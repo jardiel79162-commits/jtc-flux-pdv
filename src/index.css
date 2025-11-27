@@ -22,14 +22,18 @@ All colors MUST be HSL.
     --primary: 229 100% 65%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 229 100% 60%;
+    --primary-light: 229 100% 95%;
 
     /* Secondary: Graphite #1C1F26 */
     --secondary: 220 26% 14%;
     --secondary-foreground: 0 0% 100%;
+    --secondary-hover: 220 26% 20%;
 
     /* Accent: Green #00E0A4 */
     --accent: 163 100% 44%;
     --accent-foreground: 220 26% 14%;
+    --accent-hover: 163 100% 38%;
+    --accent-light: 163 100% 95%;
 
     --muted: 220 14% 92%;
     --muted-foreground: 220 9% 46%;
@@ -56,10 +60,15 @@ All colors MUST be HSL.
     /* Custom design tokens */
     --success: 163 100% 44%;
     --success-foreground: 0 0% 100%;
+    --success-light: 163 100% 95%;
+    
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+    
     --info: 207 90% 54%;
     --info-foreground: 0 0% 100%;
+    --info-light: 207 90% 95%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(229 100% 65%), hsl(229 100% 75%));
@@ -88,12 +97,16 @@ All colors MUST be HSL.
     --primary: 229 100% 65%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 229 100% 70%;
+    --primary-light: 229 100% 95%;
 
     --secondary: 220 22% 18%;
     --secondary-foreground: 220 14% 96%;
+    --secondary-hover: 220 22% 25%;
 
     --accent: 163 100% 44%;
     --accent-foreground: 220 26% 8%;
+    --accent-hover: 163 100% 50%;
+    --accent-light: 163 100% 95%;
 
     --muted: 220 22% 18%;
     --muted-foreground: 220 14% 70%;
@@ -124,4 +137,17 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Hide Lovable badge */
+a[href*="lovable.dev"],
+iframe[src*="lovable.dev"],
+div[style*="Edit with Lovable"],
+.lovable-badge {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    z-index: -9999 !important;
 }
