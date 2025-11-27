@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Subscription from "./pages/Subscription";
+import Products from "./pages/Products";
+import POS from "./pages/POS";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -24,10 +28,10 @@ const App = () => (
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/assinatura" element={<Subscription />} />
-            <Route path="/produtos" element={<div className="text-center py-20"><h2 className="text-2xl">Produtos - Em construção</h2></div>} />
-            <Route path="/pdv" element={<div className="text-center py-20"><h2 className="text-2xl">PDV - Em construção</h2></div>} />
-            <Route path="/relatorios" element={<div className="text-center py-20"><h2 className="text-2xl">Relatórios - Em construção</h2></div>} />
-            <Route path="/configuracoes" element={<div className="text-center py-20"><h2 className="text-2xl">Configurações - Em construção</h2></div>} />
+            <Route path="/produtos" element={<Products />} />
+            <Route path="/pdv" element={<POS />} />
+            <Route path="/relatorios" element={<Reports />} />
+            <Route path="/configuracoes" element={<Settings />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
