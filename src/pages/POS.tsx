@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X } from "lucide-react";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Product {
   id: string;
@@ -45,7 +46,7 @@ const POS = () => {
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<"cart" | "payment" | "receipt">("cart");
   const [saleData, setSaleData] = useState<SaleData | null>(null);
-  const [showProductBrowser, setShowProductBrowser] = useState(false);
+  const [showFullscreenBrowser, setShowFullscreenBrowser] = useState(false);
   const [storeName, setStoreName] = useState("Loja");
   const { toast } = useToast();
 
@@ -374,36 +375,11 @@ ID da Venda: ${sale.id}
               </div>
               <Button
                 variant="outline"
-                onClick={() => setShowProductBrowser(!showProductBrowser)}
+                onClick={() => setShowFullscreenBrowser(true)}
               >
-                {showProductBrowser ? "Ocultar Produtos" : "Ver Produtos"}
+                Ver Produtos
               </Button>
             </div>
-
-            {showProductBrowser && (
-              <Card className="border-info">
-                <CardHeader>
-                  <CardTitle className="text-lg">Produtos Disponíveis</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                    {products.map((product) => (
-                      <div
-                        key={product.id}
-                        className="border rounded-lg p-3 hover:border-primary cursor-pointer transition-all"
-                        onClick={() => addToCart(product)}
-                      >
-                        <p className="font-semibold text-sm truncate">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">Est: {product.stock_quantity}</p>
-                        <p className="text-accent font-bold mt-1">
-                          R$ {(product.promotional_price || product.price).toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {searchTerm && (
               <Card className="border-primary-light">
@@ -718,6 +694,101 @@ ID da Venda: ${sale.id}
           </Button>
         </div>
       )}
+
+      {/* Modal de Produtos em Tela Cheia */}
+      <Dialog open={showFullscreenBrowser} onOpenChange={setShowFullscreenBrowser}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
+          <div className="flex flex-col h-full">
+            <DialogHeader className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-2xl">Produtos Disponíveis</DialogTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowFullscreenBrowser(false)}
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar produto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-12 text-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {(searchTerm ? filteredProducts : products).map((product) => {
+                  const photoUrl = (product as any).photos?.[0];
+                  return (
+                    <Card
+                      key={product.id}
+                      className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+                      onClick={() => {
+                        addToCart(product);
+                        setShowFullscreenBrowser(false);
+                      }}
+                    >
+                      <CardContent className="p-4">
+                        {photoUrl ? (
+                          <img 
+                            src={photoUrl} 
+                            alt={product.name}
+                            className="w-full h-32 object-cover rounded-lg mb-3"
+                          />
+                        ) : (
+                          <div className="w-full h-32 bg-muted rounded-lg mb-3 flex items-center justify-center">
+                            <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary">
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Estoque: {product.stock_quantity}
+                        </p>
+                        <div className="space-y-1">
+                          {product.promotional_price ? (
+                            <>
+                              <p className="text-xs line-through text-muted-foreground">
+                                R$ {product.price.toFixed(2)}
+                              </p>
+                              <p className="text-lg font-bold text-accent">
+                                R$ {product.promotional_price.toFixed(2)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-lg font-bold text-accent">
+                              R$ {product.price.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {(searchTerm ? filteredProducts : products).length === 0 && (
+                <div className="text-center py-12">
+                  <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-lg text-muted-foreground">
+                    {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto disponível"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

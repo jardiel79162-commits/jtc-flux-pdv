@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Package, Search } from "lucide-react";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface Category {
   id: string;
@@ -398,14 +399,12 @@ const Products = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>URL da Foto (opcional)</Label>
-                    <Input
-                      placeholder="https://exemplo.com/foto.jpg"
-                      value={productForm.photo_url}
-                      onChange={(e) => setProductForm({ ...productForm, photo_url: e.target.value })}
-                    />
-                  </div>
+                  <ImageUpload
+                    bucket="product-photos"
+                    currentImageUrl={productForm.photo_url}
+                    onImageUploaded={(url) => setProductForm({ ...productForm, photo_url: url })}
+                    label="Foto do Produto (opcional)"
+                  />
 
                   <div className="flex items-center space-x-2">
                     <Switch
