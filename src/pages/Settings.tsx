@@ -17,6 +17,7 @@ const Settings = () => {
     store_address: "",
     operation_type: "",
     primary_color: "#4C6FFF",
+    logo_url: "",
   });
 
   useEffect(() => {
@@ -42,6 +43,7 @@ const Settings = () => {
         store_address: data.store_address || "",
         operation_type: data.operation_type || "",
         primary_color: data.primary_color || "#4C6FFF",
+        logo_url: data.logo_url || "",
       });
     }
   };
@@ -132,6 +134,20 @@ const Settings = () => {
                 onChange={(e) => setSettings({ ...settings, operation_type: e.target.value })}
                 placeholder="Ex: Varejo, E-commerce, Atacado"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Logo da Loja (URL)</Label>
+              <Input
+                value={settings.logo_url}
+                onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
+                placeholder="https://exemplo.com/logo.png"
+              />
+              {settings.logo_url && (
+                <div className="mt-2">
+                  <img src={settings.logo_url} alt="Logo" className="h-20 object-contain" />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

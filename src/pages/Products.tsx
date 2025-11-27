@@ -29,7 +29,6 @@ interface Product {
   min_stock_quantity: number | null;
   barcode: string | null;
   internal_code: string | null;
-  available_colors: string[] | null;
   is_active: boolean;
   category_id: string | null;
 }
@@ -53,9 +52,9 @@ const Products = () => {
     min_stock_quantity: "",
     barcode: "",
     internal_code: "",
-    available_colors: "",
     category_id: "",
     is_active: true,
+    photo_url: "",
   });
 
   const [categoryForm, setCategoryForm] = useState({
@@ -115,7 +114,7 @@ const Products = () => {
       min_stock_quantity: productForm.min_stock_quantity ? parseInt(productForm.min_stock_quantity) : null,
       barcode: productForm.barcode || null,
       internal_code: productForm.internal_code || null,
-      available_colors: productForm.available_colors ? productForm.available_colors.split(",").map(c => c.trim()) : null,
+      photos: productForm.photo_url ? [productForm.photo_url] : null,
       category_id: productForm.category_id || null,
       is_active: productForm.is_active,
       user_id: user.id,
@@ -215,9 +214,9 @@ const Products = () => {
       min_stock_quantity: "",
       barcode: "",
       internal_code: "",
-      available_colors: "",
       category_id: "",
       is_active: true,
+      photo_url: "",
     });
     setEditingProduct(null);
     setIsProductDialogOpen(false);
@@ -240,9 +239,9 @@ const Products = () => {
       min_stock_quantity: product.min_stock_quantity?.toString() || "",
       barcode: product.barcode || "",
       internal_code: product.internal_code || "",
-      available_colors: product.available_colors?.join(", ") || "",
       category_id: product.category_id || "",
       is_active: product.is_active,
+      photo_url: (product as any).photos?.[0] || "",
     });
     setIsProductDialogOpen(true);
   };
@@ -293,7 +292,10 @@ const Products = () => {
                 className="pl-10"
               />
             </div>
-            <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+            <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
+              if (!open) resetProductForm();
+              setIsProductDialogOpen(open);
+            }}>
               <DialogTrigger asChild>
                 <Button onClick={() => { resetProductForm(); setIsProductDialogOpen(true); }}>
                   <Plus className="mr-2 h-4 w-4" />
@@ -397,11 +399,11 @@ const Products = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Cores Disponíveis (separadas por vírgula)</Label>
+                    <Label>URL da Foto (opcional)</Label>
                     <Input
-                      placeholder="Ex: Azul, Vermelho, Verde"
-                      value={productForm.available_colors}
-                      onChange={(e) => setProductForm({ ...productForm, available_colors: e.target.value })}
+                      placeholder="https://exemplo.com/foto.jpg"
+                      value={productForm.photo_url}
+                      onChange={(e) => setProductForm({ ...productForm, photo_url: e.target.value })}
                     />
                   </div>
 

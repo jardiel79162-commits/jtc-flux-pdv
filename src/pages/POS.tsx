@@ -45,11 +45,29 @@ const POS = () => {
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<"cart" | "payment" | "receipt">("cart");
   const [saleData, setSaleData] = useState<SaleData | null>(null);
+  const [showProductBrowser, setShowProductBrowser] = useState(false);
+  const [storeName, setStoreName] = useState("Loja");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchProducts();
+    fetchStoreName();
   }, []);
+
+  const fetchStoreName = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("store_settings")
+      .select("store_name")
+      .eq("user_id", user.id)
+      .single();
+
+    if (data?.store_name) {
+      setStoreName(data.store_name);
+    }
+  };
 
   const fetchProducts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -129,6 +147,13 @@ const POS = () => {
     setCurrentStep("payment");
   };
 
+  const generateSaleId = (saleNumber: number) => {
+    const firstLetter = storeName.charAt(0).toUpperCase();
+    const lastLetter = storeName.charAt(storeName.length - 1).toUpperCase();
+    const paddedNumber = String(saleNumber).padStart(6, '0');
+    return `${firstLetter}${lastLetter}-${paddedNumber}`;
+  };
+
   const finalizeSale = async () => {
     if (!paymentMethod) {
       toast({ title: "Selecione a forma de pagamento", variant: "destructive" });
@@ -137,6 +162,15 @@ const POS = () => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    // Obter o número da última venda para gerar o ID
+    const { count } = await supabase
+      .from("sales")
+      .select("*", { count: 'exact', head: true })
+      .eq("user_id", user.id);
+
+    const saleNumber = (count || 0) + 1;
+    const customSaleId = generateSaleId(saleNumber);
 
     // Criar venda
     const { data: sale, error: saleError } = await supabase
@@ -182,7 +216,7 @@ const POS = () => {
 
     // Preparar dados do comprovante
     setSaleData({
-      id: sale.id,
+      id: customSaleId,
       total_amount: total,
       discount: discount,
       payment_method: paymentMethod,
@@ -327,16 +361,49 @@ ID da Venda: ${sale.id}
       {/* Etapa 1: Carrinho */}
       {currentStep === "cart" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar produto por nome, código interno ou código de barras..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <div className="lg:col-span-2 space-y-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar produto por nome, código interno ou código de barras..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowProductBrowser(!showProductBrowser)}
+              >
+                {showProductBrowser ? "Ocultar Produtos" : "Ver Produtos"}
+              </Button>
             </div>
+
+            {showProductBrowser && (
+              <Card className="border-info">
+                <CardHeader>
+                  <CardTitle className="text-lg">Produtos Disponíveis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                    {products.map((product) => (
+                      <div
+                        key={product.id}
+                        className="border rounded-lg p-3 hover:border-primary cursor-pointer transition-all"
+                        onClick={() => addToCart(product)}
+                      >
+                        <p className="font-semibold text-sm truncate">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">Est: {product.stock_quantity}</p>
+                        <p className="text-accent font-bold mt-1">
+                          R$ {(product.promotional_price || product.price).toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {searchTerm && (
               <Card className="border-primary-light">
