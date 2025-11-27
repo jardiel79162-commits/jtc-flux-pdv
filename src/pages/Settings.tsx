@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Store, Save } from "lucide-react";
+import { ImageUpload } from "@/components/ImageUpload";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
@@ -136,19 +137,12 @@ const Settings = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Logo da Loja (URL)</Label>
-              <Input
-                value={settings.logo_url}
-                onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
-                placeholder="https://exemplo.com/logo.png"
-              />
-              {settings.logo_url && (
-                <div className="mt-2">
-                  <img src={settings.logo_url} alt="Logo" className="h-20 object-contain" />
-                </div>
-              )}
-            </div>
+            <ImageUpload
+              bucket="store-logos"
+              currentImageUrl={settings.logo_url}
+              onImageUploaded={(url) => setSettings({ ...settings, logo_url: url })}
+              label="Logo da Loja"
+            />
 
             <div className="space-y-2">
               <Label>Cor Primária do Sistema</Label>

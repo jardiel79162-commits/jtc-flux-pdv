@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { User, Session } from "@supabase/supabase-js";
+import logo from "@/assets/logo.jpg";
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -67,7 +68,8 @@ const DashboardLayout = () => {
     <div className="min-h-screen bg-background">
       {/* Sidebar Desktop */}
       <aside className="hidden md:fixed md:left-0 md:top-0 md:bottom-0 md:flex md:w-64 md:flex-col bg-sidebar border-r border-sidebar-border">
-        <div className="p-6 border-b border-sidebar-border">
+        <div className="p-6 border-b border-sidebar-border flex items-center gap-3">
+          <img src={logo} alt="JTC FluxPDV Logo" className="w-12 h-12 rounded-full object-cover" />
           <h1 className="text-2xl font-bold text-sidebar-foreground">JTC FluxPDV</h1>
         </div>
 
@@ -107,7 +109,10 @@ const DashboardLayout = () => {
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 flex items-center justify-between px-4">
-        <h1 className="text-xl font-bold text-primary">JTC FluxPDV</h1>
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="JTC FluxPDV Logo" className="w-10 h-10 rounded-full object-cover" />
+          <h1 className="text-xl font-bold text-primary">JTC FluxPDV</h1>
+        </div>
         <Button
           variant="ghost"
           size="icon"
