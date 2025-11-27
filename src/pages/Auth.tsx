@@ -1,20 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, type SignUpData } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
-import { ShoppingCart, TrendingUp, Package } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Loader2 } from "lucide-react";
+import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingCEP, setIsFetchingCEP] = useState(false);
+  const [estados, setEstados] = useState<Estado[]>([]);
+  const [cidades, setCidades] = useState<Cidade[]>([]);
+  const [selectedEstado, setSelectedEstado] = useState("");
+  const [selectedCidade, setSelectedCidade] = useState("");
+  const [addressData, setAddressData] = useState({
+    street: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+  });
 
   useEffect(() => {
     // Verificar se já está logado
@@ -30,8 +42,51 @@ const Auth = () => {
       }
     });
 
+    // Carregar estados
+    fetchEstados().then(setEstados);
+
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    // Carregar cidades quando estado mudar
+    if (selectedEstado) {
+      fetchCidades(selectedEstado).then(setCidades);
+    } else {
+      setCidades([]);
+    }
+  }, [selectedEstado]);
+
+  const handleCEPChange = async (cep: string) => {
+    const cleanCEP = cep.replace(/\D/g, "");
+    if (cleanCEP.length === 8) {
+      setIsFetchingCEP(true);
+      const data = await fetchCEP(cleanCEP);
+      
+      if (data) {
+        setAddressData({
+          street: data.logradouro,
+          neighborhood: data.bairro,
+          city: data.localidade,
+          state: data.uf,
+        });
+        setSelectedEstado(data.uf);
+        setSelectedCidade(data.localidade);
+        
+        toast({
+          title: "CEP encontrado!",
+          description: "Endereço preenchido automaticamente.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "CEP não encontrado",
+          description: "Verifique o CEP digitado.",
+        });
+      }
+      setIsFetchingCEP(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,11 +137,11 @@ const Auth = () => {
       email: formData.get("email") as string,
       phone: formData.get("phone") as string,
       cep: formData.get("cep") as string,
-      street: formData.get("street") as string,
+      street: addressData.street,
       number: formData.get("number") as string,
-      neighborhood: formData.get("neighborhood") as string,
-      city: formData.get("city") as string,
-      state: formData.get("state") as string,
+      neighborhood: addressData.neighborhood,
+      city: selectedCidade,
+      state: selectedEstado,
       password,
     };
 
@@ -249,13 +304,29 @@ const Auth = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="cep">CEP</Label>
-                      <Input
-                        id="cep"
-                        name="cep"
-                        placeholder="00000-000"
-                        required
-                        disabled={isLoading}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="cep"
+                          name="cep"
+                          placeholder="00000-000"
+                          maxLength={9}
+                          required
+                          disabled={isLoading || isFetchingCEP}
+                          onChange={(e) => {
+                            const value = e.target.value
+                              .replace(/\D/g, "")
+                              .replace(/^(\d{5})(\d)/, "$1-$2");
+                            e.target.value = value;
+                            handleCEPChange(value);
+                          }}
+                        />
+                        {isFetchingCEP && (
+                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Digite o CEP para preencher o endereço automaticamente
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -263,6 +334,8 @@ const Auth = () => {
                       <Input
                         id="street"
                         name="street"
+                        value={addressData.street}
+                        onChange={(e) => setAddressData({ ...addressData, street: e.target.value })}
                         required
                         disabled={isLoading}
                       />
@@ -283,16 +356,8 @@ const Auth = () => {
                       <Input
                         id="neighborhood"
                         name="neighborhood"
-                        required
-                        disabled={isLoading}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Cidade</Label>
-                      <Input
-                        id="city"
-                        name="city"
+                        value={addressData.neighborhood}
+                        onChange={(e) => setAddressData({ ...addressData, neighborhood: e.target.value })}
                         required
                         disabled={isLoading}
                       />
@@ -300,14 +365,44 @@ const Auth = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="state">Estado</Label>
-                      <Input
-                        id="state"
-                        name="state"
-                        placeholder="SP"
-                        maxLength={2}
-                        required
+                      <Select
+                        value={selectedEstado}
+                        onValueChange={setSelectedEstado}
                         disabled={isLoading}
-                      />
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o estado" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-50">
+                          {estados.map((estado) => (
+                            <SelectItem key={estado.id} value={estado.sigla}>
+                              {estado.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="city">Cidade</Label>
+                      <Select
+                        value={selectedCidade}
+                        onValueChange={setSelectedCidade}
+                        disabled={isLoading || !selectedEstado}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedEstado ? "Selecione a cidade" : "Selecione o estado primeiro"} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-50 max-h-[300px]">
+                          {cidades.map((cidade) => (
+                            <SelectItem key={cidade.id} value={cidade.nome}>
+                              {cidade.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-2">
