@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Subscription from "./pages/Subscription";
 import Products from "./pages/Products";
 import POS from "./pages/POS";
+import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import DashboardLayout from "./components/DashboardLayout";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/assinatura" element={<Subscription />} />
             <Route path="/produtos" element={<Products />} />
             <Route path="/pdv" element={<POS />} />
+            <Route path="/clientes" element={<Customers />} />
             <Route path="/relatorios" element={<Reports />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Route>

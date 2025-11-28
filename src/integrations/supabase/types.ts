@@ -49,6 +49,83 @@ export type Database = {
           },
         ]
       }
+      customer_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          description: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id: string
+          description?: string | null
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string
+          birth_date: string | null
+          cpf: string
+          created_at: string
+          current_balance: number
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          birth_date?: string | null
+          cpf: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          birth_date?: string | null
+          cpf?: string
+          created_at?: string
+          current_balance?: number
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           available_colors: string[] | null
@@ -216,29 +293,43 @@ export type Database = {
       sales: {
         Row: {
           created_at: string
+          customer_id: string | null
           discount: number | null
           id: string
           payment_method: string
+          payment_status: string | null
           total_amount: number
           user_id: string
         }
         Insert: {
           created_at?: string
+          customer_id?: string | null
           discount?: number | null
           id?: string
           payment_method: string
+          payment_status?: string | null
           total_amount: number
           user_id: string
         }
         Update: {
           created_at?: string
+          customer_id?: string | null
           discount?: number | null
           id?: string
           payment_method?: string
+          payment_status?: string | null
           total_amount?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       store_settings: {
         Row: {
