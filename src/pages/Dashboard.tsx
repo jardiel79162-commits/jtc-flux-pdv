@@ -82,11 +82,19 @@ const Dashboard = () => {
       const totalMonth = salesMonth?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
 
       // Produtos com estoque baixo
-      const { data: lowStock } = await supabase
+      const { data: productsForStock, error: lowStockError } = await supabase
         .from("products")
-        .select("id")
-        .eq("user_id", user.id)
-        .filter("stock_quantity", "lte", "min_stock_quantity");
+        .select("id, stock_quantity, min_stock_quantity")
+        .eq("user_id", user.id);
+
+      if (lowStockError) {
+        console.error("Erro ao carregar produtos com estoque baixo:", lowStockError);
+      }
+
+      const lowStockCount =
+        productsForStock?.filter(
+          (product) => product.stock_quantity <= (product.min_stock_quantity ?? 0)
+        ).length || 0;
 
       // Vendas recentes
       const { data: recentSales } = await supabase
