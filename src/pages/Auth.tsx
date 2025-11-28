@@ -11,6 +11,7 @@ import { signIn, signUp, type SignUpData } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
+import logo from "@/assets/logo.jpg";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -169,13 +170,16 @@ const Auth = () => {
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
         {/* Seção de branding */}
         <div className="hidden lg:flex flex-col justify-center space-y-6 p-8">
-          <div className="space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              JTC FluxPDV
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Sistema completo de gestão para sua loja
-            </p>
+          <div className="flex items-center gap-4 mb-6">
+            <img src={logo} alt="JTC FluxPDV" className="w-20 h-20 rounded-full object-cover" />
+            <div className="space-y-1">
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                JTC FluxPDV
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                Sistema completo de gestão para sua loja
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4 pt-8">
@@ -214,7 +218,10 @@ const Auth = () => {
         {/* Formulários */}
         <Card className="shadow-2xl">
           <CardHeader className="text-center lg:text-left">
-            <CardTitle className="text-3xl lg:hidden mb-2">JTC FluxPDV</CardTitle>
+            <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
+              <img src={logo} alt="JTC FluxPDV" className="w-16 h-16 rounded-full object-cover" />
+              <CardTitle className="text-3xl">JTC FluxPDV</CardTitle>
+            </div>
             <CardDescription>Entre na sua conta ou crie uma nova</CardDescription>
           </CardHeader>
           <CardContent>
