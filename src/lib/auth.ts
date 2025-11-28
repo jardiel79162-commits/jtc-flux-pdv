@@ -23,18 +23,6 @@ export const signUp = async (data: SignUpData) => {
       data: {
         full_name: data.fullName,
         cpf: data.cpf,
-      },
-    },
-  });
-
-  if (error) throw error;
-
-  // Atualizar perfil com dados completos
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
         phone: data.phone,
         cep: data.cep,
         street: data.street,
@@ -42,11 +30,11 @@ export const signUp = async (data: SignUpData) => {
         neighborhood: data.neighborhood,
         city: data.city,
         state: data.state,
-      })
-      .eq("id", user.id);
+      },
+    },
+  });
 
-    if (profileError) throw profileError;
-  }
+  if (error) throw error;
 };
 
 export const signIn = async (identifier: string, password: string) => {

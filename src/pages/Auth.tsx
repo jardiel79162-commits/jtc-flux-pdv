@@ -260,10 +260,6 @@ const Auth = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
-
-                  <Button type="button" variant="link" className="w-full">
-                    Esqueci a senha
-                  </Button>
                 </form>
               </TabsContent>
 
