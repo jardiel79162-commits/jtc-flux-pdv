@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -31,6 +31,7 @@ interface SaleData {
   discount: number;
   payment_method: string;
   created_at: string;
+  customer_name?: string;
   items: Array<{
     product_name: string;
     quantity: number;
@@ -38,12 +39,22 @@ interface SaleData {
   }>;
 }
 
+interface Customer {
+  id: string;
+  name: string;
+  cpf: string;
+  current_balance: number;
+}
+
 const POS = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showCustomerBrowser, setShowCustomerBrowser] = useState(false);
   const [currentStep, setCurrentStep] = useState<"cart" | "payment" | "receipt">("cart");
   const [saleData, setSaleData] = useState<SaleData | null>(null);
   const [showFullscreenBrowser, setShowFullscreenBrowser] = useState(false);
@@ -53,6 +64,7 @@ const POS = () => {
   useEffect(() => {
     fetchProducts();
     fetchStoreName();
+    fetchCustomers();
   }, []);
 
   const fetchStoreName = async () => {
@@ -85,6 +97,23 @@ const POS = () => {
       toast({ title: "Erro ao carregar produtos", variant: "destructive" });
     } else {
       setProducts(data || []);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("name");
+
+    if (error) {
+      toast({ title: "Erro ao carregar clientes", variant: "destructive" });
+    } else {
+      setCustomers(data || []);
     }
   };
 
@@ -161,6 +190,15 @@ const POS = () => {
       return;
     }
 
+    if (paymentMethod === "fiado" && !selectedCustomer) {
+      toast({ 
+        title: "Cliente não selecionado", 
+        description: "Por favor, selecione um cliente para venda a prazo",
+        variant: "destructive" 
+      });
+      return;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -181,6 +219,8 @@ const POS = () => {
         total_amount: total,
         discount: discount,
         payment_method: paymentMethod,
+        customer_id: selectedCustomer?.id || null,
+        payment_status: paymentMethod === "fiado" ? "pending" : "paid",
       }])
       .select()
       .single();
@@ -215,6 +255,25 @@ const POS = () => {
         .eq("id", item.product.id);
     }
 
+    // Se for Fiado, atualizar saldo do cliente e criar transação
+    if (paymentMethod === "fiado" && selectedCustomer) {
+      const newBalance = selectedCustomer.current_balance - total;
+      await supabase
+        .from("customers")
+        .update({ current_balance: newBalance })
+        .eq("id", selectedCustomer.id);
+
+      await supabase
+        .from("customer_transactions")
+        .insert({
+          customer_id: selectedCustomer.id,
+          user_id: user.id,
+          type: "debt",
+          amount: total,
+          description: `Compra - Venda ${customSaleId}`,
+        });
+    }
+
     // Preparar dados do comprovante
     setSaleData({
       id: customSaleId,
@@ -222,6 +281,7 @@ const POS = () => {
       discount: discount,
       payment_method: paymentMethod,
       created_at: sale.created_at,
+      customer_name: selectedCustomer?.name,
       items: cart.map(item => ({
         product_name: item.product.name,
         quantity: item.quantity,
@@ -316,6 +376,7 @@ ID da Venda: ${sale.id}
     setCart([]);
     setDiscount(0);
     setPaymentMethod("");
+    setSelectedCustomer(null);
     setCurrentStep("cart");
     setSaleData(null);
     fetchProducts();
@@ -326,6 +387,7 @@ ID da Venda: ${sale.id}
     { value: "debit", label: "Cartão de Débito", icon: CreditCard },
     { value: "pix", label: "PIX", icon: Smartphone },
     { value: "cash", label: "Dinheiro", icon: Banknote },
+    { value: "fiado", label: "Fiado", icon: User },
   ];
 
   return (
@@ -578,7 +640,12 @@ ID da Venda: ${sale.id}
                           ? "bg-accent hover:bg-accent-hover border-2 border-accent"
                           : ""
                       }`}
-                      onClick={() => setPaymentMethod(method.value)}
+                      onClick={() => {
+                        setPaymentMethod(method.value);
+                        if (method.value === "fiado") {
+                          setShowCustomerBrowser(true);
+                        }
+                      }}
                     >
                       <Icon className="h-8 w-8 mb-2" />
                       <span className="text-sm">{method.label}</span>
@@ -586,8 +653,91 @@ ID da Venda: ${sale.id}
                   );
                 })}
               </div>
+
+              {paymentMethod === "fiado" && (
+                <div className="mt-4 p-4 bg-muted rounded-lg">
+                  {selectedCustomer ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Cliente selecionado:</p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold">{selectedCustomer.name}</p>
+                          <p className="text-xs text-muted-foreground">CPF: {selectedCustomer.cpf}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCustomerBrowser(true)}
+                        >
+                          Trocar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-2">
+                      <p className="text-sm text-destructive font-medium">Por favor, selecione um cliente.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCustomerBrowser(true)}
+                      >
+                        Selecionar Cliente
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Dialog para seleção de clientes */}
+          <Dialog open={showCustomerBrowser} onOpenChange={setShowCustomerBrowser}>
+            <DialogContent className="max-w-4xl max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle>Selecionar Cliente</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto max-h-[60vh]">
+                {customers.map((customer) => (
+                  <Card
+                    key={customer.id}
+                    className={`cursor-pointer hover:shadow-lg transition-shadow ${
+                      selectedCustomer?.id === customer.id ? "border-2 border-accent" : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      setShowCustomerBrowser(false);
+                    }}
+                  >
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <User className="w-4 h-4" />
+                        {customer.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1 text-sm">
+                        <p>
+                          <span className="text-muted-foreground">CPF:</span> {customer.cpf}
+                        </p>
+                        <p className={`font-semibold ${customer.current_balance < 0 ? "text-destructive" : "text-green-600"}`}>
+                          {customer.current_balance < 0
+                            ? `Devendo: R$ ${(-customer.current_balance).toFixed(2)}`
+                            : customer.current_balance > 0
+                            ? `Crédito: R$ ${customer.current_balance.toFixed(2)}`
+                            : "Sem pendências"}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {customers.length === 0 && (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    Nenhum cliente cadastrado
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <div className="flex gap-4">
             <Button
@@ -651,6 +801,12 @@ ID da Venda: ${sale.id}
                     <span>Forma de Pagamento:</span>
                     <span className="capitalize font-medium">{saleData.payment_method}</span>
                   </div>
+                  {saleData.customer_name && (
+                    <div className="flex justify-between text-sm">
+                      <span>Cliente:</span>
+                      <span className="font-semibold">{saleData.customer_name}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
