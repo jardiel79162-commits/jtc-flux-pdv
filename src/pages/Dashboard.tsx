@@ -107,7 +107,7 @@ const Dashboard = () => {
       setData({
         salesToday: totalToday,
         salesMonth: totalMonth,
-        lowStockProducts: lowStock?.length || 0,
+        lowStockProducts: lowStockCount,
         recentSales: recentSales?.length || 0,
         subscriptionStatus,
         trialDaysLeft,
