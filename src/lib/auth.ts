@@ -34,7 +34,13 @@ export const signUp = async (data: SignUpData) => {
     },
   });
 
-  if (error) throw error;
+  if (error) {
+    if (error.message && error.message.toLowerCase().includes("database error saving new user")) {
+      throw new Error("Já existe um usuário cadastrado com este CPF ou e-mail.");
+    }
+
+    throw error;
+  }
 };
 
 export const signIn = async (identifier: string, password: string) => {
