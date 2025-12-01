@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
+import jsPDF from "jspdf";
 
 interface Product {
   id: string;
@@ -348,55 +349,147 @@ const POS = () => {
   const downloadReceipt = (format: "pdf" | "txt") => {
     if (!saleData) return;
 
-    const content = generateReceiptContent(saleData);
-    
     if (format === "txt") {
+      const content = generateReceiptContent(saleData);
       const blob = new Blob([content], { type: "text/plain" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `comprovante-${saleData.id}.txt`;
       a.click();
+      window.URL.revokeObjectURL(url);
       toast({ title: "Comprovante TXT baixado!" });
     } else {
-      // Para PDF, vamos criar um simples HTML e usar print
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>Comprovante de Venda</title>
-              <style>
-                body { font-family: monospace; padding: 20px; }
-                h1 { text-align: center; }
-                .line { border-bottom: 1px dashed #000; margin: 10px 0; }
-                table { width: 100%; border-collapse: collapse; }
-                td { padding: 5px; }
-              </style>
-            </head>
-            <body>
-              <pre>${content}</pre>
-              <script>
-                window.print();
-                window.onafterprint = function() { window.close(); }
-              </script>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-      }
-      toast({ title: "Abrindo impressão de PDF..." });
+      generatePDF(saleData);
+      toast({ title: "Comprovante PDF baixado!" });
     }
   };
 
+  const generatePDF = (sale: SaleData) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = 20;
+
+    // Cabeçalho
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(storeName || "LOJA", pageWidth / 2, yPos, { align: "center" });
+    yPos += 10;
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("COMPROVANTE DE VENDA", pageWidth / 2, yPos, { align: "center" });
+    yPos += 15;
+
+    // Linha separadora
+    doc.setLineWidth(0.5);
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 10;
+
+    // Informações da venda
+    doc.setFontSize(10);
+    doc.text(`Data: ${format(new Date(sale.created_at), "dd/MM/yyyy 'às' HH:mm")}`, 20, yPos);
+    yPos += 7;
+    doc.text(`ID da Venda: ${sale.id}`, 20, yPos);
+    yPos += 7;
+
+    // Nome do cliente (se houver)
+    if (sale.customer_name) {
+      doc.setFont("helvetica", "bold");
+      doc.text(`Cliente: ${sale.customer_name}`, 20, yPos);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+    }
+
+    // Forma de pagamento
+    const paymentMethodLabels: Record<string, string> = {
+      credit: "Cartão de Crédito",
+      debit: "Cartão de Débito",
+      pix: "PIX",
+      cash: "Dinheiro",
+      fiado: "Fiado (A Prazo)",
+    };
+    doc.text(`Forma de Pagamento: ${paymentMethodLabels[sale.payment_method] || sale.payment_method}`, 20, yPos);
+    yPos += 10;
+
+    // Linha separadora
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 10;
+
+    // Título dos produtos
+    doc.setFont("helvetica", "bold");
+    doc.text("PRODUTOS", 20, yPos);
+    yPos += 7;
+    doc.setFont("helvetica", "normal");
+
+    // Lista de produtos
+    const subtotal = sale.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    
+    sale.items.forEach((item, index) => {
+      const itemTotal = item.quantity * item.unit_price;
+      doc.text(`${index + 1}. ${item.product_name}`, 20, yPos);
+      yPos += 5;
+      doc.text(`   ${item.quantity} x R$ ${item.unit_price.toFixed(2)} = R$ ${itemTotal.toFixed(2)}`, 20, yPos);
+      yPos += 7;
+    });
+
+    yPos += 5;
+
+    // Linha separadora
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 10;
+
+    // Totais
+    doc.text(`Subtotal:`, 20, yPos);
+    doc.text(`R$ ${subtotal.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    yPos += 7;
+
+    if (sale.discount > 0) {
+      doc.text(`Desconto:`, 20, yPos);
+      doc.text(`- R$ ${sale.discount.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+      yPos += 7;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(`TOTAL:`, 20, yPos);
+    doc.text(`R$ ${sale.total_amount.toFixed(2)}`, pageWidth - 20, yPos, { align: "right" });
+    yPos += 15;
+
+    // Linha separadora
+    doc.setLineWidth(0.5);
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 10;
+
+    // Mensagem final
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.text("Obrigado pela preferência!", pageWidth / 2, yPos, { align: "center" });
+
+    // Salvar PDF
+    doc.save(`comprovante-${sale.id}.pdf`);
+  };
+
   const generateReceiptContent = (sale: SaleData) => {
+    const paymentMethodLabels: Record<string, string> = {
+      credit: "Cartão de Crédito",
+      debit: "Cartão de Débito",
+      pix: "PIX",
+      cash: "Dinheiro",
+      fiado: "Fiado (A Prazo)",
+    };
+
+    const subtotal = sale.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+
     let content = `
 ================================================
-          JTC FLUXPDV - COMPROVANTE
+          ${storeName || "LOJA"} - COMPROVANTE
 ================================================
 
-Data: ${format(new Date(sale.created_at), "dd/MM/yyyy HH:mm")}
+Data: ${format(new Date(sale.created_at), "dd/MM/yyyy 'às' HH:mm")}
 ID da Venda: ${sale.id}
+${sale.customer_name ? `Cliente: ${sale.customer_name}\n` : ""}
+Forma de Pagamento: ${paymentMethodLabels[sale.payment_method] || sale.payment_method}
 
 ------------------------------------------------
               ITENS VENDIDOS
@@ -405,18 +498,19 @@ ID da Venda: ${sale.id}
 `;
 
     sale.items.forEach((item, index) => {
+      const itemTotal = item.quantity * item.unit_price;
       content += `${index + 1}. ${item.product_name}\n`;
-      content += `   Qtd: ${item.quantity} x R$ ${item.unit_price.toFixed(2)} = R$ ${(item.quantity * item.unit_price).toFixed(2)}\n\n`;
+      content += `   Qtd: ${item.quantity} x R$ ${item.unit_price.toFixed(2)} = R$ ${itemTotal.toFixed(2)}\n\n`;
     });
-
-    const subtotal = sale.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
 
     content += `------------------------------------------------\n`;
     content += `Subtotal:              R$ ${subtotal.toFixed(2)}\n`;
-    content += `Desconto:              R$ ${sale.discount.toFixed(2)}\n`;
+    if (sale.discount > 0) {
+      content += `Desconto:              R$ ${sale.discount.toFixed(2)}\n`;
+    }
     content += `TOTAL:                 R$ ${sale.total_amount.toFixed(2)}\n`;
     content += `------------------------------------------------\n`;
-    content += `Forma de Pagamento: ${sale.payment_method.toUpperCase()}\n`;
+    content += `\n`;
     content += `================================================\n`;
     content += `       Obrigado pela preferência!\n`;
     content += `================================================\n`;
@@ -831,7 +925,15 @@ ID da Venda: ${sale.id}
                   </p>
                 </div>
 
+                {saleData.customer_name && (
+                  <div className="bg-muted p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Cliente</p>
+                    <p className="font-semibold text-lg">{saleData.customer_name}</p>
+                  </div>
+                )}
+
                 <div className="border-t border-b py-4 space-y-2">
+                  <p className="font-semibold mb-2">Produtos:</p>
                   {saleData.items.map((item, index) => (
                     <div key={index} className="flex justify-between text-sm">
                       <span>{item.product_name} x{item.quantity}</span>
@@ -841,24 +943,34 @@ ID da Venda: ${sale.id}
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Desconto:</span>
-                    <span className="text-accent">- R$ {saleData.discount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Total Pago:</span>
-                    <span className="text-success">R$ {saleData.total_amount.toFixed(2)}</span>
-                  </div>
                   <div className="flex justify-between text-sm">
-                    <span>Forma de Pagamento:</span>
-                    <span className="capitalize font-medium">{saleData.payment_method}</span>
+                    <span>Subtotal:</span>
+                    <span>R$ {saleData.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0).toFixed(2)}</span>
                   </div>
-                  {saleData.customer_name && (
+                  {saleData.discount > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span>Cliente:</span>
-                      <span className="font-semibold">{saleData.customer_name}</span>
+                      <span>Desconto:</span>
+                      <span className="text-accent">- R$ {saleData.discount.toFixed(2)}</span>
                     </div>
                   )}
+                  <div className="flex justify-between text-xl font-bold border-t pt-2">
+                    <span>Total:</span>
+                    <span className="text-success">R$ {saleData.total_amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm bg-muted p-2 rounded">
+                    <span>Forma de Pagamento:</span>
+                    <span className="font-medium">
+                      {saleData.payment_method === "credit" && "Cartão de Crédito"}
+                      {saleData.payment_method === "debit" && "Cartão de Débito"}
+                      {saleData.payment_method === "pix" && "PIX"}
+                      {saleData.payment_method === "cash" && "Dinheiro"}
+                      {saleData.payment_method === "fiado" && "Fiado (A Prazo)"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-center pt-4 border-t">
+                  <p className="text-sm italic text-muted-foreground">Obrigado pela preferência!</p>
                 </div>
               </div>
             </CardContent>
