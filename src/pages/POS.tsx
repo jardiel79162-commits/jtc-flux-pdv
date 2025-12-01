@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 
 interface Product {
   id: string;
@@ -60,6 +62,12 @@ const POS = () => {
   const [showFullscreenBrowser, setShowFullscreenBrowser] = useState(false);
   const [storeName, setStoreName] = useState("Loja");
   const { toast } = useToast();
+  const { isActive, isExpired, isTrial, loading } = useSubscription();
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   useEffect(() => {
     fetchProducts();
@@ -199,98 +207,142 @@ const POS = () => {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    // Obter o número da última venda para gerar o ID
-    const { count } = await supabase
-      .from("sales")
-      .select("*", { count: 'exact', head: true })
-      .eq("user_id", user.id);
+      // Obter o número da última venda para gerar o ID
+      const { count } = await supabase
+        .from("sales")
+        .select("*", { count: 'exact', head: true })
+        .eq("user_id", user.id);
 
-    const saleNumber = (count || 0) + 1;
-    const customSaleId = generateSaleId(saleNumber);
+      const saleNumber = (count || 0) + 1;
+      const customSaleId = generateSaleId(saleNumber);
 
-    // Criar venda
-    const { data: sale, error: saleError } = await supabase
-      .from("sales")
-      .insert([{
-        user_id: user.id,
+      // Criar venda
+      const { data: sale, error: saleError } = await supabase
+        .from("sales")
+        .insert([{
+          user_id: user.id,
+          total_amount: total,
+          discount: discount,
+          payment_method: paymentMethod,
+          customer_id: selectedCustomer?.id || null,
+          payment_status: paymentMethod === "fiado" ? "pending" : "paid",
+        }])
+        .select()
+        .single();
+
+      if (saleError) {
+        console.error("Erro ao criar venda:", saleError);
+        toast({ 
+          title: "Erro ao finalizar venda", 
+          description: saleError.message,
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      // Criar itens da venda
+      const saleItems = cart.map(item => ({
+        sale_id: sale.id,
+        product_id: item.product.id,
+        quantity: item.quantity,
+        unit_price: item.product.promotional_price || item.product.price,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("sale_items")
+        .insert(saleItems);
+
+      if (itemsError) {
+        console.error("Erro ao criar itens:", itemsError);
+        toast({ 
+          title: "Erro ao registrar itens", 
+          description: itemsError.message,
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      // Atualizar estoque
+      for (const item of cart) {
+        const { error: stockError } = await supabase
+          .from("products")
+          .update({ stock_quantity: item.product.stock_quantity - item.quantity })
+          .eq("id", item.product.id);
+
+        if (stockError) {
+          console.error("Erro ao atualizar estoque:", stockError);
+        }
+      }
+
+      // Se for Fiado, atualizar saldo do cliente e criar transação
+      if (paymentMethod === "fiado" && selectedCustomer) {
+        const newBalance = selectedCustomer.current_balance - total;
+        
+        const { error: balanceError } = await supabase
+          .from("customers")
+          .update({ current_balance: newBalance })
+          .eq("id", selectedCustomer.id);
+
+        if (balanceError) {
+          console.error("Erro ao atualizar saldo:", balanceError);
+          toast({ 
+            title: "Erro ao atualizar saldo do cliente", 
+            description: balanceError.message,
+            variant: "destructive" 
+          });
+          return;
+        }
+
+        const { error: transactionError } = await supabase
+          .from("customer_transactions")
+          .insert({
+            customer_id: selectedCustomer.id,
+            user_id: user.id,
+            type: "debt",
+            amount: total,
+            description: `Compra - Venda ${customSaleId}`,
+          });
+
+        if (transactionError) {
+          console.error("Erro ao criar transação:", transactionError);
+          toast({ 
+            title: "Erro ao registrar transação", 
+            description: transactionError.message,
+            variant: "destructive" 
+          });
+          return;
+        }
+      }
+
+      // Preparar dados do comprovante
+      setSaleData({
+        id: customSaleId,
         total_amount: total,
         discount: discount,
         payment_method: paymentMethod,
-        customer_id: selectedCustomer?.id || null,
-        payment_status: paymentMethod === "fiado" ? "pending" : "paid",
-      }])
-      .select()
-      .single();
+        created_at: sale.created_at,
+        customer_name: selectedCustomer?.name,
+        items: cart.map(item => ({
+          product_name: item.product.name,
+          quantity: item.quantity,
+          unit_price: item.product.promotional_price || item.product.price,
+        })),
+      });
 
-    if (saleError) {
-      toast({ title: "Erro ao finalizar venda", variant: "destructive" });
-      return;
+      setCurrentStep("receipt");
+      toast({ title: "Venda finalizada com sucesso!" });
+    } catch (error) {
+      console.error("Erro geral ao finalizar venda:", error);
+      toast({ 
+        title: "Erro ao finalizar venda", 
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive" 
+      });
     }
-
-    // Criar itens da venda
-    const saleItems = cart.map(item => ({
-      sale_id: sale.id,
-      product_id: item.product.id,
-      quantity: item.quantity,
-      unit_price: item.product.promotional_price || item.product.price,
-    }));
-
-    const { error: itemsError } = await supabase
-      .from("sale_items")
-      .insert(saleItems);
-
-    if (itemsError) {
-      toast({ title: "Erro ao registrar itens", variant: "destructive" });
-      return;
-    }
-
-    // Atualizar estoque
-    for (const item of cart) {
-      await supabase
-        .from("products")
-        .update({ stock_quantity: item.product.stock_quantity - item.quantity })
-        .eq("id", item.product.id);
-    }
-
-    // Se for Fiado, atualizar saldo do cliente e criar transação
-    if (paymentMethod === "fiado" && selectedCustomer) {
-      const newBalance = selectedCustomer.current_balance - total;
-      await supabase
-        .from("customers")
-        .update({ current_balance: newBalance })
-        .eq("id", selectedCustomer.id);
-
-      await supabase
-        .from("customer_transactions")
-        .insert({
-          customer_id: selectedCustomer.id,
-          user_id: user.id,
-          type: "debt",
-          amount: total,
-          description: `Compra - Venda ${customSaleId}`,
-        });
-    }
-
-    // Preparar dados do comprovante
-    setSaleData({
-      id: customSaleId,
-      total_amount: total,
-      discount: discount,
-      payment_method: paymentMethod,
-      created_at: sale.created_at,
-      customer_name: selectedCustomer?.name,
-      items: cart.map(item => ({
-        product_name: item.product.name,
-        quantity: item.quantity,
-        unit_price: item.product.promotional_price || item.product.price,
-      })),
-    });
-
-    setCurrentStep("receipt");
-    toast({ title: "Venda finalizada com sucesso!" });
   };
 
   const downloadReceipt = (format: "pdf" | "txt") => {
@@ -898,12 +950,11 @@ ID da Venda: ${sale.id}
                   return (
                     <Card
                       key={product.id}
-                      className={`cursor-pointer hover:border-primary hover:shadow-lg transition-all group relative ${
+                      className={`hover:border-primary hover:shadow-lg transition-all group relative ${
                         inCart ? 'border-2 border-accent' : ''
                       }`}
-                      onClick={() => addToCart(product)}
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="p-4 space-y-3">
                         {inCart && (
                           <div className="absolute top-2 right-2 bg-accent text-accent-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg z-10">
                             {cartItem?.quantity}
@@ -913,17 +964,17 @@ ID da Venda: ${sale.id}
                           <img 
                             src={photoUrl} 
                             alt={product.name}
-                            className="w-full h-32 object-cover rounded-lg mb-3"
+                            className="w-full h-32 object-cover rounded-lg"
                           />
                         ) : (
-                          <div className="w-full h-32 bg-muted rounded-lg mb-3 flex items-center justify-center">
+                          <div className="w-full h-32 bg-muted rounded-lg flex items-center justify-center">
                             <ShoppingCart className="h-12 w-12 text-muted-foreground" />
                           </div>
                         )}
-                        <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary">
+                        <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary">
                           {product.name}
                         </h3>
-                        <p className="text-xs text-muted-foreground mb-2">
+                        <p className="text-xs text-muted-foreground">
                           Estoque: {product.stock_quantity}
                         </p>
                         <div className="space-y-1">
@@ -941,6 +992,36 @@ ID da Venda: ${sale.id}
                               R$ {product.price.toFixed(2)}
                             </p>
                           )}
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2">
+                          {inCart && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(product.id, -1);
+                                if (cartItem && cartItem.quantity === 1) {
+                                  removeFromCart(product.id);
+                                }
+                              }}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className={inCart ? "flex-1" : "w-full"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToCart(product);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

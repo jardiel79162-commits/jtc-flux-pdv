@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Users, DollarSign, CreditCard, ArrowUpCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 
 interface Customer {
   id: string;
@@ -37,6 +39,12 @@ const Customers = () => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [creditAmount, setCreditAmount] = useState("");
   const { toast } = useToast();
+  const { isActive, isExpired, isTrial, loading } = useSubscription();
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   const [formData, setFormData] = useState({
     name: "",

@@ -11,6 +11,8 @@ import { formatCurrency } from "@/lib/utils";
 import { X, Eye, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 
 interface SaleItem {
   product_id: string;
@@ -38,6 +40,12 @@ const SalesHistory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
+  const { isActive, isExpired, isTrial, loading } = useSubscription();
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   useEffect(() => {
     fetchSales();

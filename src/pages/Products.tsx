@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Package, Search } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 
 interface Category {
   id: string;
@@ -43,6 +45,12 @@ const Products = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const { toast } = useToast();
+  const { isActive, isExpired, isTrial, loading } = useSubscription();
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   const [productForm, setProductForm] = useState({
     name: "",
