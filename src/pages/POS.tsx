@@ -857,7 +857,16 @@ ID da Venda: ${sale.id}
           <div className="flex flex-col h-full">
             <DialogHeader className="p-6 border-b">
               <div className="flex items-center justify-between">
-                <DialogTitle className="text-2xl">Produtos Disponíveis</DialogTitle>
+                <div>
+                  <DialogTitle className="text-2xl">
+                    Produtos Disponíveis
+                    {cart.length > 0 && (
+                      <span className="ml-3 text-sm font-normal text-muted-foreground">
+                        ({cart.length} {cart.length === 1 ? 'item' : 'itens'} no carrinho)
+                      </span>
+                    )}
+                  </DialogTitle>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -884,16 +893,22 @@ ID da Venda: ${sale.id}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {(searchTerm ? filteredProducts : products).map((product) => {
                   const photoUrl = (product as any).photos?.[0];
+                  const cartItem = cart.find(item => item.product.id === product.id);
+                  const inCart = !!cartItem;
                   return (
                     <Card
                       key={product.id}
-                      className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-                      onClick={() => {
-                        addToCart(product);
-                        setShowFullscreenBrowser(false);
-                      }}
+                      className={`cursor-pointer hover:border-primary hover:shadow-lg transition-all group relative ${
+                        inCart ? 'border-2 border-accent' : ''
+                      }`}
+                      onClick={() => addToCart(product)}
                     >
                       <CardContent className="p-4">
+                        {inCart && (
+                          <div className="absolute top-2 right-2 bg-accent text-accent-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg z-10">
+                            {cartItem?.quantity}
+                          </div>
+                        )}
                         {photoUrl ? (
                           <img 
                             src={photoUrl} 
@@ -941,6 +956,17 @@ ID da Venda: ${sale.id}
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Footer com botão Continuar */}
+            <div className="border-t p-6 bg-card">
+              <Button
+                className="w-full h-14 text-lg bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover"
+                onClick={() => setShowFullscreenBrowser(false)}
+              >
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Continuar ({cart.length} {cart.length === 1 ? 'item' : 'itens'})
+              </Button>
             </div>
           </div>
         </DialogContent>
