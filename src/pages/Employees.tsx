@@ -1,0 +1,394 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Users, Plus, Eye, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+interface Employee {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  cpf: string;
+  role: "admin" | "gerente" | "caixa";
+  created_at: string;
+}
+
+const Employees = () => {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const { toast } = useToast();
+
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    cpf: "",
+    role: "caixa" as "gerente" | "caixa",
+    password: "",
+  });
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("employees")
+      .select("*")
+      .eq("admin_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Erro ao carregar funcionários", variant: "destructive" });
+    } else {
+      setEmployees(data || []);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      full_name: "",
+      email: "",
+      phone: "",
+      cpf: "",
+      role: "caixa",
+      password: "",
+    });
+    setEditingEmployee(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.full_name || !formData.email || !formData.cpf) {
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+
+    if (!editingEmployee && !formData.password) {
+      toast({ title: "Senha é obrigatória para novos funcionários", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    try {
+      if (editingEmployee) {
+        // Atualizar funcionário existente
+        const { error } = await supabase
+          .from("employees")
+          .update({
+            full_name: formData.full_name,
+            email: formData.email,
+            phone: formData.phone,
+            cpf: formData.cpf,
+            role: formData.role,
+          })
+          .eq("id", editingEmployee.id);
+
+        if (error) throw error;
+        toast({ title: "Funcionário atualizado com sucesso!" });
+      } else {
+        // Criar novo usuário no auth
+        const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
+          email: formData.email,
+          password: formData.password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: formData.full_name,
+            cpf: formData.cpf,
+            phone: formData.phone,
+          },
+        });
+
+        if (signUpError) throw signUpError;
+        if (!newUser.user) throw new Error("Erro ao criar usuário");
+
+        // Criar registro do funcionário
+        const { error: employeeError } = await supabase
+          .from("employees")
+          .insert({
+            user_id: newUser.user.id,
+            admin_id: user.id,
+            full_name: formData.full_name,
+            email: formData.email,
+            phone: formData.phone,
+            cpf: formData.cpf,
+            role: formData.role,
+          });
+
+        if (employeeError) throw employeeError;
+
+        // Atribuir role ao funcionário
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .insert({
+            user_id: newUser.user.id,
+            role: formData.role,
+          });
+
+        if (roleError) throw roleError;
+
+        toast({ title: "Funcionário cadastrado com sucesso!" });
+      }
+
+      setIsDialogOpen(false);
+      resetForm();
+      fetchEmployees();
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao salvar funcionário", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setFormData({
+      full_name: employee.full_name,
+      email: employee.email,
+      phone: employee.phone,
+      cpf: employee.cpf,
+      role: employee.role === "admin" ? "gerente" : employee.role,
+      password: "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (employeeId: string, userId: string) => {
+    setLoading(true);
+    try {
+      // Deletar funcionário (cascata vai deletar o user_role)
+      const { error: deleteError } = await supabase
+        .from("employees")
+        .delete()
+        .eq("id", employeeId);
+
+      if (deleteError) throw deleteError;
+
+      // Deletar usuário do auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      if (authError) throw authError;
+
+      toast({ title: "Funcionário removido com sucesso!" });
+      fetchEmployees();
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao remover funcionário", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Funcionários</h1>
+          <p className="text-muted-foreground">Gerencie os funcionários da sua loja</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Funcionário
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingEmployee ? "Editar Funcionário" : "Novo Funcionário"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nome Completo *</Label>
+                <Input
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  placeholder="Nome completo"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail *</Label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="email@exemplo.com"
+                  disabled={!!editingEmployee}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>CPF *</Label>
+                <Input
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                  placeholder="000.000.000-00"
+                  disabled={!!editingEmployee}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Cargo *</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value: "gerente" | "caixa") => setFormData({ ...formData, role: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gerente">Gerente</SelectItem>
+                    <SelectItem value="caixa">Funcionário do Caixa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {!editingEmployee && (
+                <div className="space-y-2">
+                  <Label>Senha *</Label>
+                  <Input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Senha do funcionário"
+                  />
+                </div>
+              )}
+              <Button onClick={handleSubmit} disabled={loading} className="w-full">
+                {loading ? "Salvando..." : editingEmployee ? "Atualizar" : "Confirmar"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid gap-4">
+        {employees.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Users className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground text-center">
+                Nenhum funcionário cadastrado ainda.
+                <br />
+                Clique em "Novo Funcionário" para começar.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          employees.map((employee) => (
+            <Card key={employee.id}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{employee.full_name}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {employee.role === "gerente" ? "Gerente" : "Funcionário do Caixa"}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        toast({ title: "Visualização de vendas em desenvolvimento" });
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(employee)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja remover {employee.full_name}? Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(employee.id, employee.user_id)}
+                          >
+                            Confirmar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">E-mail</p>
+                    <p className="font-medium">{employee.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">CPF</p>
+                    <p className="font-medium">{employee.cpf}</p>
+                  </div>
+                  {employee.phone && (
+                    <div>
+                      <p className="text-muted-foreground">Telefone</p>
+                      <p className="font-medium">{employee.phone}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-muted-foreground">Cadastrado em</p>
+                    <p className="font-medium">
+                      {new Date(employee.created_at).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Employees;
