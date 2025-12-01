@@ -25,6 +25,8 @@ const Settings = () => {
     has_employees: false,
   });
 
+  const [customCategory, setCustomCategory] = useState("");
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -52,6 +54,13 @@ const Settings = () => {
         category: data.category || "",
         has_employees: data.has_employees || false,
       });
+      
+      // Se a categoria não está na lista padrão, é uma categoria personalizada
+      const predefinedCategories = ["mercado", "padaria", "mercearia", "bazar", "papelaria", "restaurante", "lanchonete", "farmacia", "pet_shop"];
+      if (data.category && !predefinedCategories.includes(data.category)) {
+        setCustomCategory(data.category);
+        setSettings(prev => ({ ...prev, category: "outros" }));
+      }
     }
   };
 
@@ -59,6 +68,12 @@ const Settings = () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    // Se a categoria for "outros", usar a categoria personalizada
+    const finalSettings = {
+      ...settings,
+      category: settings.category === "outros" && customCategory ? customCategory : settings.category
+    };
 
     const { data: existing } = await supabase
       .from("store_settings")
@@ -70,13 +85,13 @@ const Settings = () => {
     if (existing) {
       const result = await supabase
         .from("store_settings")
-        .update(settings)
+        .update(finalSettings)
         .eq("user_id", user.id);
       error = result.error;
     } else {
       const result = await supabase
         .from("store_settings")
-        .insert([{ ...settings, user_id: user.id }]);
+        .insert([{ ...finalSettings, user_id: user.id }]);
       error = result.error;
     }
 
@@ -138,7 +153,12 @@ const Settings = () => {
               <Label>Categoria da Loja *</Label>
               <Select
                 value={settings.category}
-                onValueChange={(value) => setSettings({ ...settings, category: value })}
+                onValueChange={(value) => {
+                  setSettings({ ...settings, category: value });
+                  if (value !== "outros") {
+                    setCustomCategory("");
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria" />
@@ -156,6 +176,15 @@ const Settings = () => {
                   <SelectItem value="outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {settings.category === "outros" && (
+                <Input
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  placeholder="Digite a categoria da sua loja"
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-3">

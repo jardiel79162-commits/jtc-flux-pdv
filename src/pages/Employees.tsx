@@ -348,7 +348,7 @@ const Employees = () => {
                 </div>
               )}
               <Button onClick={handleSubmit} disabled={loading} className="w-full">
-                {loading ? "Salvando..." : editingEmployee ? "Atualizar" : "Confirmar"}
+                {loading ? "Salvando..." : editingEmployee ? "Atualizar" : "Continuar"}
               </Button>
             </div>
           </DialogContent>
