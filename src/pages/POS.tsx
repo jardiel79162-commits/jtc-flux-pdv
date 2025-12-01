@@ -35,6 +35,9 @@ interface SaleData {
   payment_method: string;
   created_at: string;
   customer_name?: string;
+  credit_used?: number;
+  remaining_payment_method?: string;
+  remaining_amount?: number;
   items: Array<{
     product_name: string;
     quantity: number;
@@ -221,6 +224,23 @@ const POS = () => {
       const saleNumber = (count || 0) + 1;
       const customSaleId = generateSaleId(saleNumber);
 
+      // Verificar se cliente tem crédito disponível
+      let creditUsed = 0;
+      let remainingAmount = total;
+      let finalPaymentMethod = paymentMethod;
+      let finalPaymentStatus = paymentMethod === "fiado" ? "pending" : "paid";
+
+      if (selectedCustomer && selectedCustomer.current_balance > 0) {
+        creditUsed = Math.min(selectedCustomer.current_balance, total);
+        remainingAmount = total - creditUsed;
+        
+        // Se o crédito cobriu tudo
+        if (remainingAmount === 0) {
+          finalPaymentMethod = "credito";
+          finalPaymentStatus = "paid";
+        }
+      }
+
       // Criar venda
       const { data: sale, error: saleError } = await supabase
         .from("sales")
@@ -228,9 +248,9 @@ const POS = () => {
           user_id: user.id,
           total_amount: total,
           discount: discount,
-          payment_method: paymentMethod,
+          payment_method: finalPaymentMethod,
           customer_id: selectedCustomer?.id || null,
-          payment_status: paymentMethod === "fiado" ? "pending" : "paid",
+          payment_status: finalPaymentStatus,
         }])
         .select()
         .single();
@@ -279,43 +299,82 @@ const POS = () => {
         }
       }
 
-      // Se for Fiado, atualizar saldo do cliente e criar transação
-      if (paymentMethod === "fiado" && selectedCustomer) {
-        const newBalance = selectedCustomer.current_balance - total;
-        
-        const { error: balanceError } = await supabase
-          .from("customers")
-          .update({ current_balance: newBalance })
-          .eq("id", selectedCustomer.id);
+      // Processar pagamento com crédito e/ou outras formas
+      if (selectedCustomer) {
+        if (creditUsed > 0) {
+          // Descontar crédito do cliente
+          const newBalance = selectedCustomer.current_balance - creditUsed;
+          
+          const { error: balanceError } = await supabase
+            .from("customers")
+            .update({ current_balance: newBalance })
+            .eq("id", selectedCustomer.id);
 
-        if (balanceError) {
-          console.error("Erro ao atualizar saldo:", balanceError);
-          toast({ 
-            title: "Erro ao atualizar saldo do cliente", 
-            description: balanceError.message,
-            variant: "destructive" 
-          });
-          return;
+          if (balanceError) {
+            console.error("Erro ao atualizar saldo:", balanceError);
+            toast({ 
+              title: "Erro ao atualizar crédito do cliente", 
+              description: balanceError.message,
+              variant: "destructive" 
+            });
+            return;
+          }
+
+          // Registrar transação de uso de crédito
+          const { error: creditTransactionError } = await supabase
+            .from("customer_transactions")
+            .insert({
+              customer_id: selectedCustomer.id,
+              user_id: user.id,
+              type: "payment",
+              amount: creditUsed,
+              description: `Crédito usado - Venda ${customSaleId}`,
+            });
+
+          if (creditTransactionError) {
+            console.error("Erro ao criar transação de crédito:", creditTransactionError);
+          }
         }
 
-        const { error: transactionError } = await supabase
-          .from("customer_transactions")
-          .insert({
-            customer_id: selectedCustomer.id,
-            user_id: user.id,
-            type: "debt",
-            amount: total,
-            description: `Compra - Venda ${customSaleId}`,
-          });
+        // Se ainda resta valor e é fiado, adicionar dívida
+        if (remainingAmount > 0 && paymentMethod === "fiado") {
+          const currentBalance = selectedCustomer.current_balance - creditUsed;
+          const newBalance = currentBalance - remainingAmount;
+          
+          const { error: balanceError } = await supabase
+            .from("customers")
+            .update({ current_balance: newBalance })
+            .eq("id", selectedCustomer.id);
 
-        if (transactionError) {
-          console.error("Erro ao criar transação:", transactionError);
-          toast({ 
-            title: "Erro ao registrar transação", 
-            description: transactionError.message,
-            variant: "destructive" 
-          });
-          return;
+          if (balanceError) {
+            console.error("Erro ao atualizar saldo:", balanceError);
+            toast({ 
+              title: "Erro ao atualizar saldo do cliente", 
+              description: balanceError.message,
+              variant: "destructive" 
+            });
+            return;
+          }
+
+          const { error: transactionError } = await supabase
+            .from("customer_transactions")
+            .insert({
+              customer_id: selectedCustomer.id,
+              user_id: user.id,
+              type: "debt",
+              amount: remainingAmount,
+              description: `Compra a prazo - Venda ${customSaleId}`,
+            });
+
+          if (transactionError) {
+            console.error("Erro ao criar transação:", transactionError);
+            toast({ 
+              title: "Erro ao registrar transação", 
+              description: transactionError.message,
+              variant: "destructive" 
+            });
+            return;
+          }
         }
       }
 
@@ -324,9 +383,12 @@ const POS = () => {
         id: customSaleId,
         total_amount: total,
         discount: discount,
-        payment_method: paymentMethod,
+        payment_method: finalPaymentMethod,
         created_at: sale.created_at,
         customer_name: selectedCustomer?.name,
+        credit_used: creditUsed > 0 ? creditUsed : undefined,
+        remaining_payment_method: creditUsed > 0 && remainingAmount > 0 ? paymentMethod : undefined,
+        remaining_amount: creditUsed > 0 && remainingAmount > 0 ? remainingAmount : undefined,
         items: cart.map(item => ({
           product_name: item.product.name,
           quantity: item.quantity,
@@ -408,9 +470,24 @@ const POS = () => {
       pix: "PIX",
       cash: "Dinheiro",
       fiado: "Fiado (A Prazo)",
+      credito: "Crédito do Cliente",
     };
-    doc.text(`Forma de Pagamento: ${paymentMethodLabels[sale.payment_method] || sale.payment_method}`, 20, yPos);
-    yPos += 10;
+    
+    if (sale.credit_used && sale.remaining_amount) {
+      doc.text("Formas de Pagamento:", 20, yPos);
+      yPos += 7;
+      doc.text(`  - Crédito: R$ ${sale.credit_used.toFixed(2)}`, 20, yPos);
+      yPos += 7;
+      doc.text(`  - ${paymentMethodLabels[sale.remaining_payment_method || ""] || sale.remaining_payment_method}: R$ ${sale.remaining_amount.toFixed(2)}`, 20, yPos);
+      yPos += 7;
+    } else if (sale.credit_used) {
+      doc.text(`Forma de Pagamento: Crédito do Cliente`, 20, yPos);
+      yPos += 7;
+    } else {
+      doc.text(`Forma de Pagamento: ${paymentMethodLabels[sale.payment_method] || sale.payment_method}`, 20, yPos);
+      yPos += 7;
+    }
+    yPos += 3;
 
     // Linha separadora
     doc.line(20, yPos, pageWidth - 20, yPos);
@@ -477,9 +554,21 @@ const POS = () => {
       pix: "PIX",
       cash: "Dinheiro",
       fiado: "Fiado (A Prazo)",
+      credito: "Crédito do Cliente",
     };
 
     const subtotal = sale.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+
+    let paymentInfo = "";
+    if (sale.credit_used && sale.remaining_amount) {
+      paymentInfo = `Formas de Pagamento:
+  - Crédito: R$ ${sale.credit_used.toFixed(2)}
+  - ${paymentMethodLabels[sale.remaining_payment_method || ""] || sale.remaining_payment_method}: R$ ${sale.remaining_amount.toFixed(2)}`;
+    } else if (sale.credit_used) {
+      paymentInfo = `Forma de Pagamento: Crédito do Cliente`;
+    } else {
+      paymentInfo = `Forma de Pagamento: ${paymentMethodLabels[sale.payment_method] || sale.payment_method}`;
+    }
 
     let content = `
 ================================================
@@ -489,7 +578,7 @@ const POS = () => {
 Data: ${format(new Date(sale.created_at), "dd/MM/yyyy 'às' HH:mm")}
 ID da Venda: ${sale.id}
 ${sale.customer_name ? `Cliente: ${sale.customer_name}\n` : ""}
-Forma de Pagamento: ${paymentMethodLabels[sale.payment_method] || sale.payment_method}
+${paymentInfo}
 
 ------------------------------------------------
               ITENS VENDIDOS
@@ -957,15 +1046,36 @@ Forma de Pagamento: ${paymentMethodLabels[sale.payment_method] || sale.payment_m
                     <span>Total:</span>
                     <span className="text-success">R$ {saleData.total_amount.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm bg-muted p-2 rounded">
-                    <span>Forma de Pagamento:</span>
-                    <span className="font-medium">
-                      {saleData.payment_method === "credit" && "Cartão de Crédito"}
-                      {saleData.payment_method === "debit" && "Cartão de Débito"}
-                      {saleData.payment_method === "pix" && "PIX"}
-                      {saleData.payment_method === "cash" && "Dinheiro"}
-                      {saleData.payment_method === "fiado" && "Fiado (A Prazo)"}
-                    </span>
+                  <div className="space-y-2 bg-muted p-3 rounded">
+                    <span className="text-sm font-medium">Forma de Pagamento:</span>
+                    {saleData.credit_used && saleData.remaining_amount ? (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>Crédito:</span>
+                          <span className="font-medium">R$ {saleData.credit_used.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>
+                            {saleData.remaining_payment_method === "credit" && "Cartão de Crédito"}
+                            {saleData.remaining_payment_method === "debit" && "Cartão de Débito"}
+                            {saleData.remaining_payment_method === "pix" && "PIX"}
+                            {saleData.remaining_payment_method === "cash" && "Dinheiro"}
+                            {saleData.remaining_payment_method === "fiado" && "Fiado (A Prazo)"}:
+                          </span>
+                          <span className="font-medium">R$ {saleData.remaining_amount.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ) : saleData.credit_used ? (
+                      <div className="text-sm font-medium">Crédito do Cliente</div>
+                    ) : (
+                      <div className="text-sm font-medium">
+                        {saleData.payment_method === "credit" && "Cartão de Crédito"}
+                        {saleData.payment_method === "debit" && "Cartão de Débito"}
+                        {saleData.payment_method === "pix" && "PIX"}
+                        {saleData.payment_method === "cash" && "Dinheiro"}
+                        {saleData.payment_method === "fiado" && "Fiado (A Prazo)"}
+                      </div>
+                    )}
                   </div>
                 </div>
 
