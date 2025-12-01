@@ -43,13 +43,13 @@ export const useUserPermissions = () => {
         return;
       }
 
-      // Verificar se é admin
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
+      // Buscar roles e employee data em paralelo para performance
+      const [rolesResponse, employeeResponse] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
+        supabase.from("employees").select("id, admin_id").eq("user_id", user.id).maybeSingle()
+      ]);
 
-      const isAdmin = roles?.some(r => r.role === "admin") || false;
+      const isAdmin = rolesResponse.data?.some(r => r.role === "admin") || false;
 
       if (isAdmin) {
         // Admin tem todas as permissões
@@ -69,12 +69,7 @@ export const useUserPermissions = () => {
         return;
       }
 
-      // Verificar se é funcionário
-      const { data: employee } = await supabase
-        .from("employees")
-        .select("id, admin_id")
-        .eq("user_id", user.id)
-        .single();
+      const employee = employeeResponse.data;
 
       if (employee) {
         // Buscar permissões do funcionário
