@@ -57,11 +57,6 @@ const Customers = () => {
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
-  // Bloquear se assinatura expirada
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -71,6 +66,11 @@ const Customers = () => {
       fetchTransactions(selectedCustomer.id);
     }
   }, [selectedCustomer]);
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   const fetchCustomers = async () => {
     const { data: { user } } = await supabase.auth.getUser();
