@@ -123,55 +123,37 @@ const Employees = () => {
         if (error) throw error;
         toast({ title: "Funcionário atualizado com sucesso!" });
       } else {
-        // Criar novo usuário no auth
-        const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: formData.full_name,
-            cpf: formData.cpf,
-            phone: formData.phone,
-          },
-        });
+        // Chamar Edge Function para criar funcionário
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-employee`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${sessionData.session?.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              password: formData.password,
+              full_name: formData.full_name,
+              cpf: formData.cpf,
+              phone: formData.phone,
+              role: formData.role,
+              admin_id: user.id,
+            }),
+          }
+        );
 
-        if (signUpError) throw signUpError;
-        if (!newUser.user) throw new Error("Erro ao criar usuário");
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Erro ao criar funcionário');
+        }
 
-        // Criar registro do funcionário
-        const { error: employeeError } = await supabase
-          .from("employees")
-          .insert({
-            user_id: newUser.user.id,
-            admin_id: user.id,
-            full_name: formData.full_name,
-            email: formData.email,
-            phone: formData.phone,
-            cpf: formData.cpf,
-            role: formData.role,
-          });
-
-        if (employeeError) throw employeeError;
-
-        // Atribuir role ao funcionário
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert({
-            user_id: newUser.user.id,
-            role: formData.role,
-          });
-
-        if (roleError) throw roleError;
-
-        // Abrir diálogo de permissões para novo funcionário
-        const { data: newEmployeeData } = await supabase
-          .from("employees")
-          .select("id")
-          .eq("user_id", newUser.user.id)
-          .single();
-
-        if (newEmployeeData) {
-          setNewEmployeeId(newEmployeeData.id);
+        if (result.employee_id) {
+          setNewEmployeeId(result.employee_id);
           setIsDialogOpen(false);
           setIsPermissionsDialogOpen(true);
         }
