@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
+import { SubscriptionBlocker } from "@/components/SubscriptionBlocker";
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -25,6 +27,8 @@ const DashboardLayout = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasEmployees, setHasEmployees] = useState(false);
+  const { permissions, loading, canAccessRoute, subscriptionActive } = useUserPermissions();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -48,25 +52,59 @@ const DashboardLayout = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  useEffect(() => {
+    const fetchStoreSettings = async () => {
+      if (!user || !permissions.isAdmin) return;
+
+      const { data: settings } = await supabase
+        .from("store_settings")
+        .select("has_employees")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (settings) {
+        setHasEmployees(settings.has_employees || false);
+      }
+    };
+
+    if (!loading && user) {
+      fetchStoreSettings();
+    }
+  }, [loading, user, permissions.isAdmin]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-    { icon: Package, label: "Produtos", path: "/produtos" },
-    { icon: ShoppingCart, label: "PDV", path: "/pdv" },
-    { icon: Users, label: "Clientes", path: "/clientes" },
-    { icon: History, label: "Histórico", path: "/historico" },
-    { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
-    { icon: UserCog, label: "Funcionários", path: "/funcionarios" },
-    { icon: Settings, label: "Configurações", path: "/configuracoes" },
-    { icon: CreditCard, label: "Assinatura", path: "/assinatura" },
+  const allMenuItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: true },
+    { icon: Package, label: "Produtos", path: "/produtos", permission: canAccessRoute("/produtos") },
+    { icon: ShoppingCart, label: "PDV", path: "/pdv", permission: canAccessRoute("/pdv") },
+    { icon: Users, label: "Clientes", path: "/clientes", permission: canAccessRoute("/clientes") },
+    { icon: History, label: "Histórico", path: "/historico", permission: true },
+    { icon: BarChart3, label: "Relatórios", path: "/relatorios", permission: true },
+    { icon: UserCog, label: "Funcionários", path: "/funcionarios", permission: permissions.isAdmin && hasEmployees },
+    { icon: Settings, label: "Configurações", path: "/configuracoes", permission: canAccessRoute("/configuracoes") },
+    { icon: CreditCard, label: "Assinatura", path: "/assinatura", permission: canAccessRoute("/assinatura") },
   ];
 
-  if (!user || !session) {
-    return null;
+  const menuItems = allMenuItems.filter(item => item.permission);
+
+  // Mostrar bloqueador se for funcionário e assinatura inativa
+  if (permissions.isEmployee && !subscriptionActive) {
+    return <SubscriptionBlocker isEmployee={true} />;
+  }
+
+  if (loading || !user || !session) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

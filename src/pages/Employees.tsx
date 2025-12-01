@@ -9,6 +9,7 @@ import { Users, Plus, Eye, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 
 interface Employee {
   id: string;
@@ -25,7 +26,9 @@ const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [newEmployeeId, setNewEmployeeId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -35,6 +38,15 @@ const Employees = () => {
     cpf: "",
     role: "caixa" as "gerente" | "caixa",
     password: "",
+  });
+
+  const [permissions, setPermissions] = useState({
+    can_access_pos: true,
+    can_access_products: false,
+    can_access_customers: true,
+    can_view_subscription: false,
+    can_edit_own_profile: false,
+    can_access_settings: false,
   });
 
   useEffect(() => {
@@ -67,7 +79,16 @@ const Employees = () => {
       role: "caixa",
       password: "",
     });
+    setPermissions({
+      can_access_pos: true,
+      can_access_products: false,
+      can_access_customers: true,
+      can_view_subscription: false,
+      can_edit_own_profile: false,
+      can_access_settings: false,
+    });
     setEditingEmployee(null);
+    setNewEmployeeId(null);
   };
 
   const handleSubmit = async () => {
@@ -142,7 +163,19 @@ const Employees = () => {
 
         if (roleError) throw roleError;
 
-        toast({ title: "Funcionário cadastrado com sucesso!" });
+        // Abrir diálogo de permissões para novo funcionário
+        const { data: newEmployeeData } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("user_id", newUser.user.id)
+          .single();
+
+        if (newEmployeeData) {
+          setNewEmployeeId(newEmployeeData.id);
+          setIsDialogOpen(false);
+          setIsPermissionsDialogOpen(true);
+        }
+        return;
       }
 
       setIsDialogOpen(false);
@@ -172,10 +205,39 @@ const Employees = () => {
     setIsDialogOpen(true);
   };
 
+  const handleSavePermissions = async () => {
+    if (!newEmployeeId) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("employee_permissions")
+        .insert({
+          employee_id: newEmployeeId,
+          ...permissions,
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Funcionário cadastrado com sucesso!" });
+      setIsPermissionsDialogOpen(false);
+      resetForm();
+      fetchEmployees();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar permissões",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (employeeId: string, userId: string) => {
     setLoading(true);
     try {
-      // Deletar funcionário (cascata vai deletar o user_role)
+      // Deletar funcionário (cascata vai deletar o user_role e permissões)
       const { error: deleteError } = await supabase
         .from("employees")
         .delete()
@@ -287,6 +349,104 @@ const Employees = () => {
               )}
               <Button onClick={handleSubmit} disabled={loading} className="w-full">
                 {loading ? "Salvando..." : editingEmployee ? "Atualizar" : "Confirmar"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isPermissionsDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            setIsPermissionsDialogOpen(false);
+            resetForm();
+          }
+        }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Configurar Permissões do Funcionário</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Pode realizar vendas (PDV)?</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permite acesso ao sistema de ponto de venda
+                    </p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_pos}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_pos: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Pode acessar produtos?</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permite visualizar e gerenciar produtos
+                    </p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_products}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_products: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Pode acessar clientes?</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permite visualizar e gerenciar clientes
+                    </p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_customers}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_customers: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Pode visualizar assinatura?</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permite ver o status e detalhes da assinatura
+                    </p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_view_subscription}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_view_subscription: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Pode editar próprio perfil?</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permite alterar nome e dados básicos
+                    </p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_edit_own_profile}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_edit_own_profile: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Pode acessar configurações? (não recomendado)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permite acesso às configurações da loja
+                    </p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_settings}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_settings: checked })}
+                  />
+                </div>
+              </div>
+
+              <Button onClick={handleSavePermissions} disabled={loading} className="w-full">
+                {loading ? "Salvando..." : "Confirmar Permissões"}
               </Button>
             </div>
           </DialogContent>

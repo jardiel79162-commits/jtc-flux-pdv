@@ -6,9 +6,10 @@ import { useNavigate } from "react-router-dom";
 
 interface SubscriptionBlockerProps {
   isTrial?: boolean;
+  isEmployee?: boolean;
 }
 
-const SubscriptionBlocker = ({ isTrial = false }: SubscriptionBlockerProps) => {
+export const SubscriptionBlocker = ({ isTrial = false, isEmployee = false }: SubscriptionBlockerProps) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -20,6 +21,41 @@ const SubscriptionBlocker = ({ isTrial = false }: SubscriptionBlockerProps) => {
     navigate("/assinatura");
   };
 
+  // Versão simplificada para funcionários bloqueados
+  if (isEmployee) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="rounded-full bg-destructive/10 p-3">
+                <AlertCircle className="h-12 w-12 text-destructive" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">Acesso Bloqueado</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-center text-muted-foreground">
+              A assinatura da loja está vencida ou inativa.
+            </p>
+            <p className="text-center text-foreground font-medium">
+              Entre em contato com o seu administrador para atualizar o plano da loja.
+            </p>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="w-full gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Versão completa para admins
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted">
       <Card className="max-w-lg w-full shadow-2xl border-2 border-destructive">

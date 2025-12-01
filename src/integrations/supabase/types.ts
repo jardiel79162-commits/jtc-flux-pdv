@@ -126,6 +126,53 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_permissions: {
+        Row: {
+          can_access_customers: boolean
+          can_access_pos: boolean
+          can_access_products: boolean
+          can_access_settings: boolean
+          can_edit_own_profile: boolean
+          can_view_subscription: boolean
+          created_at: string
+          employee_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          can_access_customers?: boolean
+          can_access_pos?: boolean
+          can_access_products?: boolean
+          can_access_settings?: boolean
+          can_edit_own_profile?: boolean
+          can_view_subscription?: boolean
+          created_at?: string
+          employee_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          can_access_customers?: boolean
+          can_access_pos?: boolean
+          can_access_products?: boolean
+          can_access_settings?: boolean
+          can_edit_own_profile?: boolean
+          can_view_subscription?: boolean
+          created_at?: string
+          employee_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_permissions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           admin_id: string
