@@ -11,6 +11,7 @@ import POS from "./pages/POS";
 import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import SalesHistory from "./pages/SalesHistory";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/produtos" element={<Products />} />
             <Route path="/pdv" element={<POS />} />
             <Route path="/clientes" element={<Customers />} />
+            <Route path="/historico" element={<SalesHistory />} />
             <Route path="/relatorios" element={<Reports />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Route>

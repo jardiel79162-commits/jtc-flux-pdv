@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  History,
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
@@ -56,6 +57,7 @@ const DashboardLayout = () => {
     { icon: Package, label: "Produtos", path: "/produtos" },
     { icon: ShoppingCart, label: "PDV", path: "/pdv" },
     { icon: Users, label: "Clientes", path: "/clientes" },
+    { icon: History, label: "Histórico", path: "/historico" },
     { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
     { icon: Settings, label: "Configurações", path: "/configuracoes" },
     { icon: CreditCard, label: "Assinatura", path: "/assinatura" },
