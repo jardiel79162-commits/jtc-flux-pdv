@@ -64,16 +64,16 @@ const POS = () => {
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
-  // Bloquear se assinatura expirada
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
   useEffect(() => {
     fetchProducts();
     fetchStoreName();
     fetchCustomers();
   }, []);
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   const fetchStoreName = async () => {
     const { data: { user } } = await supabase.auth.getUser();
