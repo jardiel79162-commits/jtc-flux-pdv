@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   History,
+  UserCog,
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
@@ -59,6 +60,7 @@ const DashboardLayout = () => {
     { icon: Users, label: "Clientes", path: "/clientes" },
     { icon: History, label: "Histórico", path: "/historico" },
     { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+    { icon: UserCog, label: "Funcionários", path: "/funcionarios" },
     { icon: Settings, label: "Configurações", path: "/configuracoes" },
     { icon: CreditCard, label: "Assinatura", path: "/assinatura" },
   ];

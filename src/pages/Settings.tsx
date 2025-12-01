@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Store, Save } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 
 const Settings = () => {
@@ -19,6 +21,8 @@ const Settings = () => {
     operation_type: "",
     primary_color: "#4C6FFF",
     logo_url: "",
+    category: "",
+    has_employees: false,
   });
 
   useEffect(() => {
@@ -45,6 +49,8 @@ const Settings = () => {
         operation_type: data.operation_type || "",
         primary_color: data.primary_color || "#4C6FFF",
         logo_url: data.logo_url || "",
+        category: data.category || "",
+        has_employees: data.has_employees || false,
       });
     }
   };
@@ -126,6 +132,51 @@ const Settings = () => {
                 onChange={(e) => setSettings({ ...settings, store_address: e.target.value })}
                 placeholder="Rua, número, bairro, cidade - estado"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Categoria da Loja *</Label>
+              <Select
+                value={settings.category}
+                onValueChange={(value) => setSettings({ ...settings, category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mercado">Mercado</SelectItem>
+                  <SelectItem value="padaria">Padaria</SelectItem>
+                  <SelectItem value="mercearia">Mercearia</SelectItem>
+                  <SelectItem value="bazar">Bazar</SelectItem>
+                  <SelectItem value="papelaria">Papelaria</SelectItem>
+                  <SelectItem value="restaurante">Restaurante</SelectItem>
+                  <SelectItem value="lanchonete">Lanchonete</SelectItem>
+                  <SelectItem value="farmacia">Farmácia</SelectItem>
+                  <SelectItem value="pet_shop">Pet Shop</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <Label>A loja terá funcionários?</Label>
+              <RadioGroup
+                value={settings.has_employees ? "sim" : "nao"}
+                onValueChange={(value) => setSettings({ ...settings, has_employees: value === "sim" })}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="nao" id="nao" />
+                  <Label htmlFor="nao" className="font-normal cursor-pointer">
+                    Não, somente o administrador
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="sim" id="sim" />
+                  <Label htmlFor="sim" className="font-normal cursor-pointer">
+                    Sim, a loja terá funcionários de caixa
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
 
             <div className="space-y-2">
