@@ -47,11 +47,6 @@ const Products = () => {
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
-  // Bloquear se assinatura expirada
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
   const [productForm, setProductForm] = useState({
     name: "",
     description: "",
@@ -75,6 +70,11 @@ const Products = () => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   const fetchProducts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
