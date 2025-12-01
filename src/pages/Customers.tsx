@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Users, DollarSign, CreditCard, ArrowUpCircle } from "lucide-react";
+import { UserPlus, Users, DollarSign, CreditCard, Eye, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
@@ -34,10 +34,19 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isPaymentConfirmOpen, setIsPaymentConfirmOpen] = useState(false);
   const [isCreditDialogOpen, setIsCreditDialogOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [creditAmount, setCreditAmount] = useState("");
+  const [creditFromChange, setCreditFromChange] = useState("");
+  const [paymentData, setPaymentData] = useState<{
+    debt: number;
+    paid: number;
+    change: number;
+  } | null>(null);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -132,7 +141,7 @@ const Customers = () => {
     fetchCustomers();
   };
 
-  const handlePayment = async () => {
+  const handlePaymentStep1 = () => {
     if (!selectedCustomer || !paymentAmount) return;
 
     const amount = parseFloat(paymentAmount);
@@ -141,62 +150,67 @@ const Customers = () => {
       return;
     }
 
+    const currentDebt = -selectedCustomer.current_balance;
+    const change = amount - currentDebt;
+
+    if (change > 0) {
+      setPaymentData({
+        debt: currentDebt,
+        paid: amount,
+        change: change,
+      });
+      setIsPaymentDialogOpen(false);
+      setIsPaymentConfirmOpen(true);
+    } else {
+      // Pagamento parcial ou igual
+      finalizePayment(amount, 0);
+    }
+  };
+
+  const finalizePayment = async (paidAmount: number, creditAmount: number) => {
+    if (!selectedCustomer) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const currentDebt = -selectedCustomer.current_balance;
-    const excess = amount - currentDebt;
+    const change = paidAmount - currentDebt;
+    const finalCredit = creditAmount;
+    const toReturn = change - finalCredit;
 
-    if (excess > 0) {
-      // Pagamento maior que a dívida
-      const userChoice = confirm(
-        `O pagamento de ${formatCurrency(amount)} excede a dívida de ${formatCurrency(currentDebt)} em ${formatCurrency(excess)}.\n\nDeseja deixar como crédito para o cliente?`
-      );
-
-      if (userChoice) {
-        // Deixar como crédito
-        const newBalance = excess;
-        await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
-        await supabase.from("customer_transactions").insert({
-          customer_id: selectedCustomer.id,
-          user_id: user.id,
-          type: "payment",
-          amount: amount,
-          description: `Pagamento de ${formatCurrency(amount)} (excesso de ${formatCurrency(excess)} convertido em crédito)`,
-        });
-      } else {
-        // Devolver o excesso
-        const newBalance = 0;
-        await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
-        await supabase.from("customer_transactions").insert({
-          customer_id: selectedCustomer.id,
-          user_id: user.id,
-          type: "payment",
-          amount: currentDebt,
-          description: `Pagamento de ${formatCurrency(currentDebt)} (devolver ${formatCurrency(excess)} ao cliente)`,
-        });
-      }
-    } else {
-      // Pagamento parcial ou total
-      const newBalance = selectedCustomer.current_balance + amount;
-      await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
-      await supabase.from("customer_transactions").insert({
-        customer_id: selectedCustomer.id,
-        user_id: user.id,
-        type: "payment",
-        amount: amount,
-        description: `Pagamento de ${formatCurrency(amount)}`,
-      });
-    }
+    const newBalance = finalCredit;
+    
+    await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
+    await supabase.from("customer_transactions").insert({
+      customer_id: selectedCustomer.id,
+      user_id: user.id,
+      type: "payment",
+      amount: paidAmount,
+      description: finalCredit > 0 
+        ? `Pagamento de ${formatCurrency(paidAmount)} (${formatCurrency(finalCredit)} deixado como crédito, ${formatCurrency(toReturn)} devolvido)`
+        : `Pagamento de ${formatCurrency(paidAmount)} (${formatCurrency(toReturn)} devolvido)`,
+    });
 
     toast({ title: "Pagamento registrado com sucesso!" });
     setPaymentAmount("");
-    setIsPaymentDialogOpen(false);
+    setCreditFromChange("");
+    setPaymentData(null);
+    setIsPaymentConfirmOpen(false);
     fetchCustomers();
-    if (selectedCustomer) {
-      const updated = customers.find(c => c.id === selectedCustomer.id);
-      if (updated) setSelectedCustomer(updated);
+    const updated = customers.find(c => c.id === selectedCustomer.id);
+    if (updated) setSelectedCustomer(updated);
+  };
+
+  const handleFinalizePayment = () => {
+    if (!paymentData) return;
+    
+    const creditValue = parseFloat(creditFromChange) || 0;
+    if (creditValue < 0 || creditValue > paymentData.change) {
+      toast({ title: "Valor de crédito inválido", variant: "destructive" });
+      return;
     }
+
+    finalizePayment(paymentData.paid, creditValue);
   };
 
   const handleCredit = async () => {
@@ -336,7 +350,11 @@ const Customers = () => {
                 <div className="flex gap-2">
                   <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="flex-1 gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 gap-2 border-red-500 text-red-500 hover:bg-red-50 disabled:opacity-50"
+                        disabled={selectedCustomer.current_balance >= 0}
+                      >
                         <DollarSign className="w-4 h-4" />
                         Registrar Pagamento
                       </Button>
@@ -357,14 +375,14 @@ const Customers = () => {
                             placeholder="0.00"
                           />
                         </div>
-                        <Button onClick={handlePayment} className="w-full">Confirmar Pagamento</Button>
+                        <Button onClick={handlePaymentStep1} className="w-full">Confirmar</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
 
                   <Dialog open={isCreditDialogOpen} onOpenChange={setIsCreditDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="flex-1 gap-2">
+                      <Button variant="outline" className="flex-1 gap-2 border-green-500 text-green-500 hover:bg-green-50">
                         <CreditCard className="w-4 h-4" />
                         Deixar Crédito
                       </Button>
@@ -390,6 +408,57 @@ const Customers = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
+
+                <Dialog open={isPaymentConfirmOpen} onOpenChange={setIsPaymentConfirmOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Confirmação de Pagamento</DialogTitle>
+                    </DialogHeader>
+                    {paymentData && (
+                      <div className="space-y-4">
+                        <div className="space-y-2 p-4 bg-muted rounded-lg">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Valor da dívida:</span>
+                            <span className="font-bold text-red-500">{formatCurrency(paymentData.debt)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Valor pago:</span>
+                            <span className="font-bold">{formatCurrency(paymentData.paid)}</span>
+                          </div>
+                          <div className="flex justify-between border-t pt-2">
+                            <span className="text-sm text-muted-foreground">Troco total:</span>
+                            <span className="font-bold text-green-600">{formatCurrency(paymentData.change)}</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="creditFromChange">Deixar como crédito (opcional)</Label>
+                          <Input
+                            id="creditFromChange"
+                            type="number"
+                            step="0.01"
+                            value={creditFromChange}
+                            onChange={(e) => setCreditFromChange(e.target.value)}
+                            placeholder="0.00"
+                            max={paymentData.change}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Máximo: {formatCurrency(paymentData.change)}
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="text-sm font-medium text-blue-900">Valor a devolver para o cliente:</p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {formatCurrency(paymentData.change - (parseFloat(creditFromChange) || 0))}
+                          </p>
+                        </div>
+
+                        <Button onClick={handleFinalizePayment} className="w-full">Atualizar</Button>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <div className="border-t pt-4">
@@ -424,15 +493,42 @@ const Customers = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {customers.map((customer) => (
-            <Card
-              key={customer.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setSelectedCustomer(customer)}
-            >
+            <Card key={customer.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  {customer.name}
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    {customer.name}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsViewDialogOpen(true);
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setFormData({
+                          name: customer.name,
+                          cpf: customer.cpf,
+                          birth_date: customer.birth_date || "",
+                          address: customer.address,
+                          phone: customer.phone || "",
+                        });
+                        setIsEditDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -465,6 +561,130 @@ const Customers = () => {
           )}
         </div>
       )}
+
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Cliente</DialogTitle>
+          </DialogHeader>
+          {selectedCustomer && (
+            <div className="space-y-4">
+              <div>
+                <Label>Nome</Label>
+                <p className="text-sm font-medium mt-1">{selectedCustomer.name}</p>
+              </div>
+              <div>
+                <Label>CPF</Label>
+                <p className="text-sm font-medium mt-1">{selectedCustomer.cpf}</p>
+              </div>
+              <div>
+                <Label>Data de Nascimento</Label>
+                <p className="text-sm font-medium mt-1">
+                  {selectedCustomer.birth_date 
+                    ? new Date(selectedCustomer.birth_date).toLocaleDateString("pt-BR")
+                    : "—"}
+                </p>
+              </div>
+              <div>
+                <Label>Endereço</Label>
+                <p className="text-sm font-medium mt-1">{selectedCustomer.address}</p>
+              </div>
+              <div>
+                <Label>Telefone</Label>
+                <p className="text-sm font-medium mt-1">{selectedCustomer.phone || "—"}</p>
+              </div>
+              <div>
+                <Label>Saldo Atual</Label>
+                <p className={`text-lg font-bold mt-1 ${selectedCustomer.current_balance < 0 ? "text-destructive" : "text-green-600"}`}>
+                  {selectedCustomer.current_balance < 0
+                    ? `Devendo: ${formatCurrency(-selectedCustomer.current_balance)}`
+                    : selectedCustomer.current_balance > 0
+                    ? `Crédito: ${formatCurrency(selectedCustomer.current_balance)}`
+                    : "Sem pendências"}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            if (!selectedCustomer) return;
+
+            const { error } = await supabase
+              .from("customers")
+              .update({
+                name: formData.name,
+                cpf: formData.cpf,
+                birth_date: formData.birth_date || null,
+                address: formData.address,
+                phone: formData.phone || null,
+              })
+              .eq("id", selectedCustomer.id);
+
+            if (error) {
+              toast({ title: "Erro ao atualizar cliente", variant: "destructive" });
+              return;
+            }
+
+            toast({ title: "Cliente atualizado com sucesso!" });
+            setIsEditDialogOpen(false);
+            fetchCustomers();
+          }} className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Nome do Cliente</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-cpf">CPF</Label>
+              <Input
+                id="edit-cpf"
+                value={formData.cpf}
+                onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-birth_date">Data de Nascimento</Label>
+              <Input
+                id="edit-birth_date"
+                type="date"
+                value={formData.birth_date}
+                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-address">Endereço</Label>
+              <Input
+                id="edit-address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-phone">Telefone</Label>
+              <Input
+                id="edit-phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+            <Button type="submit" className="w-full">Atualizar</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
