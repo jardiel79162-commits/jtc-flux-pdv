@@ -27,8 +27,18 @@ const Employees = () => {
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+  const [isViewPermissionsDialogOpen, setIsViewPermissionsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const [newEmployeeId, setNewEmployeeId] = useState<string | null>(null);
+  const [viewPermissions, setViewPermissions] = useState({
+    can_access_pos: false,
+    can_access_products: false,
+    can_access_customers: false,
+    can_view_subscription: false,
+    can_edit_own_profile: false,
+    can_access_settings: false,
+  });
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -168,6 +178,40 @@ const Employees = () => {
         title: "Erro ao salvar funcionário", 
         description: error.message,
         variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewPermissions = async (employee: Employee) => {
+    setViewingEmployee(employee);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("employee_permissions")
+        .select("*")
+        .eq("employee_id", employee.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setViewPermissions({
+          can_access_pos: data.can_access_pos,
+          can_access_products: data.can_access_products,
+          can_access_customers: data.can_access_customers,
+          can_view_subscription: data.can_view_subscription,
+          can_edit_own_profile: data.can_edit_own_profile,
+          can_access_settings: data.can_access_settings,
+        });
+      }
+      setIsViewPermissionsDialogOpen(true);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar permissões",
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -336,6 +380,113 @@ const Employees = () => {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={isViewPermissionsDialogOpen} onOpenChange={setIsViewPermissionsDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Permissões de {viewingEmployee?.full_name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <Label>Pode realizar vendas (PDV)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Acesso ao sistema de ponto de venda
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    viewPermissions.can_access_pos 
+                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    {viewPermissions.can_access_pos ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <Label>Pode acessar produtos</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Visualizar e gerenciar produtos
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    viewPermissions.can_access_products 
+                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    {viewPermissions.can_access_products ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <Label>Pode acessar clientes</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Visualizar e gerenciar clientes
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    viewPermissions.can_access_customers 
+                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    {viewPermissions.can_access_customers ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <Label>Pode visualizar assinatura</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Ver status e detalhes da assinatura
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    viewPermissions.can_view_subscription 
+                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    {viewPermissions.can_view_subscription ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <Label>Pode editar próprio perfil</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Alterar nome e dados básicos
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    viewPermissions.can_edit_own_profile 
+                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    {viewPermissions.can_edit_own_profile ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <Label>Pode acessar configurações</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Acesso às configurações da loja
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    viewPermissions.can_access_settings 
+                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    {viewPermissions.can_access_settings ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={isPermissionsDialogOpen} onOpenChange={(open) => {
           if (!open) {
             setIsPermissionsDialogOpen(false);
@@ -462,9 +613,8 @@ const Employees = () => {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => {
-                        toast({ title: "Visualização de vendas em desenvolvimento" });
-                      }}
+                      onClick={() => handleViewPermissions(employee)}
+                      title="Ver permissões"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
