@@ -42,14 +42,14 @@ const SalesHistory = () => {
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
+  useEffect(() => {
+    fetchSales();
+  }, []);
+
   // Bloquear se assinatura expirada
   if (!loading && isExpired) {
     return <SubscriptionBlocker isTrial={isTrial} />;
   }
-
-  useEffect(() => {
-    fetchSales();
-  }, []);
 
   const fetchSales = async () => {
     const { data: { user } } = await supabase.auth.getUser();
