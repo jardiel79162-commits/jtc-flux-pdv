@@ -47,14 +47,6 @@ const Customers = () => {
     paid: number;
     change: number;
   } | null>(null);
-  const { toast } = useToast();
-  const { isActive, isExpired, isTrial, loading } = useSubscription();
-
-  // Bloquear se assinatura expirada
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
   const [formData, setFormData] = useState({
     name: "",
     cpf: "",
@@ -62,6 +54,13 @@ const Customers = () => {
     address: "",
     phone: "",
   });
+  const { toast } = useToast();
+  const { isActive, isExpired, isTrial, loading } = useSubscription();
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   useEffect(() => {
     fetchCustomers();
