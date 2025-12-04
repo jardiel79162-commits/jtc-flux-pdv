@@ -185,11 +185,12 @@ const SalesHistory = () => {
 
   const getPaymentMethodLabel = (method: string) => {
     const methods: Record<string, string> = {
-      credit: "Cartão de Crédito",
-      debit: "Cartão de Débito",
+      credit: "Crédito",
+      debit: "Débito",
       pix: "PIX",
       cash: "Dinheiro",
       fiado: "Fiado",
+      credito: "Crédito Cliente",
     };
     return methods[method] || method;
   };
@@ -204,10 +205,10 @@ const SalesHistory = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Histórico de Vendas</h1>
-        <p className="text-muted-foreground">Visualize e gerencie suas vendas</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Histórico de Vendas</h1>
+        <p className="text-muted-foreground text-sm">Visualize e gerencie suas vendas</p>
       </div>
 
       <div className="relative">
@@ -221,43 +222,43 @@ const SalesHistory = () => {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Vendas Realizadas</CardTitle>
+        <CardHeader className="p-3 md:p-6">
+          <CardTitle className="text-base md:text-lg">Vendas Realizadas</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 md:p-6 md:pt-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Pagamento</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-xs whitespace-nowrap">Data</TableHead>
+                  <TableHead className="text-xs whitespace-nowrap">Cliente</TableHead>
+                  <TableHead className="text-xs whitespace-nowrap">Pagamento</TableHead>
+                  <TableHead className="text-xs whitespace-nowrap">Status</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap">Total</TableHead>
+                  <TableHead className="text-xs text-right whitespace-nowrap">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSales.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-8">
                       Nenhuma venda encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredSales.map((sale) => (
                     <TableRow key={sale.id}>
-                      <TableCell className="text-sm">
-                        {format(new Date(sale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {format(new Date(sale.created_at), "dd/MM/yy HH:mm")}
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {sale.customer_name || "Cliente Avulso"}
+                      <TableCell className="text-xs max-w-[80px] truncate">
+                        {sale.customer_name || "Avulso"}
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="text-xs whitespace-nowrap">
                         {getPaymentMethodLabel(sale.payment_method)}
                       </TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded text-xs ${
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
                           sale.payment_status === "paid" 
                             ? "bg-green-500/20 text-green-700 dark:text-green-300" 
                             : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300"
@@ -265,24 +266,26 @@ const SalesHistory = () => {
                           {sale.payment_status === "paid" ? "Pago" : "Pendente"}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-xs text-right font-medium whitespace-nowrap">
                         {formatCurrency(sale.total_amount)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           <Button
                             variant="outline"
-                            size="sm"
+                            size="icon"
+                            className="h-7 w-7"
                             onClick={() => viewSaleDetails(sale)}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-3 w-3" />
                           </Button>
                           <Button
                             variant="destructive"
-                            size="sm"
+                            size="icon"
+                            className="h-7 w-7"
                             onClick={() => setSaleToCancel(sale.id)}
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3 w-3" />
                           </Button>
                         </div>
                       </TableCell>
@@ -297,7 +300,7 @@ const SalesHistory = () => {
 
       {/* Dialog de Detalhes da Venda */}
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes da Venda</DialogTitle>
           </DialogHeader>
@@ -306,54 +309,56 @@ const SalesHistory = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Data</p>
-                  <p className="font-medium">
+                  <p className="font-medium text-sm">
                     {format(new Date(selectedSale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Cliente</p>
-                  <p className="font-medium">{selectedSale.customer_name || "Cliente Avulso"}</p>
+                  <p className="font-medium text-sm">{selectedSale.customer_name || "Cliente Avulso"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Pagamento</p>
-                  <p className="font-medium">{getPaymentMethodLabel(selectedSale.payment_method)}</p>
+                  <p className="font-medium text-sm">{getPaymentMethodLabel(selectedSale.payment_method)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium">{selectedSale.payment_status === "paid" ? "Pago" : "Pendente"}</p>
+                  <p className="font-medium text-sm">{selectedSale.payment_status === "paid" ? "Pago" : "Pendente"}</p>
                 </div>
               </div>
 
               <div>
-                <h3 className="font-semibold mb-2">Itens da Venda</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Produto</TableHead>
-                      <TableHead className="text-center">Qtd</TableHead>
-                      <TableHead className="text-right">Preço Unit.</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedSale.items.map((item, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{item.product_name}</TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.unit_price * item.quantity)}</TableCell>
+                <h3 className="font-semibold mb-2 text-sm">Itens da Venda</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Produto</TableHead>
+                        <TableHead className="text-xs text-center">Qtd</TableHead>
+                        <TableHead className="text-xs text-right">Preço</TableHead>
+                        <TableHead className="text-xs text-right">Subtotal</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedSale.items.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="text-xs">{item.product_name}</TableCell>
+                          <TableCell className="text-xs text-center">{item.quantity}</TableCell>
+                          <TableCell className="text-xs text-right">{formatCurrency(item.unit_price)}</TableCell>
+                          <TableCell className="text-xs text-right">{formatCurrency(item.unit_price * item.quantity)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
 
               <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal:</span>
                   <span>{formatCurrency(selectedSale.total_amount + selectedSale.discount)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Desconto:</span>
                   <span>{formatCurrency(selectedSale.discount)}</span>
                 </div>

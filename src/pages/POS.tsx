@@ -87,18 +87,24 @@ const POS = () => {
     return <SubscriptionBlocker isTrial={isTrial} />;
   }
 
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
   const fetchStoreName = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data } = await supabase
       .from("store_settings")
-      .select("store_name, pix_key_type, pix_key, pix_receiver_name")
+      .select("store_name, pix_key_type, pix_key, pix_receiver_name, logo_url")
       .eq("user_id", user.id)
       .single();
 
     if (data?.store_name) {
       setStoreName(data.store_name);
+    }
+    
+    if (data?.logo_url) {
+      setLogoUrl(data.logo_url);
     }
     
     if (data?.pix_key && data?.pix_receiver_name) {
@@ -501,7 +507,7 @@ const POS = () => {
     }
   };
 
-  const downloadReceipt = (format: "pdf" | "txt") => {
+  const downloadReceipt = async (format: "pdf" | "txt") => {
     if (!saleData) return;
 
     if (format === "txt") {
@@ -515,15 +521,35 @@ const POS = () => {
       window.URL.revokeObjectURL(url);
       toast({ title: "Comprovante TXT baixado!" });
     } else {
-      generatePDF(saleData);
+      await generatePDF(saleData);
       toast({ title: "Comprovante PDF baixado!" });
     }
   };
 
-  const generatePDF = (sale: SaleData) => {
+  const generatePDF = async (sale: SaleData) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPos = 20;
+
+    // Adicionar logo se existir
+    if (logoUrl) {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            const logoSize = 25;
+            doc.addImage(img, "JPEG", (pageWidth - logoSize) / 2, yPos, logoSize, logoSize);
+            resolve();
+          };
+          img.onerror = () => resolve(); // Continua sem logo se falhar
+          img.src = logoUrl;
+        });
+        yPos += 30;
+      } catch {
+        // Continua sem logo se falhar
+      }
+    }
 
     // Cabeçalho
     doc.setFontSize(18);
