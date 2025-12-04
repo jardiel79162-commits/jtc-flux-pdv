@@ -73,6 +73,7 @@ const POS = () => {
   const [storeName, setStoreName] = useState("Loja");
   const [pixSettings, setPixSettings] = useState<PixSettings | null>(null);
   const [showPixQrCode, setShowPixQrCode] = useState(false);
+  const [isProcessingSale, setIsProcessingSale] = useState(false);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -296,6 +297,8 @@ const POS = () => {
   };
 
   const finalizeSale = async () => {
+    if (isProcessingSale) return;
+    
     if (!paymentMethod) {
       toast({ title: "Selecione a forma de pagamento", variant: "destructive" });
       return;
@@ -310,6 +313,7 @@ const POS = () => {
       return;
     }
 
+    setIsProcessingSale(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -504,6 +508,8 @@ const POS = () => {
         description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive" 
       });
+    } finally {
+      setIsProcessingSale(false);
     }
   };
 
@@ -1149,10 +1155,10 @@ ${paymentInfo}
             <Button
               className="flex-1 bg-gradient-to-r from-success to-accent hover:opacity-90"
               onClick={finalizeSale}
-              disabled={!paymentMethod}
+              disabled={!paymentMethod || isProcessingSale}
             >
               <DollarSign className="mr-2 h-5 w-5" />
-              Finalizar Venda
+              {isProcessingSale ? "Processando..." : "Finalizar Venda"}
             </Button>
           </div>
         </div>

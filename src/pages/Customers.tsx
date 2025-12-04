@@ -42,6 +42,7 @@ const Customers = () => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [creditAmount, setCreditAmount] = useState("");
   const [creditFromChange, setCreditFromChange] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const [paymentData, setPaymentData] = useState<{
     debt: number;
     paid: number;
@@ -167,37 +168,42 @@ const Customers = () => {
   };
 
   const finalizePayment = async (paidAmount: number, creditAmount: number) => {
-    if (!selectedCustomer) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const currentDebt = -selectedCustomer.current_balance;
-    const change = paidAmount - currentDebt;
-    const finalCredit = creditAmount;
-    const toReturn = change - finalCredit;
-
-    const newBalance = finalCredit;
+    if (!selectedCustomer || isProcessing) return;
     
-    await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
-    await supabase.from("customer_transactions").insert({
-      customer_id: selectedCustomer.id,
-      user_id: user.id,
-      type: "payment",
-      amount: paidAmount,
-      description: finalCredit > 0 
-        ? `Pagamento de ${formatCurrency(paidAmount)} (${formatCurrency(finalCredit)} deixado como crédito, ${formatCurrency(toReturn)} devolvido)`
-        : `Pagamento de ${formatCurrency(paidAmount)} (${formatCurrency(toReturn)} devolvido)`,
-    });
+    setIsProcessing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    toast({ title: "Pagamento registrado com sucesso!" });
-    setPaymentAmount("");
-    setCreditFromChange("");
-    setPaymentData(null);
-    setIsPaymentConfirmOpen(false);
-    fetchCustomers();
-    const updated = customers.find(c => c.id === selectedCustomer.id);
-    if (updated) setSelectedCustomer(updated);
+      const currentDebt = -selectedCustomer.current_balance;
+      const change = paidAmount - currentDebt;
+      const finalCredit = creditAmount;
+      const toReturn = change - finalCredit;
+
+      const newBalance = finalCredit;
+      
+      await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
+      await supabase.from("customer_transactions").insert({
+        customer_id: selectedCustomer.id,
+        user_id: user.id,
+        type: "payment",
+        amount: paidAmount,
+        description: finalCredit > 0 
+          ? `Pagamento de ${formatCurrency(paidAmount)} (${formatCurrency(finalCredit)} deixado como crédito, ${formatCurrency(toReturn)} devolvido)`
+          : `Pagamento de ${formatCurrency(paidAmount)} (${formatCurrency(toReturn)} devolvido)`,
+      });
+
+      toast({ title: "Pagamento registrado com sucesso!" });
+      setPaymentAmount("");
+      setCreditFromChange("");
+      setPaymentData(null);
+      setIsPaymentConfirmOpen(false);
+      fetchCustomers();
+      const updated = customers.find(c => c.id === selectedCustomer.id);
+      if (updated) setSelectedCustomer(updated);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleFinalizePayment = () => {
@@ -213,7 +219,7 @@ const Customers = () => {
   };
 
   const handleCredit = async () => {
-    if (!selectedCustomer || !creditAmount) return;
+    if (!selectedCustomer || !creditAmount || isProcessing) return;
 
     const amount = parseFloat(creditAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -221,26 +227,31 @@ const Customers = () => {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    setIsProcessing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const newBalance = selectedCustomer.current_balance + amount;
-    await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
-    await supabase.from("customer_transactions").insert({
-      customer_id: selectedCustomer.id,
-      user_id: user.id,
-      type: "credit",
-      amount: amount,
-      description: `Crédito deixado de ${formatCurrency(amount)}`,
-    });
+      const newBalance = selectedCustomer.current_balance + amount;
+      await supabase.from("customers").update({ current_balance: newBalance }).eq("id", selectedCustomer.id);
+      await supabase.from("customer_transactions").insert({
+        customer_id: selectedCustomer.id,
+        user_id: user.id,
+        type: "credit",
+        amount: amount,
+        description: `Crédito deixado de ${formatCurrency(amount)}`,
+      });
 
-    toast({ title: "Crédito registrado com sucesso!" });
-    setCreditAmount("");
-    setIsCreditDialogOpen(false);
-    fetchCustomers();
-    if (selectedCustomer) {
-      const updated = customers.find(c => c.id === selectedCustomer.id);
-      if (updated) setSelectedCustomer(updated);
+      toast({ title: "Crédito registrado com sucesso!" });
+      setCreditAmount("");
+      setIsCreditDialogOpen(false);
+      fetchCustomers();
+      if (selectedCustomer) {
+        const updated = customers.find(c => c.id === selectedCustomer.id);
+        if (updated) setSelectedCustomer(updated);
+      }
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -402,7 +413,9 @@ const Customers = () => {
                             placeholder="0.00"
                           />
                         </div>
-                        <Button onClick={handleCredit} className="w-full">Confirmar Crédito</Button>
+                        <Button onClick={handleCredit} className="w-full" disabled={isProcessing}>
+                          {isProcessing ? "Processando..." : "Confirmar Crédito"}
+                        </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -453,7 +466,9 @@ const Customers = () => {
                           </p>
                         </div>
 
-                        <Button onClick={handleFinalizePayment} className="w-full">Atualizar</Button>
+                        <Button onClick={handleFinalizePayment} className="w-full" disabled={isProcessing}>
+                          {isProcessing ? "Processando..." : "Atualizar"}
+                        </Button>
                       </div>
                     )}
                   </DialogContent>
