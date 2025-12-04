@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,11 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Package, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Search, MoreVertical, Download, Upload } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Category {
   id: string;
@@ -44,6 +45,9 @@ const Products = () => {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -310,6 +314,154 @@ const Products = () => {
     return categories.find(c => c.id === id)?.name || "-";
   };
 
+  const exportProductsToCSV = () => {
+    setIsExporting(true);
+    try {
+      const headers = [
+        "nome",
+        "descricao",
+        "preco",
+        "preco_promocional",
+        "estoque",
+        "estoque_minimo",
+        "codigo_interno",
+        "codigo_barras",
+        "categoria",
+        "ativo"
+      ];
+
+      const csvRows = [headers.join(";")];
+
+      products.forEach(product => {
+        const categoryName = getCategoryName(product.category_id);
+        const row = [
+          product.name,
+          product.description || "",
+          product.price.toString().replace(".", ","),
+          product.promotional_price?.toString().replace(".", ",") || "",
+          product.stock_quantity.toString(),
+          product.min_stock_quantity?.toString() || "",
+          product.internal_code || "",
+          product.barcode || "",
+          categoryName !== "-" ? categoryName : "",
+          product.is_active ? "sim" : "nao"
+        ];
+        csvRows.push(row.map(field => `"${field}"`).join(";"));
+      });
+
+      const csvContent = "\uFEFF" + csvRows.join("\n"); // BOM for UTF-8
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `produtos_${new Date().toISOString().split("T")[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Produtos exportados com sucesso!" });
+    } catch (error) {
+      console.error("Erro ao exportar:", error);
+      toast({ title: "Erro ao exportar produtos", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const importProductsFromCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const text = await file.text();
+      const lines = text.split("\n").filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        toast({ title: "Arquivo vazio ou inválido", variant: "destructive" });
+        return;
+      }
+
+      // Skip header row
+      const dataLines = lines.slice(1);
+      let imported = 0;
+      let errors = 0;
+
+      for (const line of dataLines) {
+        try {
+          // Parse CSV with quotes
+          const fields = line.match(/("([^"]|"")*"|[^;]*)/g)?.map(f => 
+            f.replace(/^"|"$/g, "").replace(/""/g, '"').trim()
+          ) || [];
+
+          if (fields.length < 3) continue;
+
+          const [
+            nome,
+            descricao,
+            preco,
+            precoPromocional,
+            estoque,
+            estoqueMinimo,
+            codigoInterno,
+            codigoBarras,
+            categoria,
+            ativo
+          ] = fields;
+
+          // Find category by name
+          let categoryId = null;
+          if (categoria) {
+            const cat = categories.find(c => c.name.toLowerCase() === categoria.toLowerCase());
+            categoryId = cat?.id || null;
+          }
+
+          const productData = {
+            name: nome,
+            description: descricao || null,
+            price: parseFloat(preco.replace(",", ".")) || 0,
+            promotional_price: precoPromocional ? parseFloat(precoPromocional.replace(",", ".")) : null,
+            stock_quantity: parseInt(estoque) || 0,
+            min_stock_quantity: estoqueMinimo ? parseInt(estoqueMinimo) : null,
+            internal_code: codigoInterno || null,
+            barcode: codigoBarras || null,
+            category_id: categoryId,
+            is_active: ativo?.toLowerCase() !== "nao",
+            user_id: user.id,
+          };
+
+          const { error } = await supabase.from("products").insert([productData]);
+          
+          if (error) {
+            console.error("Erro ao importar produto:", error);
+            errors++;
+          } else {
+            imported++;
+          }
+        } catch (err) {
+          console.error("Erro ao processar linha:", err);
+          errors++;
+        }
+      }
+
+      fetchProducts();
+      toast({ 
+        title: `Importação concluída`, 
+        description: `${imported} produtos importados${errors > 0 ? `, ${errors} erros` : ""}` 
+      });
+    } catch (error) {
+      console.error("Erro ao importar:", error);
+      toast({ title: "Erro ao importar produtos", variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -336,6 +488,34 @@ const Products = () => {
                 className="pl-10"
               />
             </div>
+            
+            {/* Import/Export dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isExporting || isImporting}>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={exportProductsToCSV} disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exportando..." : "Exportar CSV"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isImporting ? "Importando..." : "Importar CSV"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".csv"
+              onChange={importProductsFromCSV}
+              className="hidden"
+            />
+            
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => {
               if (!open) resetProductForm();
               setIsProductDialogOpen(open);
