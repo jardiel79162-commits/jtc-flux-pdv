@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 interface Product {
   id: string;
@@ -74,6 +75,7 @@ const POS = () => {
   const [pixSettings, setPixSettings] = useState<PixSettings | null>(null);
   const [showPixQrCode, setShowPixQrCode] = useState(false);
   const [isProcessingSale, setIsProcessingSale] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -252,6 +254,23 @@ const POS = () => {
       setCart([...cart, { product, quantity: 1 }]);
     }
     setSearchTerm("");
+  };
+
+  const handleBarcodeScan = (barcode: string) => {
+    const product = products.find(p => 
+      p.barcode === barcode || p.internal_code === barcode
+    );
+    
+    if (product) {
+      addToCart(product);
+      toast({ title: "Produto adicionado", description: product.name });
+    } else {
+      toast({ 
+        title: "Produto não encontrado", 
+        description: `Código: ${barcode}`,
+        variant: "destructive" 
+      });
+    }
   };
 
   const removeFromCart = (productId: string) => {
@@ -795,6 +814,13 @@ ${paymentInfo}
                   className="pl-10"
                 />
               </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowBarcodeScanner(true)}
+                title="Ler código de barras com câmera"
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setShowFullscreenBrowser(true)}
@@ -1444,6 +1470,13 @@ ${paymentInfo}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        isOpen={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+        onScan={handleBarcodeScan}
+      />
     </div>
   );
 };
