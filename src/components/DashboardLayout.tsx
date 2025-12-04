@@ -111,10 +111,10 @@ const DashboardLayout = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <img src={logo} alt="JTC FluxPDV Logo" className="w-10 h-10 rounded-full object-cover" />
           <h1 className="text-xl font-bold text-primary">JTC FluxPDV</h1>
-        </div>
+        </Link>
         <Button
           variant="ghost"
           size="icon"
