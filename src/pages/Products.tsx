@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Package, Search, MoreVertical, Download, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Search, MoreVertical, Download, Upload, Camera } from "lucide-react";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { ImageUpload } from "@/components/ImageUpload";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
@@ -47,6 +48,7 @@ const Products = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
@@ -605,20 +607,22 @@ const Products = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Código Interno</Label>
-                      <Input
-                        value={productForm.internal_code}
-                        onChange={(e) => setProductForm({ ...productForm, internal_code: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Código de Barras</Label>
+                  <div className="space-y-2">
+                    <Label>Código de Barras</Label>
+                    <div className="flex gap-2">
                       <Input
                         value={productForm.barcode}
                         onChange={(e) => setProductForm({ ...productForm, barcode: e.target.value })}
+                        className="flex-1"
                       />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsBarcodeScannerOpen(true)}
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
 
@@ -643,6 +647,16 @@ const Products = () => {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Barcode Scanner for Products */}
+            <BarcodeScanner
+              isOpen={isBarcodeScannerOpen}
+              onClose={() => setIsBarcodeScannerOpen(false)}
+              onScan={(barcode) => {
+                setProductForm({ ...productForm, barcode });
+                setIsBarcodeScannerOpen(false);
+              }}
+            />
           </div>
 
           <div className="border rounded-lg">

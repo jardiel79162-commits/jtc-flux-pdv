@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Camera, X, AlertCircle } from "lucide-react";
+import { Camera, X, AlertCircle, Flashlight, FlashlightOff } from "lucide-react";
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
@@ -20,7 +20,7 @@ const playBeepSound = () => {
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
-    oscillator.frequency.value = 1200; // Frequência do beep (Hz)
+    oscillator.frequency.value = 1200;
     oscillator.type = "sine";
     
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -33,20 +33,38 @@ const playBeepSound = () => {
   }
 };
 
+// Função para vibrar o dispositivo
+const vibrate = () => {
+  try {
+    if (navigator.vibrate) {
+      navigator.vibrate(200);
+    }
+  } catch (err) {
+    console.error("Erro ao vibrar:", err);
+  }
+};
+
 export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<"prompt" | "granted" | "denied" | "checking">("checking");
+  const [scannedCode, setScannedCode] = useState<string | null>(null);
+  const [flashOn, setFlashOn] = useState(false);
+  const [flashSupported, setFlashSupported] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<MediaStreamTrack | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       checkCameraPermission();
+      setScannedCode(null);
     } else {
       stopScanner();
       setPermissionState("checking");
       setError(null);
+      setFlashOn(false);
+      setScannedCode(null);
     }
 
     return () => {
@@ -95,6 +113,39 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
     }
   };
 
+  const checkFlashSupport = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+      
+      if (capabilities.torch) {
+        setFlashSupported(true);
+        trackRef.current = track;
+      } else {
+        stream.getTracks().forEach(t => t.stop());
+      }
+    } catch (err) {
+      console.error("Erro ao verificar flash:", err);
+    }
+  };
+
+  const toggleFlash = async () => {
+    try {
+      if (trackRef.current) {
+        const newFlashState = !flashOn;
+        await (trackRef.current as any).applyConstraints({
+          advanced: [{ torch: newFlashState }]
+        });
+        setFlashOn(newFlashState);
+      }
+    } catch (err) {
+      console.error("Erro ao alternar flash:", err);
+    }
+  };
+
   const startScanner = async () => {
     try {
       setError(null);
@@ -105,6 +156,9 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
       }
 
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check flash support
+      await checkFlashSupport();
 
       scannerRef.current = new Html5Qrcode(scannerId);
       setIsScanning(true);
@@ -119,8 +173,15 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
         (decodedText) => {
           // Tocar som de beep ao ler código
           playBeepSound();
-          onScan(decodedText);
-          handleClose();
+          // Vibrar o dispositivo
+          vibrate();
+          // Mostrar código na tela
+          setScannedCode(decodedText);
+          // Aguardar um momento e então enviar
+          setTimeout(() => {
+            onScan(decodedText);
+            handleClose();
+          }, 800);
         },
         () => {
           // Ignore errors during scanning
@@ -139,6 +200,21 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
   };
 
   const stopScanner = async () => {
+    // Turn off flash
+    if (trackRef.current) {
+      try {
+        await (trackRef.current as any).applyConstraints({
+          advanced: [{ torch: false }]
+        });
+      } catch (err) {
+        // Ignore
+      }
+      trackRef.current.stop();
+      trackRef.current = null;
+    }
+    setFlashOn(false);
+    setFlashSupported(false);
+
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
@@ -215,14 +291,40 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
 
           {permissionState === "granted" && !error && (
             <>
-              <div 
-                id="barcode-scanner-container" 
-                ref={containerRef}
-                className="w-full min-h-[250px] rounded-lg overflow-hidden bg-muted"
-              />
-              <p className="text-sm text-muted-foreground text-center">
-                Posicione o código de barras no centro da tela
-              </p>
+              <div className="relative">
+                <div 
+                  id="barcode-scanner-container" 
+                  ref={containerRef}
+                  className="w-full min-h-[250px] rounded-lg overflow-hidden bg-muted"
+                />
+                {/* Botão de Flash */}
+                {flashSupported && (
+                  <Button
+                    variant={flashOn ? "default" : "outline"}
+                    size="icon"
+                    className="absolute top-2 right-2 z-10"
+                    onClick={toggleFlash}
+                  >
+                    {flashOn ? (
+                      <Flashlight className="h-5 w-5" />
+                    ) : (
+                      <FlashlightOff className="h-5 w-5" />
+                    )}
+                  </Button>
+                )}
+              </div>
+              
+              {/* Código lido */}
+              {scannedCode ? (
+                <div className="bg-accent/20 border border-accent rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Código lido:</p>
+                  <p className="text-xl font-mono font-bold text-accent">{scannedCode}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center">
+                  Posicione o código de barras no centro da tela
+                </p>
+              )}
             </>
           )}
 
