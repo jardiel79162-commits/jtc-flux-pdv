@@ -3,8 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar, BarChart3 } from "lucide-react";
+import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
+
+// Importar imagens de ações rápidas
+import quickActionProdutos from "@/assets/quick-action-produtos.png";
+import quickActionVenda from "@/assets/quick-action-venda.png";
+import quickActionClientes from "@/assets/quick-action-clientes.png";
+import quickActionHistorico from "@/assets/quick-action-historico.png";
+import quickActionRelatorios from "@/assets/quick-action-relatorios.png";
+import quickActionConfiguracoes from "@/assets/quick-action-configuracoes.png";
+import quickActionAssinatura from "@/assets/quick-action-assinatura.png";
 
 interface DashboardData {
   salesToday: number;
@@ -13,7 +22,18 @@ interface DashboardData {
   recentSales: number;
   subscriptionStatus: "active" | "trial" | "expired";
   trialDaysLeft?: number;
+  quickActionsEnabled: boolean;
 }
+
+const quickActions = [
+  { label: "Produtos", path: "/produtos", image: quickActionProdutos },
+  { label: "Venda", path: "/pdv", image: quickActionVenda },
+  { label: "Clientes", path: "/clientes", image: quickActionClientes },
+  { label: "Histórico", path: "/historico", image: quickActionHistorico },
+  { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios },
+  { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
+  { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura },
+];
 
 const Dashboard = () => {
   const [data, setData] = useState<DashboardData>({
@@ -23,6 +43,7 @@ const Dashboard = () => {
     recentSales: 0,
     subscriptionStatus: "trial",
     trialDaysLeft: 0,
+    quickActionsEnabled: false,
   });
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +61,13 @@ const Dashboard = () => {
         .from("profiles")
         .select("trial_ends_at, subscription_ends_at, subscription_plan")
         .eq("id", user.id)
+        .single();
+
+      // Carregar configurações da loja
+      const { data: storeSettings } = await supabase
+        .from("store_settings")
+        .select("quick_actions_enabled")
+        .eq("user_id", user.id)
         .single();
 
       // Calcular dias restantes de teste
@@ -111,6 +139,7 @@ const Dashboard = () => {
         recentSales: recentSales?.length || 0,
         subscriptionStatus,
         trialDaysLeft,
+        quickActionsEnabled: storeSettings?.quick_actions_enabled || false,
       });
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -190,6 +219,26 @@ const Dashboard = () => {
         </Card>
       )}
 
+      {/* Ações Rápidas com Logos */}
+      {data.quickActionsEnabled && (
+        <div className="grid grid-cols-4 md:grid-cols-7 gap-4">
+          {quickActions.map((action) => (
+            <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
+                <img 
+                  src={action.image} 
+                  alt={action.label} 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
+                {action.label}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+
       {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
@@ -240,36 +289,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Ações Rápidas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>Acesse rapidamente as principais funcionalidades</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link to="/pdv">
-            <Button className="w-full" size="lg">
-              <ShoppingCart className="w-5 h-5 mr-2" />
-              Nova Venda
-            </Button>
-          </Link>
-
-          <Link to="/produtos">
-            <Button variant="outline" className="w-full" size="lg">
-              <Package className="w-5 h-5 mr-2" />
-              Gerenciar Produtos
-            </Button>
-          </Link>
-
-          <Link to="/relatorios">
-            <Button variant="outline" className="w-full" size="lg">
-              <BarChart3 className="w-5 h-5 mr-2" />
-              Ver Relatórios
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
     </div>
   );
 };
