@@ -80,7 +80,7 @@ const DashboardLayout = () => {
   const allMenuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: true },
     { icon: Package, label: "Produtos", path: "/produtos", permission: canAccessRoute("/produtos") },
-    { icon: ShoppingCart, label: "PDV", path: "/pdv", permission: canAccessRoute("/pdv") },
+    { icon: ShoppingCart, label: "Venda", path: "/pdv", permission: canAccessRoute("/pdv") },
     { icon: Users, label: "Clientes", path: "/clientes", permission: canAccessRoute("/clientes") },
     { icon: History, label: "Histórico", path: "/historico", permission: true },
     { icon: BarChart3, label: "Relatórios", path: "/relatorios", permission: true },

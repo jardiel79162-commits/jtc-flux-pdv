@@ -427,6 +427,7 @@ export type Database = {
           logo_url: string | null
           operation_type: string | null
           primary_color: string | null
+          quick_actions_enabled: boolean | null
           store_address: string | null
           store_name: string
           updated_at: string
@@ -441,6 +442,7 @@ export type Database = {
           logo_url?: string | null
           operation_type?: string | null
           primary_color?: string | null
+          quick_actions_enabled?: boolean | null
           store_address?: string | null
           store_name?: string
           updated_at?: string
@@ -455,6 +457,7 @@ export type Database = {
           logo_url?: string | null
           operation_type?: string | null
           primary_color?: string | null
+          quick_actions_enabled?: boolean | null
           store_address?: string | null
           store_name?: string
           updated_at?: string
