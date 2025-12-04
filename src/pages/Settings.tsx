@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History } from "lucide-react";
-import { VideoPlaceholder } from "@/components/VideoPlaceholder";
+import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -26,6 +25,9 @@ const Settings = () => {
     category: "",
     has_employees: false,
     quick_actions_enabled: false,
+    pix_key_type: "",
+    pix_key: "",
+    pix_receiver_name: "",
   });
 
   const [customCategory, setCustomCategory] = useState("");
@@ -57,6 +59,9 @@ const Settings = () => {
         category: data.category || "",
         has_employees: data.has_employees || false,
         quick_actions_enabled: data.quick_actions_enabled || false,
+        pix_key_type: data.pix_key_type || "",
+        pix_key: data.pix_key || "",
+        pix_receiver_name: data.pix_receiver_name || "",
       });
       
       // Se a categoria não está na lista padrão, é uma categoria personalizada
@@ -105,6 +110,23 @@ const Settings = () => {
       toast({ title: "Erro ao salvar configurações", variant: "destructive" });
     } else {
       toast({ title: "Configurações salvas com sucesso!" });
+    }
+  };
+
+  const getPixKeyPlaceholder = () => {
+    switch (settings.pix_key_type) {
+      case "cpf":
+        return "000.000.000-00";
+      case "cnpj":
+        return "00.000.000/0000-00";
+      case "email":
+        return "email@exemplo.com";
+      case "phone":
+        return "+5500000000000";
+      case "random":
+        return "Chave aleatória (32 caracteres)";
+      default:
+        return "Selecione o tipo de chave primeiro";
     }
   };
 
@@ -226,6 +248,68 @@ const Settings = () => {
           </CardContent>
         </Card>
 
+        {/* Configuração PIX */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5" />
+              Configuração PIX
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Configure sua chave PIX para receber pagamentos. A loja só poderá aceitar pagamentos via PIX se uma chave estiver cadastrada.
+            </p>
+
+            <div className="space-y-2">
+              <Label>Tipo de Chave PIX</Label>
+              <Select
+                value={settings.pix_key_type}
+                onValueChange={(value) => setSettings({ ...settings, pix_key_type: value, pix_key: "" })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo de chave" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cpf">CPF</SelectItem>
+                  <SelectItem value="cnpj">CNPJ</SelectItem>
+                  <SelectItem value="email">E-mail</SelectItem>
+                  <SelectItem value="phone">Telefone</SelectItem>
+                  <SelectItem value="random">Chave Aleatória</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Chave PIX</Label>
+              <Input
+                value={settings.pix_key}
+                onChange={(e) => setSettings({ ...settings, pix_key: e.target.value })}
+                placeholder={getPixKeyPlaceholder()}
+                disabled={!settings.pix_key_type}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Nome do Recebedor</Label>
+              <Input
+                value={settings.pix_receiver_name}
+                onChange={(e) => setSettings({ ...settings, pix_receiver_name: e.target.value })}
+                placeholder="Nome que aparecerá no PIX"
+                disabled={!settings.pix_key_type}
+              />
+            </div>
+
+            {settings.pix_key && settings.pix_receiver_name && (
+              <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-sm text-green-600 font-medium">
+                  ✓ PIX configurado! A loja pode receber pagamentos via PIX.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -273,10 +357,6 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
-                  <VideoPlaceholder 
-                    title="Como Fazer uma Venda" 
-                    description="Assista ao tutorial completo do processo de venda"
-                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Passo 1: Acessar a Tela de Venda</h4>
                     <p>Clique em "Venda" no menu superior ou use as ações rápidas do Dashboard (se ativadas).</p>
@@ -331,10 +411,6 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
-                  <VideoPlaceholder 
-                    title="Gerenciamento de Produtos" 
-                    description="Tutorial completo de cadastro e gestão de produtos"
-                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Cadastrar Novo Produto</h4>
                     <ol className="list-decimal list-inside space-y-1 ml-2">
@@ -384,10 +460,6 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
-                  <VideoPlaceholder 
-                    title="Gerenciamento de Clientes" 
-                    description="Como cadastrar clientes e gerenciar crédito/fiado"
-                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Cadastrar Novo Cliente</h4>
                     <ol className="list-decimal list-inside space-y-1 ml-2">
@@ -427,10 +499,6 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
-                  <VideoPlaceholder 
-                    title="Histórico de Vendas" 
-                    description="Aprenda a consultar e gerenciar o histórico de vendas"
-                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Visualizar Vendas</h4>
                     <p>Acesse "Histórico" no menu para ver todas as vendas realizadas com:</p>
@@ -469,10 +537,6 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
-                  <VideoPlaceholder 
-                    title="Relatórios" 
-                    description="Como gerar e exportar relatórios do sistema"
-                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Tipos de Relatórios Disponíveis</h4>
                     <ul className="list-disc list-inside space-y-1 ml-2">
@@ -500,10 +564,6 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
-                  <VideoPlaceholder 
-                    title="Configurações da Loja" 
-                    description="Personalize sua loja e configure o sistema"
-                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Informações Básicas</h4>
                     <ul className="list-disc list-inside space-y-1 ml-2">
@@ -536,10 +596,6 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
-                  <VideoPlaceholder 
-                    title="Assinatura e Planos" 
-                    description="Como assinar e gerenciar seu plano"
-                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Período de Teste</h4>
                     <p>Ao criar sua conta, você ganha 3 dias de teste grátis com acesso completo ao sistema.</p>

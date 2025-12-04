@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
+import { QRCodeSVG } from "qrcode.react";
 
 interface Product {
   id: string;
@@ -52,6 +53,12 @@ interface Customer {
   current_balance: number;
 }
 
+interface PixSettings {
+  pix_key_type: string | null;
+  pix_key: string | null;
+  pix_receiver_name: string | null;
+}
+
 const POS = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -65,6 +72,8 @@ const POS = () => {
   const [saleData, setSaleData] = useState<SaleData | null>(null);
   const [showFullscreenBrowser, setShowFullscreenBrowser] = useState(false);
   const [storeName, setStoreName] = useState("Loja");
+  const [pixSettings, setPixSettings] = useState<PixSettings | null>(null);
+  const [showPixQrCode, setShowPixQrCode] = useState(false);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -85,13 +94,98 @@ const POS = () => {
 
     const { data } = await supabase
       .from("store_settings")
-      .select("store_name")
+      .select("store_name, pix_key_type, pix_key, pix_receiver_name")
       .eq("user_id", user.id)
       .single();
 
     if (data?.store_name) {
       setStoreName(data.store_name);
     }
+    
+    if (data?.pix_key && data?.pix_receiver_name) {
+      setPixSettings({
+        pix_key_type: data.pix_key_type,
+        pix_key: data.pix_key,
+        pix_receiver_name: data.pix_receiver_name,
+      });
+    }
+  };
+
+  // Gerar payload PIX (formato EMV)
+  const generatePixPayload = (amount: number): string => {
+    if (!pixSettings?.pix_key || !pixSettings?.pix_receiver_name) return "";
+    
+    const formatField = (id: string, value: string): string => {
+      const len = value.length.toString().padStart(2, '0');
+      return `${id}${len}${value}`;
+    };
+
+    // Payload Format Indicator
+    let payload = formatField("00", "01");
+    
+    // Merchant Account Information (PIX)
+    const gui = formatField("00", "BR.GOV.BCB.PIX");
+    const key = formatField("01", pixSettings.pix_key);
+    const merchantAccountInfo = `${gui}${key}`;
+    payload += formatField("26", merchantAccountInfo);
+    
+    // Merchant Category Code
+    payload += formatField("52", "0000");
+    
+    // Transaction Currency (BRL = 986)
+    payload += formatField("53", "986");
+    
+    // Transaction Amount
+    payload += formatField("54", amount.toFixed(2));
+    
+    // Country Code
+    payload += formatField("58", "BR");
+    
+    // Merchant Name
+    const merchantName = pixSettings.pix_receiver_name.substring(0, 25);
+    payload += formatField("59", merchantName);
+    
+    // Merchant City
+    payload += formatField("60", "CIDADE");
+    
+    // CRC16 placeholder
+    payload += "6304";
+    
+    // Calculate CRC16
+    const crc = calculateCRC16(payload);
+    payload = payload.slice(0, -4) + formatField("63", crc);
+    
+    return payload;
+  };
+
+  // Cálculo CRC16-CCITT-FALSE
+  const calculateCRC16 = (str: string): string => {
+    let crc = 0xFFFF;
+    for (let i = 0; i < str.length; i++) {
+      crc ^= str.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) {
+        if (crc & 0x8000) {
+          crc = (crc << 1) ^ 0x1021;
+        } else {
+          crc <<= 1;
+        }
+        crc &= 0xFFFF;
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  };
+
+  const handlePixPayment = () => {
+    if (!pixSettings?.pix_key) {
+      toast({ 
+        title: "PIX não configurado", 
+        description: "Configure sua chave PIX nas Configurações para aceitar pagamentos via PIX.",
+        variant: "destructive" 
+      });
+      return;
+    }
+    setPaymentMethod("pix");
+    setShowPixQrCode(true);
   };
 
   const fetchProducts = async () => {
@@ -876,9 +970,13 @@ ${paymentInfo}
                           : ""
                       }`}
                       onClick={() => {
-                        setPaymentMethod(method.value);
-                        if (method.value === "fiado") {
-                          setShowCustomerBrowser(true);
+                        if (method.value === "pix") {
+                          handlePixPayment();
+                        } else {
+                          setPaymentMethod(method.value);
+                          if (method.value === "fiado") {
+                            setShowCustomerBrowser(true);
+                          }
                         }
                       }}
                     >
@@ -888,6 +986,46 @@ ${paymentInfo}
                   );
                 })}
               </div>
+
+              {/* Dialog do QR Code PIX */}
+              <Dialog open={showPixQrCode} onOpenChange={setShowPixQrCode}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <QrCode className="h-5 w-5 text-primary" />
+                      Pagamento PIX
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex flex-col items-center space-y-4 py-4">
+                    <div className="bg-white p-4 rounded-lg">
+                      <QRCodeSVG 
+                        value={generatePixPayload(total)} 
+                        size={200}
+                        level="M"
+                      />
+                    </div>
+                    <div className="text-center space-y-2">
+                      <p className="text-2xl font-bold text-accent">R$ {total.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Escaneie o QR Code para pagar
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Recebedor: {pixSettings?.pix_receiver_name}
+                      </p>
+                    </div>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        setShowPixQrCode(false);
+                        toast({ title: "Pagamento PIX confirmado!" });
+                      }}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Confirmar Pagamento
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {paymentMethod === "fiado" && (
                 <div className="mt-4 p-4 bg-muted rounded-lg">

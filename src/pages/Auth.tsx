@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, type SignUpData } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle } from "lucide-react";
-import { VideoPlaceholder } from "@/components/VideoPlaceholder";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 import logo from "@/assets/logo.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -486,12 +485,6 @@ const Auth = () => {
                         </DialogTitle>
                       </DialogHeader>
                       <div className="space-y-6 text-sm">
-                        {/* Video Tutorial */}
-                        <VideoPlaceholder 
-                          title="Tutorial: Como Criar Sua Conta" 
-                          description="Assista ao vídeo completo do processo de cadastro"
-                        />
-
                         {/* Introdução */}
                         <div className="bg-primary/5 p-4 rounded-lg">
                           <p className="text-muted-foreground">
