@@ -426,6 +426,9 @@ export type Database = {
           id: string
           logo_url: string | null
           operation_type: string | null
+          pix_key: string | null
+          pix_key_type: string | null
+          pix_receiver_name: string | null
           primary_color: string | null
           quick_actions_enabled: boolean | null
           store_address: string | null
@@ -441,6 +444,9 @@ export type Database = {
           id?: string
           logo_url?: string | null
           operation_type?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          pix_receiver_name?: string | null
           primary_color?: string | null
           quick_actions_enabled?: boolean | null
           store_address?: string | null
@@ -456,6 +462,9 @@ export type Database = {
           id?: string
           logo_url?: string | null
           operation_type?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          pix_receiver_name?: string | null
           primary_color?: string | null
           quick_actions_enabled?: boolean | null
           store_address?: string | null
