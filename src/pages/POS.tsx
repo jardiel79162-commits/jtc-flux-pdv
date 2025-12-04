@@ -257,9 +257,20 @@ const POS = () => {
   };
 
   const handleBarcodeScan = (barcode: string) => {
-    const product = products.find(p => 
-      p.barcode === barcode || p.internal_code === barcode
-    );
+    // Normalizar o código lido (remover espaços)
+    const normalizedBarcode = barcode.replace(/\s/g, "").trim();
+    
+    const product = products.find(p => {
+      // Normalizar os códigos do produto também
+      const productBarcode = p.barcode?.replace(/\s/g, "").trim() || "";
+      const productInternalCode = p.internal_code?.replace(/\s/g, "").trim() || "";
+      
+      return productBarcode === normalizedBarcode || 
+             productInternalCode === normalizedBarcode ||
+             // Também verificar se contém (para códigos parciais)
+             (productBarcode && productBarcode.includes(normalizedBarcode)) ||
+             (productInternalCode && productInternalCode.includes(normalizedBarcode));
+    });
     
     if (product) {
       addToCart(product);

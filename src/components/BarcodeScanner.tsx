@@ -10,6 +10,29 @@ interface BarcodeScannerProps {
   onClose: () => void;
 }
 
+// Função para gerar som de beep
+const playBeepSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 1200; // Frequência do beep (Hz)
+    oscillator.type = "sine";
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2);
+  } catch (err) {
+    console.error("Erro ao reproduzir som:", err);
+  }
+};
+
 export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +57,6 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
   const checkCameraPermission = async () => {
     setPermissionState("checking");
     try {
-      // Check if permissions API is available
       if (navigator.permissions && navigator.permissions.query) {
         const result = await navigator.permissions.query({ name: "camera" as PermissionName });
         setPermissionState(result.state as "prompt" | "granted" | "denied");
@@ -43,11 +65,9 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
           startScanner();
         }
       } else {
-        // If permissions API not available, try to start scanner directly
         setPermissionState("prompt");
       }
     } catch (err) {
-      // Some browsers don't support querying camera permission
       setPermissionState("prompt");
     }
   };
@@ -57,9 +77,7 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
     setPermissionState("checking");
     
     try {
-      // Request camera access
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      // Stop the stream immediately - we just needed to request permission
       stream.getTracks().forEach(track => track.stop());
       
       setPermissionState("granted");
@@ -86,7 +104,6 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
         await stopScanner();
       }
 
-      // Wait for DOM element to be ready
       await new Promise(resolve => setTimeout(resolve, 100));
 
       scannerRef.current = new Html5Qrcode(scannerId);
@@ -100,6 +117,8 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
           aspectRatio: 1.5,
         },
         (decodedText) => {
+          // Tocar som de beep ao ler código
+          playBeepSound();
           onScan(decodedText);
           handleClose();
         },
@@ -123,7 +142,7 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        if (state === 2) { // SCANNING state
+        if (state === 2) {
           await scannerRef.current.stop();
         }
         scannerRef.current.clear();
