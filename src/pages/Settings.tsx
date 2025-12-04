@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, ChevronDown } from "lucide-react";
+import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History } from "lucide-react";
+import { VideoPlaceholder } from "@/components/VideoPlaceholder";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -272,6 +273,10 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                  <VideoPlaceholder 
+                    title="Como Fazer uma Venda" 
+                    description="Assista ao tutorial completo do processo de venda"
+                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Passo 1: Acessar a Tela de Venda</h4>
                     <p>Clique em "Venda" no menu superior ou use as ações rápidas do Dashboard (se ativadas).</p>
@@ -326,6 +331,10 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                  <VideoPlaceholder 
+                    title="Gerenciamento de Produtos" 
+                    description="Tutorial completo de cadastro e gestão de produtos"
+                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Cadastrar Novo Produto</h4>
                     <ol className="list-decimal list-inside space-y-1 ml-2">
@@ -375,6 +384,10 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                  <VideoPlaceholder 
+                    title="Gerenciamento de Clientes" 
+                    description="Como cadastrar clientes e gerenciar crédito/fiado"
+                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Cadastrar Novo Cliente</h4>
                     <ol className="list-decimal list-inside space-y-1 ml-2">
@@ -414,6 +427,10 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                  <VideoPlaceholder 
+                    title="Histórico de Vendas" 
+                    description="Aprenda a consultar e gerenciar o histórico de vendas"
+                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Visualizar Vendas</h4>
                     <p>Acesse "Histórico" no menu para ver todas as vendas realizadas com:</p>
@@ -452,6 +469,10 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                  <VideoPlaceholder 
+                    title="Relatórios" 
+                    description="Como gerar e exportar relatórios do sistema"
+                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Tipos de Relatórios Disponíveis</h4>
                     <ul className="list-disc list-inside space-y-1 ml-2">
@@ -479,6 +500,10 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                  <VideoPlaceholder 
+                    title="Configurações da Loja" 
+                    description="Personalize sua loja e configure o sistema"
+                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Informações Básicas</h4>
                     <ul className="list-disc list-inside space-y-1 ml-2">
@@ -511,6 +536,10 @@ const Settings = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                  <VideoPlaceholder 
+                    title="Assinatura e Planos" 
+                    description="Como assinar e gerenciar seu plano"
+                  />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-foreground">Período de Teste</h4>
                     <p>Ao criar sua conta, você ganha 3 dias de teste grátis com acesso completo ao sistema.</p>
