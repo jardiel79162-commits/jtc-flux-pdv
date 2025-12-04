@@ -134,80 +134,94 @@ const Reports = () => {
     toast({ title: "Relatório exportado com sucesso" });
   };
 
+  const getPaymentMethodLabel = (method: string) => {
+    const methods: Record<string, string> = {
+      credit: "Crédito",
+      debit: "Débito",
+      pix: "PIX",
+      cash: "Dinheiro",
+      fiado: "Fiado",
+      credito: "Crédito Cliente",
+    };
+    return methods[method] || method;
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Relatórios</h1>
-          <p className="text-muted-foreground">Análise de vendas e desempenho</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Relatórios</h1>
+          <p className="text-muted-foreground text-sm">Análise de vendas e desempenho</p>
         </div>
-        <Button onClick={exportToCSV}>
+        <Button onClick={exportToCSV} size="sm">
           <Download className="mr-2 h-4 w-4" />
           Exportar CSV
         </Button>
       </div>
 
-      <div className="flex gap-4 items-end">
-        <div className="space-y-2">
-          <Label>Data Inicial</Label>
+      <div className="flex flex-col sm:flex-row gap-3 items-end">
+        <div className="space-y-2 w-full sm:w-auto">
+          <Label className="text-sm">Data Inicial</Label>
           <Input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            className="w-full sm:w-40"
           />
         </div>
-        <div className="space-y-2">
-          <Label>Data Final</Label>
+        <div className="space-y-2 w-full sm:w-auto">
+          <Label className="text-sm">Data Final</Label>
           <Input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
+            className="w-full sm:w-40"
           />
         </div>
-        <Button onClick={fetchSalesData}>
+        <Button onClick={fetchSalesData} size="sm" className="w-full sm:w-auto">
           <Calendar className="mr-2 h-4 w-4" />
           Filtrar
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento Total</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">Faturamento</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R$ {totalRevenue.toFixed(2)}</div>
+          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">R$ {totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">Vendas</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalTransactions}</div>
+          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">{totalTransactions}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Descontos Aplicados</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">Descontos</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R$ {totalDiscount.toFixed(2)}</div>
+          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">R$ {totalDiscount.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">Ticket Médio</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">
               R$ {totalTransactions > 0 ? (totalRevenue / totalTransactions).toFixed(2) : "0.00"}
             </div>
           </CardContent>
@@ -215,116 +229,122 @@ const Reports = () => {
       </div>
 
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList>
-          <TabsTrigger value="sales">Vendas</TabsTrigger>
-          <TabsTrigger value="products">Produtos Mais Vendidos</TabsTrigger>
-          <TabsTrigger value="payment">Formas de Pagamento</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="sales" className="text-xs md:text-sm">Vendas</TabsTrigger>
+          <TabsTrigger value="products" className="text-xs md:text-sm">Produtos</TabsTrigger>
+          <TabsTrigger value="payment" className="text-xs md:text-sm">Pagamento</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="sales" className="space-y-4">
+        <TabsContent value="sales" className="space-y-4 mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Vendas</CardTitle>
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="text-base md:text-lg">Histórico de Vendas</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data e Hora</TableHead>
-                    <TableHead>Valor Total</TableHead>
-                    <TableHead>Desconto</TableHead>
-                    <TableHead>Forma de Pagamento</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sales.length === 0 ? (
+            <CardContent className="p-0 md:p-6 md:pt-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        Nenhuma venda registrada no período
-                      </TableCell>
+                      <TableHead className="text-xs whitespace-nowrap">Data</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap">Valor</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap">Desconto</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap">Pagamento</TableHead>
                     </TableRow>
-                  ) : (
-                    sales.map((sale) => (
-                      <TableRow key={sale.id}>
-                        <TableCell>{format(new Date(sale.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
-                        <TableCell className="font-medium">R$ {sale.total_amount.toFixed(2)}</TableCell>
-                        <TableCell>R$ {(sale.discount || 0).toFixed(2)}</TableCell>
-                        <TableCell className="capitalize">{sale.payment_method}</TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {sales.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
+                          Nenhuma venda registrada
+                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      sales.map((sale) => (
+                        <TableRow key={sale.id}>
+                          <TableCell className="text-xs whitespace-nowrap">{format(new Date(sale.created_at), "dd/MM/yy HH:mm")}</TableCell>
+                          <TableCell className="text-xs font-medium whitespace-nowrap">R$ {sale.total_amount.toFixed(2)}</TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">R$ {(sale.discount || 0).toFixed(2)}</TableCell>
+                          <TableCell className="text-xs capitalize whitespace-nowrap">{getPaymentMethodLabel(sale.payment_method)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="products" className="space-y-4">
+        <TabsContent value="products" className="space-y-4 mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Produtos Mais Vendidos</CardTitle>
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="text-base md:text-lg">Produtos Mais Vendidos</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Produto</TableHead>
-                    <TableHead>Quantidade Vendida</TableHead>
-                    <TableHead>Faturamento</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {productSales.length === 0 ? (
+            <CardContent className="p-0 md:p-6 md:pt-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                        Nenhum produto vendido no período
-                      </TableCell>
+                      <TableHead className="text-xs">Produto</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap">Qtd</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap">Faturamento</TableHead>
                     </TableRow>
-                  ) : (
-                    productSales.map((product, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{product.product_name}</TableCell>
-                        <TableCell>{product.total_quantity}</TableCell>
-                        <TableCell>R$ {product.total_revenue.toFixed(2)}</TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {productSales.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
+                          Nenhum produto vendido
+                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      productSales.map((product, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="text-xs font-medium max-w-[120px] truncate">{product.product_name}</TableCell>
+                          <TableCell className="text-xs">{product.total_quantity}</TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">R$ {product.total_revenue.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="payment" className="space-y-4">
+        <TabsContent value="payment" className="space-y-4 mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Resumo por Forma de Pagamento</CardTitle>
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="text-base md:text-lg">Resumo por Pagamento</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Forma de Pagamento</TableHead>
-                    <TableHead>Valor Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.keys(paymentMethodSummary).length === 0 ? (
+            <CardContent className="p-0 md:p-6 md:pt-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
-                        Nenhuma venda registrada no período
-                      </TableCell>
+                      <TableHead className="text-xs">Forma de Pagamento</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap">Valor Total</TableHead>
                     </TableRow>
-                  ) : (
-                    Object.entries(paymentMethodSummary).map(([method, total]) => (
-                      <TableRow key={method}>
-                        <TableCell className="capitalize font-medium">{method}</TableCell>
-                        <TableCell>R$ {total.toFixed(2)}</TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.keys(paymentMethodSummary).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-center py-8 text-muted-foreground text-sm">
+                          Nenhuma venda registrada
+                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      Object.entries(paymentMethodSummary).map(([method, total]) => (
+                        <TableRow key={method}>
+                          <TableCell className="text-xs capitalize font-medium">{getPaymentMethodLabel(method)}</TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">R$ {total.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
