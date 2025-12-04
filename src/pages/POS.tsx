@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
-import { QRCodeSVG } from "qrcode.react";
 
 interface Product {
   id: string;
@@ -998,10 +997,11 @@ ${paymentInfo}
                   </DialogHeader>
                   <div className="flex flex-col items-center space-y-4 py-4">
                     <div className="bg-white p-4 rounded-lg">
-                      <QRCodeSVG 
-                        value={generatePixPayload(total)} 
-                        size={200}
-                        level="M"
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixPayload(total))}`}
+                        alt="QR Code PIX"
+                        width={200}
+                        height={200}
                       />
                     </div>
                     <div className="text-center space-y-2">
