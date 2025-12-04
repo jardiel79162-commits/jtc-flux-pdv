@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, type SignUpData } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 import logo from "@/assets/logo.jpg";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -467,6 +468,171 @@ const Auth = () => {
                   <p className="text-sm text-center text-muted-foreground">
                     Ao criar sua conta, você ganha 3 dias de teste grátis
                   </p>
+
+                  {/* Manual de Como Criar Conta */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full mt-2" type="button">
+                        <HelpCircle className="mr-2 h-4 w-4" />
+                        Manual: Como Criar Minha Conta
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                          <HelpCircle className="h-5 w-5 text-primary" />
+                          Manual Completo: Como Criar Sua Conta
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-6 text-sm">
+                        {/* Introdução */}
+                        <div className="bg-primary/5 p-4 rounded-lg">
+                          <p className="text-muted-foreground">
+                            Bem-vindo ao JTC FluxPDV! Este manual vai te guiar passo a passo no processo de criação da sua conta. 
+                            Ao finalizar o cadastro, você ganhará automaticamente <strong>3 dias de teste grátis</strong> com acesso completo ao sistema.
+                          </p>
+                        </div>
+
+                        {/* Passo 1 */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                            Informações Pessoais
+                          </h3>
+                          <div className="ml-8 space-y-2 text-muted-foreground">
+                            <p><strong>Nome Completo:</strong> Digite seu nome completo (nome e sobrenome). Este nome aparecerá no sistema e nos relatórios.</p>
+                            <p><strong>CPF:</strong> Digite seu CPF (apenas números ou com pontos e traço). O CPF é usado para identificação única e também pode ser usado para fazer login.</p>
+                            <div className="bg-muted/50 p-2 rounded text-xs">
+                              💡 <strong>Dica:</strong> O CPF pode ser digitado com ou sem formatação (12345678900 ou 123.456.789-00)
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Passo 2 */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                            Contato
+                          </h3>
+                          <div className="ml-8 space-y-2 text-muted-foreground">
+                            <p><strong>E-mail:</strong> Digite um e-mail válido. Este e-mail será usado para:</p>
+                            <ul className="list-disc list-inside ml-2">
+                              <li>Fazer login no sistema</li>
+                              <li>Receber notificações importantes</li>
+                              <li>Recuperação de conta (se necessário)</li>
+                            </ul>
+                            <p><strong>Telefone:</strong> Digite seu número de telefone com DDD. Exemplo: (98) 99999-9999</p>
+                          </div>
+                        </div>
+
+                        {/* Passo 3 */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+                            Endereço
+                          </h3>
+                          <div className="ml-8 space-y-2 text-muted-foreground">
+                            <p><strong>CEP:</strong> Digite o CEP da sua localização. O sistema irá preencher automaticamente:</p>
+                            <ul className="list-disc list-inside ml-2">
+                              <li>Rua</li>
+                              <li>Bairro</li>
+                              <li>Cidade</li>
+                              <li>Estado</li>
+                            </ul>
+                            <div className="bg-muted/50 p-2 rounded text-xs">
+                              💡 <strong>Dica:</strong> Se não souber o CEP, você pode selecionar primeiro o Estado e depois a Cidade manualmente.
+                            </div>
+                            <p><strong>Número:</strong> Digite o número do seu endereço (casa, apartamento, sala comercial, etc.)</p>
+                            <p><strong>Campos Automáticos:</strong> Após digitar o CEP, os campos Rua, Bairro, Estado e Cidade serão preenchidos automaticamente. Você pode editá-los se necessário.</p>
+                          </div>
+                        </div>
+
+                        {/* Passo 4 */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
+                            Senha
+                          </h3>
+                          <div className="ml-8 space-y-2 text-muted-foreground">
+                            <p><strong>Senha:</strong> Crie uma senha segura para sua conta.</p>
+                            <p><strong>Confirmar Senha:</strong> Digite a mesma senha novamente para confirmar.</p>
+                            <div className="bg-muted/50 p-2 rounded text-xs">
+                              💡 <strong>Dicas de segurança:</strong>
+                              <ul className="list-disc list-inside ml-2 mt-1">
+                                <li>Use pelo menos 6 caracteres</li>
+                                <li>Combine letras maiúsculas, minúsculas e números</li>
+                                <li>Evite senhas óbvias como "123456" ou sua data de nascimento</li>
+                              </ul>
+                            </div>
+                            <p>Clique no ícone do olho (👁️) para visualizar a senha enquanto digita.</p>
+                          </div>
+                        </div>
+
+                        {/* Passo 5 */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">5</span>
+                            Finalizar Cadastro
+                          </h3>
+                          <div className="ml-8 space-y-2 text-muted-foreground">
+                            <p>Após preencher todos os campos, clique no botão <strong>"Criar Conta"</strong>.</p>
+                            <p>O sistema irá:</p>
+                            <ul className="list-disc list-inside ml-2">
+                              <li>Validar todos os dados informados</li>
+                              <li>Criar sua conta no sistema</li>
+                              <li>Ativar automaticamente 3 dias de teste grátis</li>
+                              <li>Redirecionar você para o Dashboard principal</li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        {/* Após o Cadastro */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <span className="bg-accent text-accent-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">✓</span>
+                            Após o Cadastro
+                          </h3>
+                          <div className="ml-8 space-y-2 text-muted-foreground">
+                            <p>Com sua conta criada, você poderá:</p>
+                            <ul className="list-disc list-inside ml-2">
+                              <li>Configurar as informações da sua loja</li>
+                              <li>Cadastrar produtos e categorias</li>
+                              <li>Cadastrar clientes</li>
+                              <li>Realizar vendas</li>
+                              <li>Gerar relatórios</li>
+                            </ul>
+                            <div className="bg-accent/10 p-3 rounded-lg mt-3">
+                              <p className="font-medium text-foreground">📌 Importante:</p>
+                              <p>Seu período de teste de 3 dias começa imediatamente após o cadastro. Aproveite para explorar todas as funcionalidades do sistema!</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Login */}
+                        <div className="space-y-2 border-t pt-4">
+                          <h3 className="font-semibold text-foreground">Como Fazer Login</h3>
+                          <div className="text-muted-foreground">
+                            <p>Após criar sua conta, você pode fazer login de duas formas:</p>
+                            <ul className="list-disc list-inside ml-2 mt-2">
+                              <li><strong>E-mail + Senha:</strong> Use o e-mail cadastrado</li>
+                              <li><strong>CPF + Senha:</strong> Use o CPF cadastrado (apenas números)</li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        {/* Problemas Comuns */}
+                        <div className="space-y-2 border-t pt-4">
+                          <h3 className="font-semibold text-foreground">Problemas Comuns</h3>
+                          <div className="text-muted-foreground space-y-2">
+                            <p><strong>"As senhas não coincidem":</strong> Verifique se digitou a mesma senha nos dois campos.</p>
+                            <p><strong>"CEP não encontrado":</strong> Verifique se o CEP está correto ou preencha o endereço manualmente.</p>
+                            <p><strong>"E-mail já cadastrado":</strong> Este e-mail já possui uma conta. Use outro e-mail ou faça login.</p>
+                            <p><strong>"CPF já cadastrado":</strong> Este CPF já possui uma conta. Faça login com suas credenciais.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </form>
               </TabsContent>
             </Tabs>
