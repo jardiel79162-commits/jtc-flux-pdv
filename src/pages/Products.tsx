@@ -49,6 +49,8 @@ const Products = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
@@ -117,8 +119,12 @@ const Products = () => {
   };
 
   const handleSaveProduct = async () => {
+    if (isSavingProduct) return; // Evitar dupla submissão
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    setIsSavingProduct(true);
 
     const productData = {
       name: productForm.name,
@@ -135,29 +141,33 @@ const Products = () => {
       user_id: user.id,
     };
 
-    if (editingProduct) {
-      const { error } = await supabase
-        .from("products")
-        .update(productData)
-        .eq("id", editingProduct.id);
+    try {
+      if (editingProduct) {
+        const { error } = await supabase
+          .from("products")
+          .update(productData)
+          .eq("id", editingProduct.id);
 
-      if (error) {
-        toast({ title: "Erro ao atualizar produto", variant: "destructive" });
+        if (error) {
+          toast({ title: "Erro ao atualizar produto", variant: "destructive" });
+        } else {
+          toast({ title: "Produto atualizado com sucesso" });
+          fetchProducts();
+          resetProductForm();
+        }
       } else {
-        toast({ title: "Produto atualizado com sucesso" });
-        fetchProducts();
-        resetProductForm();
-      }
-    } else {
-      const { error } = await supabase.from("products").insert([productData]);
+        const { error } = await supabase.from("products").insert([productData]);
 
-      if (error) {
-        toast({ title: "Erro ao criar produto", variant: "destructive" });
-      } else {
-        toast({ title: "Produto criado com sucesso" });
-        fetchProducts();
-        resetProductForm();
+        if (error) {
+          toast({ title: "Erro ao criar produto", variant: "destructive" });
+        } else {
+          toast({ title: "Produto criado com sucesso" });
+          fetchProducts();
+          resetProductForm();
+        }
       }
+    } finally {
+      setIsSavingProduct(false);
     }
   };
 
@@ -208,8 +218,12 @@ const Products = () => {
   };
 
   const handleSaveCategory = async () => {
+    if (isSavingCategory) return; // Evitar dupla submissão
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    setIsSavingCategory(true);
 
     const categoryData = {
       name: categoryForm.name,
@@ -217,29 +231,33 @@ const Products = () => {
       user_id: user.id,
     };
 
-    if (editingCategory) {
-      const { error } = await supabase
-        .from("categories")
-        .update(categoryData)
-        .eq("id", editingCategory.id);
+    try {
+      if (editingCategory) {
+        const { error } = await supabase
+          .from("categories")
+          .update(categoryData)
+          .eq("id", editingCategory.id);
 
-      if (error) {
-        toast({ title: "Erro ao atualizar categoria", variant: "destructive" });
+        if (error) {
+          toast({ title: "Erro ao atualizar categoria", variant: "destructive" });
+        } else {
+          toast({ title: "Categoria atualizada com sucesso" });
+          fetchCategories();
+          resetCategoryForm();
+        }
       } else {
-        toast({ title: "Categoria atualizada com sucesso" });
-        fetchCategories();
-        resetCategoryForm();
-      }
-    } else {
-      const { error } = await supabase.from("categories").insert([categoryData]);
+        const { error } = await supabase.from("categories").insert([categoryData]);
 
-      if (error) {
-        toast({ title: "Erro ao criar categoria", variant: "destructive" });
-      } else {
-        toast({ title: "Categoria criada com sucesso" });
-        fetchCategories();
-        resetCategoryForm();
+        if (error) {
+          toast({ title: "Erro ao criar categoria", variant: "destructive" });
+        } else {
+          toast({ title: "Categoria criada com sucesso" });
+          fetchCategories();
+          resetCategoryForm();
+        }
       }
+    } finally {
+      setIsSavingCategory(false);
     }
   };
 
@@ -642,8 +660,10 @@ const Products = () => {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={resetProductForm}>Cancelar</Button>
-                  <Button onClick={handleSaveProduct}>Salvar</Button>
+                  <Button variant="outline" onClick={resetProductForm} disabled={isSavingProduct}>Cancelar</Button>
+                  <Button onClick={handleSaveProduct} disabled={isSavingProduct}>
+                    {isSavingProduct ? "Salvando..." : "Salvar"}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -654,7 +674,8 @@ const Products = () => {
               onClose={() => setIsBarcodeScannerOpen(false)}
               onScan={(barcode) => {
                 setProductForm({ ...productForm, barcode });
-                setIsBarcodeScannerOpen(false);
+                // Não precisa chamar setIsBarcodeScannerOpen(false) aqui
+                // pois o BarcodeScanner já faz isso no handleClose
               }}
             />
           </div>
@@ -764,8 +785,10 @@ const Products = () => {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={resetCategoryForm}>Cancelar</Button>
-                  <Button onClick={handleSaveCategory}>Salvar</Button>
+                  <Button variant="outline" onClick={resetCategoryForm} disabled={isSavingCategory}>Cancelar</Button>
+                  <Button onClick={handleSaveCategory} disabled={isSavingCategory}>
+                    {isSavingCategory ? "Salvando..." : "Salvar"}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
