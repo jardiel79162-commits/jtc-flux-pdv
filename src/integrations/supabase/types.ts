@@ -552,6 +552,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_invite_code: {
+        Args: { code: string }
+        Returns: {
+          is_already_used: boolean
+          is_valid: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "gerente" | "caixa"
