@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Camera, X, AlertCircle, Flashlight, FlashlightOff, CheckCircle2, Package } from "lucide-react";
 
+interface ProductPreview {
+  name: string;
+  image?: string;
+}
+
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
   isOpen: boolean;
   onClose: () => void;
+  getProductPreview?: (barcode: string) => ProductPreview | null;
 }
 
 // Função para gerar som de beep
@@ -44,12 +50,13 @@ const vibrate = () => {
   }
 };
 
-export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps) => {
+export const BarcodeScanner = ({ onScan, isOpen, onClose, getProductPreview }: BarcodeScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<"prompt" | "granted" | "denied" | "checking">("checking");
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [productPreview, setProductPreview] = useState<ProductPreview | null>(null);
   const [flashOn, setFlashOn] = useState(false);
   const [flashSupported, setFlashSupported] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -62,6 +69,7 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
       checkCameraPermission();
       setScannedCode(null);
       setShowSuccess(false);
+      setProductPreview(null);
       hasScannedRef.current = false;
     } else {
       stopScanner();
@@ -70,6 +78,7 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
       setFlashOn(false);
       setScannedCode(null);
       setShowSuccess(false);
+      setProductPreview(null);
       hasScannedRef.current = false;
     }
 
@@ -190,6 +199,13 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
           playBeepSound();
           // Vibrar o dispositivo
           vibrate();
+          
+          // Buscar preview do produto se disponível
+          if (getProductPreview) {
+            const preview = getProductPreview(decodedText);
+            setProductPreview(preview);
+          }
+          
           // Mostrar código e imagem de sucesso na tela
           setScannedCode(decodedText);
           setShowSuccess(true);
@@ -335,19 +351,41 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
               {showSuccess && scannedCode ? (
                 <div className="bg-accent/20 border-2 border-accent rounded-lg p-6 text-center animate-in zoom-in-95 duration-300">
                   <div className="flex flex-col items-center gap-3">
+                    {/* Imagem do produto ou ícone padrão */}
                     <div className="relative">
-                      <div className="w-20 h-20 bg-accent/30 rounded-full flex items-center justify-center">
-                        <Package className="h-10 w-10 text-accent" />
-                      </div>
+                      {productPreview?.image ? (
+                        <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-accent shadow-lg">
+                          <img 
+                            src={productPreview.image} 
+                            alt={productPreview.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 bg-accent/30 rounded-full flex items-center justify-center">
+                          <Package className="h-10 w-10 text-accent" />
+                        </div>
+                      )}
                       <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
                         <CheckCircle2 className="h-5 w-5 text-white" />
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Código lido com sucesso!</p>
-                      <p className="text-xl font-mono font-bold text-accent">{scannedCode}</p>
+                      {productPreview?.name ? (
+                        <>
+                          <p className="text-lg font-semibold text-foreground">{productPreview.name}</p>
+                          <p className="text-sm text-muted-foreground">Código: {scannedCode}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm text-muted-foreground mb-1">Código lido com sucesso!</p>
+                          <p className="text-xl font-mono font-bold text-accent">{scannedCode}</p>
+                        </>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground">Adicionando produto...</p>
+                    <p className="text-xs text-muted-foreground">
+                      {productPreview ? "Adicionando ao carrinho..." : "Processando..."}
+                    </p>
                   </div>
                 </div>
               ) : (
