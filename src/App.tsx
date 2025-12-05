@@ -13,6 +13,8 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import SalesHistory from "./pages/SalesHistory";
 import Employees from "./pages/Employees";
+import Suppliers from "./pages/Suppliers";
+import Purchases from "./pages/Purchases";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/relatorios" element={<Reports />} />
             <Route path="/configuracoes" element={<Settings />} />
             <Route path="/funcionarios" element={<Employees />} />
+            <Route path="/fornecedores" element={<Suppliers />} />
+            <Route path="/compras" element={<Purchases />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
