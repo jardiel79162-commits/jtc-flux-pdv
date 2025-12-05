@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,15 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { signIn, signUp, type SignUpData } from "@/lib/auth";
+import { signIn, signUp, validateInviteCode, type SignUpData } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 import logo from "@/assets/logo.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,12 @@ const Auth = () => {
     city: "",
     state: "",
   });
+
+  // Estado do código de convite
+  const [hasInviteCode, setHasInviteCode] = useState<boolean | null>(null);
+  const [inviteCode, setInviteCode] = useState("");
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid">("idle");
 
   useEffect(() => {
     // Verificar se já está logado
@@ -49,8 +56,16 @@ const Auth = () => {
     // Carregar estados
     fetchEstados().then(setEstados);
 
+    // Verificar código de referência na URL
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      setHasInviteCode(true);
+      setInviteCode(refCode.toUpperCase());
+      validateCode(refCode);
+    }
+
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   useEffect(() => {
     // Carregar cidades quando estado mudar
@@ -60,6 +75,28 @@ const Auth = () => {
       setCidades([]);
     }
   }, [selectedEstado]);
+
+  const validateCode = async (code: string) => {
+    if (code.length < 6) {
+      setCodeValidationStatus("idle");
+      return;
+    }
+    
+    setIsValidatingCode(true);
+    const isValid = await validateInviteCode(code);
+    setCodeValidationStatus(isValid ? "valid" : "invalid");
+    setIsValidatingCode(false);
+  };
+
+  const handleInviteCodeChange = (value: string) => {
+    const upperValue = value.toUpperCase();
+    setInviteCode(upperValue);
+    if (upperValue.length >= 6) {
+      validateCode(upperValue);
+    } else {
+      setCodeValidationStatus("idle");
+    }
+  };
 
   const handleCEPChange = async (cep: string) => {
     const cleanCEP = cep.replace(/\D/g, "");
@@ -135,6 +172,17 @@ const Auth = () => {
       return;
     }
 
+    // Validar código de convite se fornecido
+    if (hasInviteCode && inviteCode && codeValidationStatus !== "valid") {
+      toast({
+        variant: "destructive",
+        title: "Código inválido",
+        description: "Por favor, verifique o código de convite.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     const data: SignUpData = {
       fullName: formData.get("fullName") as string,
       cpf: (formData.get("cpf") as string).replace(/\D/g, ""),
@@ -147,13 +195,17 @@ const Auth = () => {
       city: selectedCidade,
       state: selectedEstado,
       password,
+      referredByCode: hasInviteCode && codeValidationStatus === "valid" ? inviteCode : undefined,
     };
 
     try {
       await signUp(data);
+      const trialMessage = hasInviteCode && codeValidationStatus === "valid" 
+        ? "Você ganhou 1 mês + 3 dias de teste grátis! 🎉"
+        : "Você ganhou 3 dias de teste grátis. Seja bem-vindo!";
       toast({
         title: "Conta criada!",
-        description: "Você ganhou 3 dias de teste grátis. Seja bem-vindo!",
+        description: trialMessage,
       });
     } catch (error: any) {
       toast({
@@ -167,63 +219,77 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+    <div className="min-h-screen bg-gradient-to-br from-primary/8 via-background to-accent/8 flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
         {/* Seção de branding */}
-        <div className="hidden lg:flex flex-col justify-center space-y-6 p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <img src={logo} alt="JTC FluxPDV" className="w-20 h-20 rounded-full object-cover" />
-            <div className="space-y-1">
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                JTC FluxPDV
-              </h1>
-              <p className="text-xl text-muted-foreground">
-                Sistema completo de gestão para sua loja
-              </p>
+        <div className="hidden lg:flex flex-col justify-center space-y-8 p-8">
+          <div className="space-y-4">
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <img src={logo} alt="JTC FluxPDV" className="w-24 h-24 rounded-2xl object-cover shadow-xl" />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-accent flex items-center justify-center shadow-lg">
+                  <CheckCircle2 className="w-5 h-5 text-accent-foreground" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h1 className="text-5xl font-bold gradient-text">
+                  JTC FluxPDV
+                </h1>
+                <p className="text-lg text-muted-foreground">
+                  Sistema profissional de gestão para sua loja
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-4 pt-8">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <ShoppingCart className="w-6 h-6 text-primary" />
+          <div className="space-y-5 pt-6">
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 transition-all hover:shadow-md hover:border-primary/30">
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <ShoppingCart className="w-7 h-7 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold">PDV Completo</h3>
+                <h3 className="font-semibold text-lg">PDV Completo</h3>
                 <p className="text-sm text-muted-foreground">Sistema de vendas rápido e eficiente</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                <Package className="w-6 h-6 text-accent" />
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 transition-all hover:shadow-md hover:border-accent/30">
+              <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                <Package className="w-7 h-7 text-accent" />
               </div>
               <div>
-                <h3 className="font-semibold">Gestão de Estoque</h3>
+                <h3 className="font-semibold text-lg">Gestão de Estoque</h3>
                 <p className="text-sm text-muted-foreground">Controle total dos seus produtos</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-success" />
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 transition-all hover:shadow-md hover:border-success/30">
+              <div className="w-14 h-14 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-7 h-7 text-success" />
               </div>
               <div>
-                <h3 className="font-semibold">Relatórios Detalhados</h3>
+                <h3 className="font-semibold text-lg">Relatórios Detalhados</h3>
                 <p className="text-sm text-muted-foreground">Análises completas do seu negócio</p>
               </div>
             </div>
           </div>
+
+          <div className="pt-4 flex items-center gap-3 text-sm text-muted-foreground">
+            <Gift className="w-5 h-5 text-accent" />
+            <span>Convide amigos e ganhe <strong className="text-accent">1 mês grátis</strong> para cada cadastro!</span>
+          </div>
         </div>
 
         {/* Formulários */}
-        <Card className="shadow-2xl">
-          <CardHeader className="text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
-              <img src={logo} alt="JTC FluxPDV" className="w-16 h-16 rounded-full object-cover" />
-              <CardTitle className="text-3xl">JTC FluxPDV</CardTitle>
+        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm">
+          <CardHeader className="text-center lg:text-left pb-2">
+            <div className="flex items-center justify-center lg:justify-start gap-4 mb-4">
+              <img src={logo} alt="JTC FluxPDV" className="w-16 h-16 rounded-xl object-cover shadow-lg" />
+              <div>
+                <CardTitle className="text-3xl font-bold">JTC FluxPDV</CardTitle>
+                <CardDescription className="text-base">Sistema de Gestão Profissional</CardDescription>
+              </div>
             </div>
-            <CardDescription>Entre na sua conta ou crie uma nova</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
@@ -461,12 +527,113 @@ const Auth = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  {/* Código de Convite */}
+                  <div className="space-y-4 pt-2 border-t border-border">
+                    <div className="flex items-center gap-2 text-accent">
+                      <Gift className="h-5 w-5" />
+                      <span className="font-medium">Código de Convite</span>
+                    </div>
+                    
+                    {hasInviteCode === null ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Você tem um código de convite de um amigo?
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="flex-1 border-accent text-accent hover:bg-accent/10"
+                            onClick={() => setHasInviteCode(true)}
+                          >
+                            Sim, tenho!
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setHasInviteCode(false)}
+                          >
+                            Não tenho
+                          </Button>
+                        </div>
+                      </div>
+                    ) : hasInviteCode ? (
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label>Digite o código de convite</Label>
+                          <div className="relative">
+                            <Input
+                              value={inviteCode}
+                              onChange={(e) => handleInviteCodeChange(e.target.value)}
+                              placeholder="Ex: ABC123"
+                              maxLength={6}
+                              className="uppercase font-mono text-lg tracking-widest"
+                              disabled={isLoading}
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              {isValidatingCode && (
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              )}
+                              {!isValidatingCode && codeValidationStatus === "valid" && (
+                                <CheckCircle2 className="h-5 w-5 text-accent" />
+                              )}
+                              {!isValidatingCode && codeValidationStatus === "invalid" && (
+                                <XCircle className="h-5 w-5 text-destructive" />
+                              )}
+                            </div>
+                          </div>
+                          {codeValidationStatus === "valid" && (
+                            <p className="text-sm text-accent font-medium">
+                              🎉 Código válido! Você ganhará 1 mês + 3 dias grátis!
+                            </p>
+                          )}
+                          {codeValidationStatus === "invalid" && (
+                            <p className="text-sm text-destructive">
+                              Código inválido. Verifique e tente novamente.
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setHasInviteCode(false);
+                            setInviteCode("");
+                            setCodeValidationStatus("idle");
+                          }}
+                        >
+                          Não tenho código
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <p className="text-sm text-muted-foreground">
+                          Sem código? Sem problema! Você ainda ganha <strong>3 dias grátis</strong>.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-accent"
+                          onClick={() => setHasInviteCode(true)}
+                        >
+                          Na verdade, tenho um código!
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
                     {isLoading ? "Criando..." : "Criar Conta"}
                   </Button>
 
                   <p className="text-sm text-center text-muted-foreground">
-                    Ao criar sua conta, você ganha 3 dias de teste grátis
+                    {hasInviteCode && codeValidationStatus === "valid" 
+                      ? "Ao criar sua conta, você ganha 1 mês + 3 dias de teste grátis! 🎉"
+                      : "Ao criar sua conta, você ganha 3 dias de teste grátis"
+                    }
                   </p>
 
                   {/* Manual de Como Criar Conta */}

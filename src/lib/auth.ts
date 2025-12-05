@@ -12,6 +12,7 @@ export interface SignUpData {
   neighborhood: string;
   city: string;
   state: string;
+  referredByCode?: string;
 }
 
 export const signUp = async (data: SignUpData) => {
@@ -30,6 +31,7 @@ export const signUp = async (data: SignUpData) => {
         neighborhood: data.neighborhood,
         city: data.city,
         state: data.state,
+        referred_by_code: data.referredByCode || null,
       },
     },
   });
@@ -73,4 +75,15 @@ export const signIn = async (identifier: string, password: string) => {
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+};
+
+// Validar código de convite
+export const validateInviteCode = async (code: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("invite_code", code.toUpperCase())
+    .single();
+
+  return !error && !!data;
 };

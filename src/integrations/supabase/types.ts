@@ -286,9 +286,11 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          invite_code: string | null
           neighborhood: string | null
           number: string | null
           phone: string | null
+          referred_by: string | null
           state: string | null
           street: string | null
           subscription_ends_at: string | null
@@ -304,9 +306,11 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          invite_code?: string | null
           neighborhood?: string | null
           number?: string | null
           phone?: string | null
+          referred_by?: string | null
           state?: string | null
           street?: string | null
           subscription_ends_at?: string | null
@@ -322,9 +326,11 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          invite_code?: string | null
           neighborhood?: string | null
           number?: string | null
           phone?: string | null
+          referred_by?: string | null
           state?: string | null
           street?: string | null
           subscription_ends_at?: string | null
@@ -332,7 +338,15 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_items: {
         Row: {
@@ -527,6 +541,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invite_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
