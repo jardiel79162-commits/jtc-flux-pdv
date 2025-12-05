@@ -828,7 +828,7 @@ ${paymentInfo}
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-6 overflow-hidden">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">PDV - Ponto de Venda</h1>
         <p className="text-muted-foreground">Sistema de vendas</p>
@@ -926,63 +926,66 @@ ${paymentInfo}
             )}
 
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
                   <ShoppingCart className="h-5 w-5 text-primary" />
-                  Carrinho de Compras
+                  Carrinho
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {cart.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <ShoppingCart className="h-16 w-16 mx-auto mb-2 opacity-50" />
                     <p>Carrinho vazio</p>
                   </div>
                 ) : (
-                  <Table>
+                  <Table className="table-fixed w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Produto</TableHead>
-                        <TableHead>Preço</TableHead>
-                        <TableHead>Qtd</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead></TableHead>
+                        <TableHead className="text-xs w-[30%]">Produto</TableHead>
+                        <TableHead className="text-xs w-[18%]">Preço</TableHead>
+                        <TableHead className="text-xs w-[25%]">Qtd</TableHead>
+                        <TableHead className="text-xs w-[17%]">Total</TableHead>
+                        <TableHead className="text-xs w-[10%]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {cart.map((item) => (
                         <TableRow key={item.product.id}>
-                          <TableCell className="font-medium">{item.product.name}</TableCell>
-                          <TableCell>
+                          <TableCell className="font-medium text-xs truncate">{item.product.name}</TableCell>
+                          <TableCell className="text-xs">
                             R$ {(item.product.promotional_price || item.product.price).toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="outline"
+                                className="h-6 w-6"
                                 onClick={() => updateQuantity(item.product.id, -1)}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="w-8 text-center">{item.quantity}</span>
+                              <span className="w-6 text-center text-xs">{item.quantity}</span>
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="outline"
+                                className="h-6 w-6"
                                 onClick={() => updateQuantity(item.product.id, 1)}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="font-semibold">R$ {getItemPrice(item).toFixed(2)}</TableCell>
+                          <TableCell className="font-semibold text-xs">R$ {getItemPrice(item).toFixed(2)}</TableCell>
                           <TableCell>
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
+                              className="h-6 w-6"
                               onClick={() => removeFromCart(item.product.id)}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-3 w-3 text-destructive" />
                             </Button>
                           </TableCell>
                         </TableRow>

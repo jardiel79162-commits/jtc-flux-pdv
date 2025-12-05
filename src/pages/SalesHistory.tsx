@@ -205,7 +205,7 @@ const SalesHistory = () => {
   });
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-hidden">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">Histórico de Vendas</h1>
         <p className="text-muted-foreground text-sm">Visualize e gerencie suas vendas</p>
