@@ -77,22 +77,19 @@ export const signOut = async () => {
   if (error) throw error;
 };
 
-// Validar código de convite (verifica se existe E se não foi usado)
+// Validar código de convite usando função segura do banco
 export const validateInviteCode = async (code: string): Promise<{ valid: boolean; alreadyUsed: boolean }> => {
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, invite_code_used")
-    .eq("invite_code", code.toUpperCase())
-    .maybeSingle();
+    .rpc('validate_invite_code', { code: code.toUpperCase() });
 
-  if (error || !data) {
+  if (error || !data || data.length === 0) {
+    console.error("Erro ao validar código:", error);
     return { valid: false, alreadyUsed: false };
   }
 
-  // Se o código existe mas já foi usado
-  if (data.invite_code_used === true) {
-    return { valid: false, alreadyUsed: true };
-  }
-
-  return { valid: true, alreadyUsed: false };
+  const result = data[0];
+  return { 
+    valid: result.is_valid === true, 
+    alreadyUsed: result.is_already_used === true 
+  };
 };
