@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, validateInviteCode, type SignUpData } from "@/lib/auth";
+import { isValidCPF } from "@/lib/cpfValidator";
 import { supabase } from "@/integrations/supabase/client";
 import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
@@ -38,6 +39,7 @@ const Auth = () => {
   const [inviteCode, setInviteCode] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid" | "used">("idle");
+  const [cpfError, setCpfError] = useState<string | null>(null);
 
   useEffect(() => {
     // Verificar se já está logado
@@ -173,6 +175,18 @@ const Auth = () => {
         variant: "destructive",
         title: "Erro",
         description: "As senhas não coincidem.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Validar CPF
+    const cpfValue = (formData.get("cpf") as string).replace(/\D/g, "");
+    if (!isValidCPF(cpfValue)) {
+      toast({
+        variant: "destructive",
+        title: "CPF inválido",
+        description: "Por favor, digite um CPF válido.",
       });
       setIsLoading(false);
       return;
@@ -364,7 +378,23 @@ const Auth = () => {
                         placeholder="000.000.000-00"
                         required
                         disabled={isLoading}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, "");
+                          if (value.length === 11) {
+                            if (!isValidCPF(value)) {
+                              setCpfError("CPF inválido");
+                            } else {
+                              setCpfError(null);
+                            }
+                          } else {
+                            setCpfError(null);
+                          }
+                        }}
+                        className={cpfError ? "border-destructive" : ""}
                       />
+                      {cpfError && (
+                        <p className="text-xs text-destructive">{cpfError}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -668,6 +698,7 @@ const Auth = () => {
                           <p className="text-muted-foreground">
                             Bem-vindo ao JTC FluxPDV! Este manual vai te guiar passo a passo no processo de criação da sua conta. 
                             Ao finalizar o cadastro, você ganhará automaticamente <strong>3 dias de teste grátis</strong> com acesso completo ao sistema.
+                            Se você tiver um <strong>código de convite</strong>, ganha <strong>1 mês + 3 dias grátis</strong>!
                           </p>
                         </div>
 
@@ -680,6 +711,9 @@ const Auth = () => {
                           <div className="ml-8 space-y-2 text-muted-foreground">
                             <p><strong>Nome Completo:</strong> Digite seu nome completo (nome e sobrenome). Este nome aparecerá no sistema e nos relatórios.</p>
                             <p><strong>CPF:</strong> Digite seu CPF (apenas números ou com pontos e traço). O CPF é usado para identificação única e também pode ser usado para fazer login.</p>
+                            <div className="bg-yellow-500/10 p-2 rounded text-xs border border-yellow-500/20">
+                              ⚠️ <strong>Importante:</strong> O sistema valida se o CPF é válido. CPFs com dígitos verificadores incorretos serão rejeitados.
+                            </div>
                             <div className="bg-muted/50 p-2 rounded text-xs">
                               💡 <strong>Dica:</strong> O CPF pode ser digitado com ou sem formatação (12345678900 ou 123.456.789-00)
                             </div>
@@ -746,19 +780,43 @@ const Auth = () => {
                           </div>
                         </div>
 
-                        {/* Passo 5 */}
+                        {/* Passo 5 - Código de Convite */}
                         <div className="space-y-2">
                           <h3 className="font-semibold text-foreground flex items-center gap-2">
                             <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">5</span>
+                            Código de Convite (Opcional)
+                          </h3>
+                          <div className="ml-8 space-y-2 text-muted-foreground">
+                            <p>Se você recebeu um código de convite de um amigo:</p>
+                            <ol className="list-decimal list-inside ml-2">
+                              <li>Clique em "Sim, tenho um código!"</li>
+                              <li>Digite o código de 8 caracteres</li>
+                              <li>Aguarde a validação (ícone verde = válido)</li>
+                            </ol>
+                            <div className="bg-accent/10 p-2 rounded text-xs border border-accent/20">
+                              🎁 <strong>Benefícios:</strong> Com código válido você ganha <strong>1 mês + 3 dias grátis</strong> (33 dias total) e seu amigo ganha mais 1 mês!
+                            </div>
+                            <div className="bg-destructive/10 p-2 rounded text-xs border border-destructive/20">
+                              ⚠️ <strong>Atenção:</strong> Cada código só pode ser usado uma vez. Códigos já utilizados serão rejeitados.
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Passo 6 */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">6</span>
                             Finalizar Cadastro
                           </h3>
                           <div className="ml-8 space-y-2 text-muted-foreground">
                             <p>Após preencher todos os campos, clique no botão <strong>"Criar Conta"</strong>.</p>
                             <p>O sistema irá:</p>
                             <ul className="list-disc list-inside ml-2">
-                              <li>Validar todos os dados informados</li>
+                              <li>Validar o CPF (dígitos verificadores)</li>
+                              <li>Validar o código de convite (se informado)</li>
+                              <li>Verificar se e-mail e CPF já não estão cadastrados</li>
                               <li>Criar sua conta no sistema</li>
-                              <li>Ativar automaticamente 3 dias de teste grátis</li>
+                              <li>Ativar automaticamente o período de teste grátis</li>
                               <li>Redirecionar você para o Dashboard principal</li>
                             </ul>
                           </div>
@@ -778,10 +836,11 @@ const Auth = () => {
                               <li>Cadastrar clientes</li>
                               <li>Realizar vendas</li>
                               <li>Gerar relatórios</li>
+                              <li>Compartilhar seu código de convite para ganhar mais tempo grátis</li>
                             </ul>
                             <div className="bg-accent/10 p-3 rounded-lg mt-3">
-                              <p className="font-medium text-foreground">📌 Importante:</p>
-                              <p>Seu período de teste de 3 dias começa imediatamente após o cadastro. Aproveite para explorar todas as funcionalidades do sistema!</p>
+                              <p className="font-medium text-foreground">📌 Seu Código de Convite:</p>
+                              <p>Após criar sua conta, você receberá um código único nas Configurações. Compartilhe com amigos e ganhe <strong>1 mês grátis</strong> para cada pessoa que se cadastrar usando seu código!</p>
                             </div>
                           </div>
                         </div>
@@ -802,10 +861,13 @@ const Auth = () => {
                         <div className="space-y-2 border-t pt-4">
                           <h3 className="font-semibold text-foreground">Problemas Comuns</h3>
                           <div className="text-muted-foreground space-y-2">
+                            <p><strong>"CPF inválido":</strong> O CPF digitado não passou na validação. Verifique se digitou corretamente (11 dígitos).</p>
                             <p><strong>"As senhas não coincidem":</strong> Verifique se digitou a mesma senha nos dois campos.</p>
                             <p><strong>"CEP não encontrado":</strong> Verifique se o CEP está correto ou preencha o endereço manualmente.</p>
                             <p><strong>"E-mail já cadastrado":</strong> Este e-mail já possui uma conta. Use outro e-mail ou faça login.</p>
                             <p><strong>"CPF já cadastrado":</strong> Este CPF já possui uma conta. Faça login com suas credenciais.</p>
+                            <p><strong>"Código de convite inválido":</strong> O código não existe. Verifique com quem te enviou.</p>
+                            <p><strong>"Código já utilizado":</strong> Este código já foi usado por outra pessoa. Cada código só pode ser usado uma vez.</p>
                           </div>
                         </div>
                       </div>
