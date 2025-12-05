@@ -43,7 +43,7 @@ const Settings = () => {
   // Estado do código de convite
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [referrals, setReferrals] = useState<{ full_name: string; created_at: string }[]>([]);
+  const [referrals, setReferrals] = useState<{ full_name: string; email: string; created_at: string }[]>([]);
 
   useEffect(() => {
     fetchSettings();
@@ -73,7 +73,7 @@ const Settings = () => {
     // Buscar quem utilizou meu código de convite (referred_by = meu id)
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, created_at")
+      .select("full_name, email, created_at")
       .eq("referred_by", user.id)
       .order("created_at", { ascending: false });
 
@@ -495,9 +495,9 @@ const Settings = () => {
                 <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
                   <h4 className="font-semibold text-foreground">Como funciona:</h4>
                   <ul className="text-muted-foreground space-y-1">
-                    <li>• Você ganha <strong>1 mês grátis</strong> quando seu código for utilizado</li>
+                    <li>• Você ganha <strong>1 mês grátis</strong> para cada pessoa que usar seu código</li>
                     <li>• Seu amigo ganha <strong>1 mês + 3 dias grátis</strong> ao se cadastrar</li>
-                    <li>• Cada código só pode ser utilizado <strong>uma vez</strong></li>
+                    <li>• Cada dispositivo só pode usar o código <strong>uma vez</strong></li>
                   </ul>
                 </div>
 
@@ -522,7 +522,10 @@ const Settings = () => {
                                 {referral.full_name.charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <span className="font-medium text-sm">{referral.full_name}</span>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm">{referral.full_name}</span>
+                              <span className="text-xs text-muted-foreground">{referral.email}</span>
+                            </div>
                           </div>
                           <span className="text-xs text-muted-foreground">
                             {new Date(referral.created_at).toLocaleDateString('pt-BR')}
