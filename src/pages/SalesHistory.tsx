@@ -229,18 +229,15 @@ const SalesHistory = () => {
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs w-[20%]">Data</TableHead>
-                <TableHead className="text-xs w-[18%]">Cliente</TableHead>
-                <TableHead className="text-xs w-[15%]">Pagamento</TableHead>
-                <TableHead className="text-xs w-[12%]">Status</TableHead>
-                <TableHead className="text-xs text-right w-[15%]">Total</TableHead>
-                <TableHead className="text-xs text-right w-[20%]">Ações</TableHead>
+                <TableHead className="text-xs w-[50%]">Produto</TableHead>
+                <TableHead className="text-xs w-[25%]">Data</TableHead>
+                <TableHead className="text-xs text-right w-[25%]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredSales.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-8">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground text-sm py-8">
                     Nenhuma venda encontrada
                   </TableCell>
                 </TableRow>
@@ -248,25 +245,12 @@ const SalesHistory = () => {
                 filteredSales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell className="text-xs truncate">
-                      {format(new Date(sale.created_at), "dd/MM/yy HH:mm")}
+                      {sale.items.length > 0 
+                        ? sale.items.map(item => item.product_name).join(", ")
+                        : "Sem produtos"}
                     </TableCell>
                     <TableCell className="text-xs truncate">
-                      {sale.customer_name || "Avulso"}
-                    </TableCell>
-                    <TableCell className="text-xs truncate">
-                      {getPaymentMethodLabel(sale.payment_method)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                        sale.payment_status === "paid" 
-                          ? "bg-green-500/20 text-green-700 dark:text-green-300" 
-                          : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300"
-                      }`}>
-                        {sale.payment_status === "paid" ? "Pago" : "Pend."}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-right font-medium truncate">
-                      {formatCurrency(sale.total_amount)}
+                      {format(new Date(sale.created_at), "dd/MM/yy")}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
