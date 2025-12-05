@@ -43,10 +43,12 @@ const Settings = () => {
   // Estado do código de convite
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [referrals, setReferrals] = useState<{ full_name: string; created_at: string }[]>([]);
 
   useEffect(() => {
     fetchSettings();
     fetchInviteCode();
+    fetchReferrals();
   }, []);
 
   const fetchInviteCode = async () => {
@@ -61,6 +63,22 @@ const Settings = () => {
 
     if (data?.invite_code) {
       setInviteCode(data.invite_code);
+    }
+  };
+
+  const fetchReferrals = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Buscar quem utilizou meu código de convite (referred_by = meu id)
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, created_at")
+      .eq("referred_by", user.id)
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      setReferrals(data);
     }
   };
 
@@ -477,10 +495,42 @@ const Settings = () => {
                 <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
                   <h4 className="font-semibold text-foreground">Como funciona:</h4>
                   <ul className="text-muted-foreground space-y-1">
-                    <li>• Você ganha <strong>1 mês grátis</strong> para cada amigo que usar seu código</li>
+                    <li>• Você ganha <strong>1 mês grátis</strong> quando seu código for utilizado</li>
                     <li>• Seu amigo ganha <strong>1 mês + 3 dias grátis</strong> ao se cadastrar</li>
-                    <li>• Sem limite de convites!</li>
+                    <li>• Cada código só pode ser utilizado <strong>uma vez</strong></li>
                   </ul>
+                </div>
+
+                {/* Quem utilizou o código */}
+                <div className="border-t border-border pt-4 mt-4">
+                  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-accent" />
+                    Quem utilizou seu código
+                  </h4>
+                  
+                  {referrals.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Ninguém utilizou seu código ainda. Compartilhe para ganhar 1 mês grátis!
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {referrals.map((referral, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                              <span className="text-xs font-semibold text-accent">
+                                {referral.full_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="font-medium text-sm">{referral.full_name}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(referral.created_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </CollapsibleContent>

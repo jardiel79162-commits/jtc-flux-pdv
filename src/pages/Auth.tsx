@@ -203,6 +203,29 @@ const Auth = () => {
       return;
     }
 
+    // Verificar se o IP já usou este código de convite
+    if (hasInviteCode && inviteCode && codeValidationStatus === "valid") {
+      try {
+        const response = await supabase.functions.invoke('validate-invite-ip', {
+          body: { invite_code: inviteCode, action: 'check' }
+        });
+        
+        if (response.error) {
+          console.error('Erro ao verificar IP:', response.error);
+        } else if (!response.data.can_use) {
+          toast({
+            variant: "destructive",
+            title: "Código já utilizado",
+            description: response.data.message || "Este dispositivo já utilizou este código de convite para criar uma conta.",
+          });
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Erro ao verificar IP:', error);
+      }
+    }
+
     const data: SignUpData = {
       fullName: formData.get("fullName") as string,
       cpf: (formData.get("cpf") as string).replace(/\D/g, ""),
@@ -220,6 +243,14 @@ const Auth = () => {
 
     try {
       await signUp(data);
+      
+      // Registrar uso do código de convite com IP
+      if (hasInviteCode && inviteCode && codeValidationStatus === "valid") {
+        await supabase.functions.invoke('validate-invite-ip', {
+          body: { invite_code: inviteCode, action: 'register' }
+        });
+      }
+      
       const trialMessage = hasInviteCode && codeValidationStatus === "valid" 
         ? "Você ganhou 1 mês + 3 dias de teste grátis! 🎉"
         : "Você ganhou 3 dias de teste grátis. Seja bem-vindo!";

@@ -212,6 +212,30 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_code_usage: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          ip_address: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code: string
+          ip_address: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          ip_address?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           available_colors: string[] | null
