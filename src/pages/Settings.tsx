@@ -733,8 +733,18 @@ const Settings = () => {
                           <li><strong>Nome da Loja:</strong> Aparece no cabeçalho e nos recibos</li>
                           <li><strong>Telefone Comercial:</strong> Contato da loja</li>
                           <li><strong>Endereço:</strong> Localização da loja</li>
-                          <li><strong>Categoria:</strong> Tipo de estabelecimento</li>
+                          <li><strong>Categoria:</strong> Tipo de estabelecimento (mercado, padaria, etc.)</li>
                         </ul>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Configuração PIX</h4>
+                        <p>Para aceitar pagamentos via PIX, configure:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li><strong>Tipo de Chave:</strong> CPF, CNPJ, E-mail, Telefone ou Chave Aleatória</li>
+                          <li><strong>Chave PIX:</strong> Sua chave conforme o tipo selecionado</li>
+                          <li><strong>Nome do Recebedor:</strong> Nome que aparecerá no PIX</li>
+                        </ul>
+                        <p className="text-xs mt-2">Quando configurado, o sistema gera QR Code automaticamente durante vendas PIX.</p>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Personalização Visual</h4>
@@ -746,6 +756,46 @@ const Settings = () => {
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Ações Rápidas</h4>
                         <p>Ative para exibir atalhos com ícones no Dashboard para acesso rápido às principais funções.</p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Sistema de Convite */}
+                  <AccordionItem value="convite">
+                    <AccordionTrigger className="text-left">
+                      <div className="flex items-center gap-2">
+                        <Gift className="h-4 w-4 text-accent" />
+                        Sistema de Convite
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Como Funciona</h4>
+                        <p>Cada usuário recebe um código de convite único de 8 caracteres. Compartilhe seu código com amigos e ambos ganham benefícios!</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Benefícios</h4>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li><strong>Para você (quem convida):</strong> Ganha 1 mês grátis adicionado ao seu período</li>
+                          <li><strong>Para seu amigo:</strong> Ganha 1 mês + 3 dias grátis (33 dias) ao se cadastrar</li>
+                          <li><strong>Sem limite:</strong> Convide quantos amigos quiser!</li>
+                        </ul>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Como Compartilhar</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Acesse "Configurações" e abra a seção "Meu Código de Convite"</li>
+                          <li>Copie o código ou use o botão de compartilhar</li>
+                          <li>Envie o código ou link para seus amigos</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Regras Importantes</h4>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>Cada código só pode ser usado uma vez</li>
+                          <li>O benefício é aplicado imediatamente após o cadastro</li>
+                          <li>Códigos já utilizados não funcionam para novos cadastros</li>
+                        </ul>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
