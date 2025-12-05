@@ -62,6 +62,7 @@ interface PixSettings {
 
 const POS = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -199,7 +200,10 @@ const POS = () => {
 
   const fetchProducts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setProductsLoading(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("products")
@@ -213,6 +217,7 @@ const POS = () => {
     } else {
       setProducts(data || []);
     }
+    setProductsLoading(false);
   };
 
   const fetchCustomers = async () => {
@@ -258,6 +263,24 @@ const POS = () => {
   };
 
   const handleBarcodeScan = (barcode: string) => {
+    // Verificar se os produtos já foram carregados
+    if (productsLoading) {
+      toast({ 
+        title: "Aguarde", 
+        description: "Carregando produtos...",
+      });
+      return;
+    }
+
+    if (products.length === 0) {
+      toast({ 
+        title: "Nenhum produto disponível", 
+        description: "Cadastre produtos com estoque disponível.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
     // Normalizar o código lido (remover espaços)
     const normalizedBarcode = barcode.replace(/\s/g, "").trim();
     
@@ -853,6 +876,7 @@ ${paymentInfo}
                 variant="outline"
                 onClick={() => setShowBarcodeScanner(true)}
                 title="Ler código de barras com câmera"
+                disabled={productsLoading}
               >
                 <Camera className="h-4 w-4" />
               </Button>
