@@ -78,6 +78,7 @@ const POS = () => {
   const [showPixQrCode, setShowPixQrCode] = useState(false);
   const [isProcessingSale, setIsProcessingSale] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -91,8 +92,6 @@ const POS = () => {
   if (!loading && isExpired) {
     return <SubscriptionBlocker isTrial={isTrial} />;
   }
-
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   const fetchStoreName = async () => {
     const { data: { user } } = await supabase.auth.getUser();
