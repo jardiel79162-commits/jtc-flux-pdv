@@ -37,7 +37,7 @@ const Auth = () => {
   const [hasInviteCode, setHasInviteCode] = useState<boolean | null>(null);
   const [inviteCode, setInviteCode] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
-  const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid" | "used">("idle");
 
   useEffect(() => {
     // Verificar se já está logado
@@ -83,8 +83,14 @@ const Auth = () => {
     }
     
     setIsValidatingCode(true);
-    const isValid = await validateInviteCode(code);
-    setCodeValidationStatus(isValid ? "valid" : "invalid");
+    const result = await validateInviteCode(code);
+    if (result.valid) {
+      setCodeValidationStatus("valid");
+    } else if (result.alreadyUsed) {
+      setCodeValidationStatus("used");
+    } else {
+      setCodeValidationStatus("invalid");
+    }
     setIsValidatingCode(false);
   };
 
@@ -578,7 +584,7 @@ const Auth = () => {
                               {!isValidatingCode && codeValidationStatus === "valid" && (
                                 <CheckCircle2 className="h-5 w-5 text-accent" />
                               )}
-                              {!isValidatingCode && codeValidationStatus === "invalid" && (
+                              {!isValidatingCode && (codeValidationStatus === "invalid" || codeValidationStatus === "used") && (
                                 <XCircle className="h-5 w-5 text-destructive" />
                               )}
                             </div>
@@ -591,6 +597,11 @@ const Auth = () => {
                           {codeValidationStatus === "invalid" && (
                             <p className="text-sm text-destructive">
                               Código inválido. Verifique e tente novamente.
+                            </p>
+                          )}
+                          {codeValidationStatus === "used" && (
+                            <p className="text-sm text-destructive">
+                              Este código já foi utilizado por outra pessoa.
                             </p>
                           )}
                         </div>
