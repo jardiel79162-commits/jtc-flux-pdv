@@ -14,6 +14,7 @@ import quickActionHistorico from "@/assets/quick-action-historico.png";
 import quickActionRelatorios from "@/assets/quick-action-relatorios.png";
 import quickActionConfiguracoes from "@/assets/quick-action-configuracoes.png";
 import quickActionAssinatura from "@/assets/quick-action-assinatura.png";
+import quickActionFornecedores from "@/assets/quick-action-fornecedores.jpg";
 
 interface DashboardData {
   salesToday: number;
@@ -29,6 +30,7 @@ const quickActions = [
   { label: "Produtos", path: "/produtos", image: quickActionProdutos },
   { label: "Venda", path: "/pdv", image: quickActionVenda },
   { label: "Clientes", path: "/clientes", image: quickActionClientes },
+  { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores },
   { label: "Histórico", path: "/historico", image: quickActionHistorico },
   { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios },
   { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
@@ -221,7 +223,7 @@ const Dashboard = () => {
 
       {/* Ações Rápidas com Logos */}
       {data.quickActionsEnabled && (
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
           {quickActions.map((action) => (
             <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
               <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
