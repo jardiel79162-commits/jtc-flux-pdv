@@ -40,6 +40,7 @@ const Auth = () => {
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid" | "used">("idle");
   const [cpfError, setCpfError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   useEffect(() => {
     // Verificar se já está logado
@@ -187,6 +188,18 @@ const Auth = () => {
         variant: "destructive",
         title: "CPF inválido",
         description: "Por favor, digite um CPF válido.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Validar telefone (11 dígitos com DDD)
+    const phoneValue = (formData.get("phone") as string).replace(/\D/g, "");
+    if (phoneValue.length !== 11) {
+      toast({
+        variant: "destructive",
+        title: "Telefone inválido",
+        description: "O telefone deve ter 11 dígitos (DDD + número).",
       });
       setIsLoading(false);
       return;
@@ -482,8 +495,19 @@ const Auth = () => {
                             formatted = "(" + value.slice(0, 2) + ") " + value.slice(2, 7) + "-" + value.slice(7);
                           }
                           e.target.value = formatted;
+                          
+                          // Validar se tem 11 dígitos
+                          if (value.length > 0 && value.length < 11) {
+                            setPhoneError("Telefone deve ter 11 dígitos (DDD + número)");
+                          } else {
+                            setPhoneError(null);
+                          }
                         }}
+                        className={phoneError ? "border-destructive" : ""}
                       />
+                      {phoneError && (
+                        <p className="text-xs text-destructive">{phoneError}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
