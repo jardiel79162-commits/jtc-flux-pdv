@@ -680,16 +680,16 @@ const Products = () => {
             />
           </div>
 
-          <div className="border rounded-lg">
-            <Table>
+          <div className="border rounded-lg overflow-hidden">
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Estoque</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-xs w-[25%]">Nome</TableHead>
+                  <TableHead className="text-xs w-[18%]">Categoria</TableHead>
+                  <TableHead className="text-xs w-[18%]">Preço</TableHead>
+                  <TableHead className="text-xs w-[12%]">Estoque</TableHead>
+                  <TableHead className="text-xs w-[12%]">Status</TableHead>
+                  <TableHead className="text-xs text-right w-[15%]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -703,40 +703,42 @@ const Products = () => {
                 ) : (
                   filteredProducts.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{getCategoryName(product.category_id)}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-medium text-xs truncate">{product.name}</TableCell>
+                      <TableCell className="text-xs truncate">{getCategoryName(product.category_id)}</TableCell>
+                      <TableCell className="text-xs">
                         {product.promotional_price ? (
                           <div>
-                            <span className="line-through text-muted-foreground text-sm">
+                            <span className="line-through text-muted-foreground text-[10px]">
                               R$ {product.price.toFixed(2)}
                             </span>
                             <br />
-                            <span className="text-accent font-semibold">
+                            <span className="text-accent font-semibold text-xs">
                               R$ {product.promotional_price.toFixed(2)}
                             </span>
                           </div>
                         ) : (
-                          `R$ ${product.price.toFixed(2)}`
+                          <span className="text-xs">R$ {product.price.toFixed(2)}</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={product.stock_quantity <= (product.min_stock_quantity || 0) ? "destructive" : "default"}>
+                        <Badge variant={product.stock_quantity <= (product.min_stock_quantity || 0) ? "destructive" : "default"} className="text-[10px]">
                           {product.stock_quantity}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={product.is_active ? "default" : "secondary"}>
+                        <Badge variant={product.is_active ? "default" : "secondary"} className="text-[10px]">
                           {product.is_active ? "Ativo" : "Inativo"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => startEditProduct(product)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditProduct(product)}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteProduct(product.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -794,13 +796,13 @@ const Products = () => {
             </Dialog>
           </div>
 
-          <div className="border rounded-lg">
-            <Table>
+          <div className="border rounded-lg overflow-hidden">
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-xs w-[30%]">Nome</TableHead>
+                  <TableHead className="text-xs w-[50%]">Tipo</TableHead>
+                  <TableHead className="text-xs text-right w-[20%]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -813,19 +815,21 @@ const Products = () => {
                 ) : (
                   categories.map((category) => (
                     <TableRow key={category.id}>
-                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell className="font-medium text-xs truncate">{category.name}</TableCell>
                       <TableCell>
-                        <Badge variant={category.parent_id ? "secondary" : "default"}>
-                          {category.parent_id ? `Subcategoria de ${getCategoryName(category.parent_id)}` : "Categoria Principal"}
+                        <Badge variant={category.parent_id ? "secondary" : "default"} className="text-[10px] truncate max-w-full">
+                          {category.parent_id ? `Sub: ${getCategoryName(category.parent_id)}` : "Principal"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => startEditCategory(category)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteCategory(category.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditCategory(category)}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteCategory(category.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

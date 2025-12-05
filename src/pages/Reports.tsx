@@ -241,36 +241,34 @@ const Reports = () => {
               <CardTitle className="text-base md:text-lg">Histórico de Vendas</CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6 md:pt-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+              <Table className="table-fixed w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs w-[25%]">Data</TableHead>
+                    <TableHead className="text-xs w-[25%]">Valor</TableHead>
+                    <TableHead className="text-xs w-[25%]">Desconto</TableHead>
+                    <TableHead className="text-xs w-[25%]">Pagamento</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sales.length === 0 ? (
                     <TableRow>
-                      <TableHead className="text-xs whitespace-nowrap">Data</TableHead>
-                      <TableHead className="text-xs whitespace-nowrap">Valor</TableHead>
-                      <TableHead className="text-xs whitespace-nowrap">Desconto</TableHead>
-                      <TableHead className="text-xs whitespace-nowrap">Pagamento</TableHead>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
+                        Nenhuma venda registrada
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sales.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
-                          Nenhuma venda registrada
-                        </TableCell>
+                  ) : (
+                    sales.map((sale) => (
+                      <TableRow key={sale.id}>
+                        <TableCell className="text-xs truncate">{format(new Date(sale.created_at), "dd/MM/yy HH:mm")}</TableCell>
+                        <TableCell className="text-xs font-medium truncate">R$ {sale.total_amount.toFixed(2)}</TableCell>
+                        <TableCell className="text-xs truncate">R$ {(sale.discount || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-xs capitalize truncate">{getPaymentMethodLabel(sale.payment_method)}</TableCell>
                       </TableRow>
-                    ) : (
-                      sales.map((sale) => (
-                        <TableRow key={sale.id}>
-                          <TableCell className="text-xs whitespace-nowrap">{format(new Date(sale.created_at), "dd/MM/yy HH:mm")}</TableCell>
-                          <TableCell className="text-xs font-medium whitespace-nowrap">R$ {sale.total_amount.toFixed(2)}</TableCell>
-                          <TableCell className="text-xs whitespace-nowrap">R$ {(sale.discount || 0).toFixed(2)}</TableCell>
-                          <TableCell className="text-xs capitalize whitespace-nowrap">{getPaymentMethodLabel(sale.payment_method)}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -281,34 +279,32 @@ const Reports = () => {
               <CardTitle className="text-base md:text-lg">Produtos Mais Vendidos</CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6 md:pt-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+              <Table className="table-fixed w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs w-[50%]">Produto</TableHead>
+                    <TableHead className="text-xs w-[20%]">Qtd</TableHead>
+                    <TableHead className="text-xs w-[30%]">Faturamento</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {productSales.length === 0 ? (
                     <TableRow>
-                      <TableHead className="text-xs">Produto</TableHead>
-                      <TableHead className="text-xs whitespace-nowrap">Qtd</TableHead>
-                      <TableHead className="text-xs whitespace-nowrap">Faturamento</TableHead>
+                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
+                        Nenhum produto vendido
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {productSales.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
-                          Nenhum produto vendido
-                        </TableCell>
+                  ) : (
+                    productSales.map((product, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="text-xs font-medium truncate">{product.product_name}</TableCell>
+                        <TableCell className="text-xs">{product.total_quantity}</TableCell>
+                        <TableCell className="text-xs truncate">R$ {product.total_revenue.toFixed(2)}</TableCell>
                       </TableRow>
-                    ) : (
-                      productSales.map((product, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="text-xs font-medium max-w-[120px] truncate">{product.product_name}</TableCell>
-                          <TableCell className="text-xs">{product.total_quantity}</TableCell>
-                          <TableCell className="text-xs whitespace-nowrap">R$ {product.total_revenue.toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -319,32 +315,30 @@ const Reports = () => {
               <CardTitle className="text-base md:text-lg">Resumo por Pagamento</CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6 md:pt-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+              <Table className="table-fixed w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs w-[60%]">Forma de Pagamento</TableHead>
+                    <TableHead className="text-xs w-[40%]">Valor Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.keys(paymentMethodSummary).length === 0 ? (
                     <TableRow>
-                      <TableHead className="text-xs">Forma de Pagamento</TableHead>
-                      <TableHead className="text-xs whitespace-nowrap">Valor Total</TableHead>
+                      <TableCell colSpan={2} className="text-center py-8 text-muted-foreground text-sm">
+                        Nenhuma venda registrada
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.keys(paymentMethodSummary).length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={2} className="text-center py-8 text-muted-foreground text-sm">
-                          Nenhuma venda registrada
-                        </TableCell>
+                  ) : (
+                    Object.entries(paymentMethodSummary).map(([method, total]) => (
+                      <TableRow key={method}>
+                        <TableCell className="text-xs capitalize font-medium truncate">{getPaymentMethodLabel(method)}</TableCell>
+                        <TableCell className="text-xs truncate">R$ {total.toFixed(2)}</TableCell>
                       </TableRow>
-                    ) : (
-                      Object.entries(paymentMethodSummary).map(([method, total]) => (
-                        <TableRow key={method}>
-                          <TableCell className="text-xs capitalize font-medium">{getPaymentMethodLabel(method)}</TableCell>
-                          <TableCell className="text-xs whitespace-nowrap">R$ {total.toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>

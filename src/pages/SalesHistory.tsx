@@ -226,75 +226,73 @@ const SalesHistory = () => {
           <CardTitle className="text-base md:text-lg">Vendas Realizadas</CardTitle>
         </CardHeader>
         <CardContent className="p-0 md:p-6 md:pt-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <Table className="table-fixed w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs w-[20%]">Data</TableHead>
+                <TableHead className="text-xs w-[18%]">Cliente</TableHead>
+                <TableHead className="text-xs w-[15%]">Pagamento</TableHead>
+                <TableHead className="text-xs w-[12%]">Status</TableHead>
+                <TableHead className="text-xs text-right w-[15%]">Total</TableHead>
+                <TableHead className="text-xs text-right w-[20%]">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredSales.length === 0 ? (
                 <TableRow>
-                  <TableHead className="text-xs whitespace-nowrap">Data</TableHead>
-                  <TableHead className="text-xs whitespace-nowrap">Cliente</TableHead>
-                  <TableHead className="text-xs whitespace-nowrap">Pagamento</TableHead>
-                  <TableHead className="text-xs whitespace-nowrap">Status</TableHead>
-                  <TableHead className="text-xs text-right whitespace-nowrap">Total</TableHead>
-                  <TableHead className="text-xs text-right whitespace-nowrap">Ações</TableHead>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-8">
+                    Nenhuma venda encontrada
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSales.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-8">
-                      Nenhuma venda encontrada
+              ) : (
+                filteredSales.map((sale) => (
+                  <TableRow key={sale.id}>
+                    <TableCell className="text-xs truncate">
+                      {format(new Date(sale.created_at), "dd/MM/yy HH:mm")}
+                    </TableCell>
+                    <TableCell className="text-xs truncate">
+                      {sale.customer_name || "Avulso"}
+                    </TableCell>
+                    <TableCell className="text-xs truncate">
+                      {getPaymentMethodLabel(sale.payment_method)}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                        sale.payment_status === "paid" 
+                          ? "bg-green-500/20 text-green-700 dark:text-green-300" 
+                          : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300"
+                      }`}>
+                        {sale.payment_status === "paid" ? "Pago" : "Pend."}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-right font-medium truncate">
+                      {formatCurrency(sale.total_amount)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => viewSaleDetails(sale)}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => setSaleToCancel(sale.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredSales.map((sale) => (
-                    <TableRow key={sale.id}>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {format(new Date(sale.created_at), "dd/MM/yy HH:mm")}
-                      </TableCell>
-                      <TableCell className="text-xs max-w-[80px] truncate">
-                        {sale.customer_name || "Avulso"}
-                      </TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {getPaymentMethodLabel(sale.payment_method)}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                          sale.payment_status === "paid" 
-                            ? "bg-green-500/20 text-green-700 dark:text-green-300" 
-                            : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300"
-                        }`}>
-                          {sale.payment_status === "paid" ? "Pago" : "Pendente"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs text-right font-medium whitespace-nowrap">
-                        {formatCurrency(sale.total_amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => viewSaleDetails(sale)}
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setSaleToCancel(sale.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
