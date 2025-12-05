@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff } from "lucide-react";
+import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff, Gift, Copy, Check, Share2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -37,11 +37,61 @@ const Settings = () => {
   const [storeInfoOpen, setStoreInfoOpen] = useState(false);
   const [pixConfigOpen, setPixConfigOpen] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [inviteCodeOpen, setInviteCodeOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+
+  // Estado do código de convite
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetchSettings();
+    fetchInviteCode();
   }, []);
+
+  const fetchInviteCode = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("invite_code")
+      .eq("id", user.id)
+      .single();
+
+    if (data?.invite_code) {
+      setInviteCode(data.invite_code);
+    }
+  };
+
+  const handleCopyCode = () => {
+    if (inviteCode) {
+      navigator.clipboard.writeText(inviteCode);
+      setCopied(true);
+      toast({
+        title: "Código copiado!",
+        description: "Compartilhe com seus amigos",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/auth?ref=${inviteCode}`;
+    if (navigator.share) {
+      navigator.share({
+        title: "JTC FluxPDV - Convite",
+        text: `Use meu código de convite ${inviteCode} e ganhe 1 mês + 3 dias grátis!`,
+        url: shareUrl,
+      });
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copiado!",
+        description: "Compartilhe o link com seus amigos",
+      });
+    }
+  };
 
   const fetchSettings = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -375,7 +425,69 @@ const Settings = () => {
           </Collapsible>
         </Card>
 
-        <Button onClick={handleSave} disabled={loading} className="w-full">
+        {/* Meu Código de Convite */}
+        <Card className="border-accent/30 bg-accent/5">
+          <Collapsible open={inviteCodeOpen} onOpenChange={setInviteCodeOpen}>
+            <CardHeader className="cursor-pointer" onClick={() => setInviteCodeOpen(!inviteCodeOpen)}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between w-full">
+                  <CardTitle className="flex items-center gap-2 text-accent">
+                    <Gift className="h-5 w-5" />
+                    Meu Código de Convite
+                  </CardTitle>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    {inviteCodeOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Compartilhe seu código e ganhe <strong className="text-accent">1 mês grátis</strong> quando alguém se cadastrar usando ele!
+                </p>
+
+                <div className="bg-background rounded-xl p-6 text-center space-y-4 border border-accent/20">
+                  <div className="text-4xl font-mono font-bold tracking-widest text-primary">
+                    {inviteCode || "Carregando..."}
+                  </div>
+                  
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      onClick={handleCopyCode}
+                      variant="outline"
+                      className="gap-2"
+                      disabled={!inviteCode}
+                    >
+                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copied ? "Copiado!" : "Copiar"}
+                    </Button>
+                    
+                    <Button
+                      onClick={handleShare}
+                      className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
+                      disabled={!inviteCode}
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartilhar
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
+                  <h4 className="font-semibold text-foreground">Como funciona:</h4>
+                  <ul className="text-muted-foreground space-y-1">
+                    <li>• Você ganha <strong>1 mês grátis</strong> para cada amigo que usar seu código</li>
+                    <li>• Seu amigo ganha <strong>1 mês + 3 dias grátis</strong> ao se cadastrar</li>
+                    <li>• Sem limite de convites!</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        <Button onClick={handleSave} disabled={loading} className="w-full h-12">
           <Save className="mr-2 h-4 w-4" />
           {loading ? "Salvando..." : "Salvar Configurações"}
         </Button>
