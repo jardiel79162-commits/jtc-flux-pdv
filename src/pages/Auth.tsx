@@ -409,8 +409,25 @@ const Auth = () => {
                         placeholder="000.000.000-00"
                         required
                         disabled={isLoading}
+                        inputMode="numeric"
+                        maxLength={14}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "");
+                          // Formatar CPF automaticamente: 000.000.000-00
+                          let value = e.target.value.replace(/\D/g, "");
+                          if (value.length > 11) value = value.slice(0, 11);
+                          
+                          let formatted = value;
+                          if (value.length > 3) {
+                            formatted = value.slice(0, 3) + "." + value.slice(3);
+                          }
+                          if (value.length > 6) {
+                            formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
+                          }
+                          if (value.length > 9) {
+                            formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
+                          }
+                          e.target.value = formatted;
+                          
                           if (value.length === 11) {
                             if (!isValidCPF(value)) {
                               setCpfError("CPF inválido");
@@ -447,6 +464,25 @@ const Auth = () => {
                         placeholder="(00) 00000-0000"
                         required
                         disabled={isLoading}
+                        inputMode="numeric"
+                        maxLength={15}
+                        onChange={(e) => {
+                          // Formatar telefone automaticamente: (00) 00000-0000
+                          let value = e.target.value.replace(/\D/g, "");
+                          if (value.length > 11) value = value.slice(0, 11);
+                          
+                          let formatted = value;
+                          if (value.length > 0) {
+                            formatted = "(" + value;
+                          }
+                          if (value.length > 2) {
+                            formatted = "(" + value.slice(0, 2) + ") " + value.slice(2);
+                          }
+                          if (value.length > 7) {
+                            formatted = "(" + value.slice(0, 2) + ") " + value.slice(2, 7) + "-" + value.slice(7);
+                          }
+                          e.target.value = formatted;
+                        }}
                       />
                     </div>
 
@@ -460,11 +496,17 @@ const Auth = () => {
                           maxLength={9}
                           required
                           disabled={isLoading || isFetchingCEP}
+                          inputMode="numeric"
                           onChange={(e) => {
-                            const value = e.target.value
-                              .replace(/\D/g, "")
-                              .replace(/^(\d{5})(\d)/, "$1-$2");
-                            e.target.value = value;
+                            // Formatar CEP automaticamente: 00000-000
+                            let value = e.target.value.replace(/\D/g, "");
+                            if (value.length > 8) value = value.slice(0, 8);
+                            
+                            let formatted = value;
+                            if (value.length > 5) {
+                              formatted = value.slice(0, 5) + "-" + value.slice(5);
+                            }
+                            e.target.value = formatted;
                             handleCEPChange(value);
                           }}
                         />
@@ -637,6 +679,8 @@ const Auth = () => {
                               maxLength={6}
                               className="uppercase font-mono text-lg tracking-widest"
                               disabled={isLoading}
+                              autoCapitalize="characters"
+                              style={{ textTransform: 'uppercase' }}
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
                               {isValidatingCode && (
