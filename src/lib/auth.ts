@@ -77,13 +77,22 @@ export const signOut = async () => {
   if (error) throw error;
 };
 
-// Validar código de convite
-export const validateInviteCode = async (code: string): Promise<boolean> => {
+// Validar código de convite (verifica se existe E se não foi usado)
+export const validateInviteCode = async (code: string): Promise<{ valid: boolean; alreadyUsed: boolean }> => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, invite_code_used")
     .eq("invite_code", code.toUpperCase())
-    .single();
+    .maybeSingle();
 
-  return !error && !!data;
+  if (error || !data) {
+    return { valid: false, alreadyUsed: false };
+  }
+
+  // Se o código existe mas já foi usado
+  if (data.invite_code_used === true) {
+    return { valid: false, alreadyUsed: true };
+  }
+
+  return { valid: true, alreadyUsed: false };
 };

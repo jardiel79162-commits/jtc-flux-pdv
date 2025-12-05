@@ -287,6 +287,7 @@ export type Database = {
           full_name: string
           id: string
           invite_code: string | null
+          invite_code_used: boolean | null
           neighborhood: string | null
           number: string | null
           phone: string | null
@@ -307,6 +308,7 @@ export type Database = {
           full_name: string
           id: string
           invite_code?: string | null
+          invite_code_used?: boolean | null
           neighborhood?: string | null
           number?: string | null
           phone?: string | null
@@ -327,6 +329,7 @@ export type Database = {
           full_name?: string
           id?: string
           invite_code?: string | null
+          invite_code_used?: boolean | null
           neighborhood?: string | null
           number?: string | null
           phone?: string | null
