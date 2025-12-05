@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Camera, X, AlertCircle, Flashlight, FlashlightOff } from "lucide-react";
+import { Camera, X, AlertCircle, Flashlight, FlashlightOff, CheckCircle2, Package } from "lucide-react";
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
@@ -49,22 +49,28 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
   const [error, setError] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<"prompt" | "granted" | "denied" | "checking">("checking");
   const [scannedCode, setScannedCode] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [flashSupported, setFlashSupported] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
+  const hasScannedRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
       checkCameraPermission();
       setScannedCode(null);
+      setShowSuccess(false);
+      hasScannedRef.current = false;
     } else {
       stopScanner();
       setPermissionState("checking");
       setError(null);
       setFlashOn(false);
       setScannedCode(null);
+      setShowSuccess(false);
+      hasScannedRef.current = false;
     }
 
     return () => {
@@ -171,17 +177,28 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
           aspectRatio: 1.5,
         },
         (decodedText) => {
+          // Evitar leituras múltiplas
+          if (hasScannedRef.current) return;
+          hasScannedRef.current = true;
+          
+          // Parar o scanner imediatamente
+          if (scannerRef.current) {
+            scannerRef.current.stop().catch(() => {});
+          }
+          
           // Tocar som de beep ao ler código
           playBeepSound();
           // Vibrar o dispositivo
           vibrate();
-          // Mostrar código na tela
+          // Mostrar código e imagem de sucesso na tela
           setScannedCode(decodedText);
-          // Aguardar um momento e então enviar
+          setShowSuccess(true);
+          
+          // Aguardar 3 segundos mostrando sucesso e então enviar
           setTimeout(() => {
             onScan(decodedText);
             handleClose();
-          }, 800);
+          }, 3000);
         },
         () => {
           // Ignore errors during scanning
@@ -314,11 +331,24 @@ export const BarcodeScanner = ({ onScan, isOpen, onClose }: BarcodeScannerProps)
                 )}
               </div>
               
-              {/* Código lido */}
-              {scannedCode ? (
-                <div className="bg-accent/20 border border-accent rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Código lido:</p>
-                  <p className="text-xl font-mono font-bold text-accent">{scannedCode}</p>
+              {/* Código lido com imagem de sucesso */}
+              {showSuccess && scannedCode ? (
+                <div className="bg-accent/20 border-2 border-accent rounded-lg p-6 text-center animate-in zoom-in-95 duration-300">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="relative">
+                      <div className="w-20 h-20 bg-accent/30 rounded-full flex items-center justify-center">
+                        <Package className="h-10 w-10 text-accent" />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
+                        <CheckCircle2 className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Código lido com sucesso!</p>
+                      <p className="text-xl font-mono font-bold text-accent">{scannedCode}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Adicionando produto...</p>
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center">
