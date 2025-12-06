@@ -15,10 +15,10 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "logo.jpg"],
+      includeAssets: ["favicon.ico", "logo.jpg", "apple-touch-icon.png"],
       manifest: {
         name: "JTC FluxPDV",
-        short_name: "FluxPDV",
+        short_name: "JTC FluxPDV",
         description: "Sistema PDV profissional com gestão de vendas, controle de estoque e relatórios",
         theme_color: "#4C6FFF",
         background_color: "#1C1F26",
@@ -27,17 +27,22 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         icons: [
           {
-            src: "/pwa-192x192.png",
+            src: "/apple-touch-icon.png",
+            sizes: "180x180",
+            type: "image/png",
+          },
+          {
+            src: "/apple-touch-icon.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/apple-touch-icon.png",
             sizes: "512x512",
             type: "image/png",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/apple-touch-icon.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
