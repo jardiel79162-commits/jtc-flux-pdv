@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff, Gift, Copy, Check, Share2 } from "lucide-react";
+import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff, Gift, Copy, Check, Share2, Download, CheckCircle, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -38,7 +38,14 @@ const Settings = () => {
   const [pixConfigOpen, setPixConfigOpen] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [inviteCodeOpen, setInviteCodeOpen] = useState(false);
+  const [downloadAppOpen, setDownloadAppOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+
+  // PWA Install states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   // Estado do código de convite
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -46,6 +53,37 @@ const Settings = () => {
   useEffect(() => {
     fetchSettings();
     fetchInviteCode();
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    // Listen for beforeinstallprompt event
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    // Listen for app installed event
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+      toast({
+        title: "App instalado com sucesso!",
+        description: "O JTC FluxPDV foi adicionado à sua tela inicial",
+      });
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const fetchInviteCode = async () => {
@@ -89,6 +127,25 @@ const Settings = () => {
       toast({
         title: "Link copiado!",
         description: "Compartilhe o link com seus amigos",
+      });
+    }
+  };
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      setIsInstalling(true);
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      setIsInstalling(false);
+      
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+      }
+    } else {
+      toast({
+        title: "Instalação manual necessária",
+        description: "Use o menu do navegador → 'Adicionar à tela inicial'",
       });
     }
   };
@@ -482,6 +539,87 @@ const Settings = () => {
                     <li>• Cada dispositivo só pode usar o código <strong>uma vez</strong></li>
                   </ul>
                 </div>
+
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* Baixar App */}
+        <Card className="border-primary/30 bg-primary/5">
+          <Collapsible open={downloadAppOpen} onOpenChange={setDownloadAppOpen}>
+            <CardHeader className="cursor-pointer" onClick={() => setDownloadAppOpen(!downloadAppOpen)}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between w-full">
+                  <CardTitle className="flex items-center gap-2 text-primary">
+                    <Download className="h-5 w-5" />
+                    Baixar App
+                  </CardTitle>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    {downloadAppOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Instale o JTC FluxPDV como um aplicativo no seu celular! Acesso rápido, funciona offline e sem barra do navegador.
+                </p>
+
+                {isInstalled ? (
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                    <div>
+                      <p className="font-medium text-green-600">App já instalado!</p>
+                      <p className="text-sm text-muted-foreground">O JTC FluxPDV está na sua tela inicial</p>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleInstallApp}
+                    className="w-full h-14 text-lg gap-3"
+                    disabled={isInstalling}
+                  >
+                    {isInstalling ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Instalando...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-5 w-5" />
+                        📲 Clique aqui para fazer a instalação
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3">
+                  <h4 className="font-semibold text-foreground">Benefícios do App:</h4>
+                  <ul className="text-muted-foreground space-y-1">
+                    <li>✅ Acesso rápido pela tela inicial</li>
+                    <li>✅ Funciona sem internet (modo offline)</li>
+                    <li>✅ Abre em tela cheia (sem barra do navegador)</li>
+                    <li>✅ Carrega mais rápido</li>
+                  </ul>
+                </div>
+
+                {!isInstalled && (
+                  <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3">
+                    <h4 className="font-semibold text-foreground">📱 Como instalar manualmente:</h4>
+                    <div className="space-y-2">
+                      <div className="border-l-2 border-primary pl-3">
+                        <p className="font-medium">No Android:</p>
+                        <p className="text-muted-foreground">Menu do navegador (⋮) → "Adicionar à tela inicial"</p>
+                      </div>
+                      <div className="border-l-2 border-primary pl-3">
+                        <p className="font-medium">No iPhone/iPad:</p>
+                        <p className="text-muted-foreground">Toque em Compartilhar (↑) → "Adicionar à Tela de Início"</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               </CardContent>
             </CollapsibleContent>
