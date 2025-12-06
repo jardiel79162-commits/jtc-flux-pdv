@@ -46,6 +46,7 @@ interface Supplier {
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -63,15 +64,16 @@ const Products = () => {
   const [productForm, setProductForm] = useState({
     name: "",
     description: "",
+    cost_price: "",
     price: "",
     promotional_price: "",
     stock_quantity: "",
-    min_stock_quantity: "",
     barcode: "",
-    internal_code: "",
     category_id: "",
     is_active: true,
     photo_url: "",
+    hasSupplier: false,
+    supplier_id: "",
   });
 
   const [categoryForm, setCategoryForm] = useState({
@@ -82,6 +84,7 @@ const Products = () => {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchSuppliers();
   }, []);
 
   // Bloquear se assinatura expirada
@@ -102,7 +105,20 @@ const Products = () => {
     if (error) {
       toast({ title: "Erro ao carregar produtos", variant: "destructive" });
     } else {
-      setProducts(data || []);
+      const mappedProducts: Product[] = (data || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        cost_price: p.cost_price,
+        promotional_price: p.promotional_price,
+        stock_quantity: p.stock_quantity,
+        barcode: p.barcode,
+        is_active: p.is_active,
+        category_id: p.category_id,
+        supplier_id: p.supplier_id,
+      }));
+      setProducts(mappedProducts);
     }
   };
 
@@ -123,6 +139,23 @@ const Products = () => {
     }
   };
 
+  const fetchSuppliers = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("suppliers")
+      .select("id, name")
+      .eq("user_id", user.id)
+      .order("name");
+
+    if (error) {
+      toast({ title: "Erro ao carregar fornecedores", variant: "destructive" });
+    } else {
+      setSuppliers(data || []);
+    }
+  };
+
   const handleSaveProduct = async () => {
     if (isSavingProduct) return; // Evitar dupla submissão
     
@@ -134,14 +167,14 @@ const Products = () => {
     const productData = {
       name: productForm.name,
       description: productForm.description || null,
+      cost_price: productForm.cost_price ? parseFloat(productForm.cost_price) : null,
       price: parseFloat(productForm.price),
       promotional_price: productForm.promotional_price ? parseFloat(productForm.promotional_price) : null,
       stock_quantity: parseInt(productForm.stock_quantity) || 0,
-      min_stock_quantity: productForm.min_stock_quantity ? parseInt(productForm.min_stock_quantity) : null,
       barcode: productForm.barcode || null,
-      internal_code: productForm.internal_code || null,
       photos: productForm.photo_url ? [productForm.photo_url] : null,
       category_id: productForm.category_id || null,
+      supplier_id: productForm.hasSupplier && productForm.supplier_id ? productForm.supplier_id : null,
       is_active: productForm.is_active,
       user_id: user.id,
     };
@@ -281,15 +314,16 @@ const Products = () => {
     setProductForm({
       name: "",
       description: "",
+      cost_price: "",
       price: "",
       promotional_price: "",
       stock_quantity: "",
-      min_stock_quantity: "",
       barcode: "",
-      internal_code: "",
       category_id: "",
       is_active: true,
       photo_url: "",
+      hasSupplier: false,
+      supplier_id: "",
     });
     setEditingProduct(null);
     setIsProductDialogOpen(false);
@@ -306,15 +340,16 @@ const Products = () => {
     setProductForm({
       name: product.name,
       description: product.description || "",
+      cost_price: product.cost_price?.toString() || "",
       price: product.price.toString(),
       promotional_price: product.promotional_price?.toString() || "",
       stock_quantity: product.stock_quantity.toString(),
-      min_stock_quantity: product.min_stock_quantity?.toString() || "",
       barcode: product.barcode || "",
-      internal_code: product.internal_code || "",
       category_id: product.category_id || "",
       is_active: product.is_active,
       photo_url: (product as any).photos?.[0] || "",
+      hasSupplier: !!product.supplier_id,
+      supplier_id: product.supplier_id || "",
     });
     setIsProductDialogOpen(true);
   };
@@ -330,7 +365,6 @@ const Products = () => {
 
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.internal_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -345,11 +379,10 @@ const Products = () => {
       const headers = [
         "nome",
         "descricao",
+        "preco_custo",
         "preco",
         "preco_promocional",
         "estoque",
-        "estoque_minimo",
-        "codigo_interno",
         "codigo_barras",
         "categoria",
         "ativo"
@@ -362,11 +395,10 @@ const Products = () => {
         const row = [
           product.name,
           product.description || "",
+          product.cost_price?.toString().replace(".", ",") || "",
           product.price.toString().replace(".", ","),
           product.promotional_price?.toString().replace(".", ",") || "",
           product.stock_quantity.toString(),
-          product.min_stock_quantity?.toString() || "",
-          product.internal_code || "",
           product.barcode || "",
           categoryName !== "-" ? categoryName : "",
           product.is_active ? "sim" : "nao"
@@ -426,11 +458,10 @@ const Products = () => {
           const [
             nome,
             descricao,
+            precoCusto,
             preco,
             precoPromocional,
             estoque,
-            estoqueMinimo,
-            codigoInterno,
             codigoBarras,
             categoria,
             ativo
@@ -446,11 +477,10 @@ const Products = () => {
           const productData = {
             name: nome,
             description: descricao || null,
+            cost_price: precoCusto ? parseFloat(precoCusto.replace(",", ".")) : null,
             price: parseFloat(preco.replace(",", ".")) || 0,
             promotional_price: precoPromocional ? parseFloat(precoPromocional.replace(",", ".")) : null,
             stock_quantity: parseInt(estoque) || 0,
-            min_stock_quantity: estoqueMinimo ? parseInt(estoqueMinimo) : null,
-            internal_code: codigoInterno || null,
             barcode: codigoBarras || null,
             category_id: categoryId,
             is_active: ativo?.toLowerCase() !== "nao",
@@ -592,7 +622,16 @@ const Products = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Preço *</Label>
+                      <Label>Preço de Custo</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={productForm.cost_price}
+                        onChange={(e) => setProductForm({ ...productForm, cost_price: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Preço de Venda *</Label>
                       <Input
                         type="number"
                         step="0.01"
@@ -600,6 +639,9 @@ const Products = () => {
                         onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Preço Promocional</Label>
                       <Input
@@ -609,23 +651,12 @@ const Products = () => {
                         onChange={(e) => setProductForm({ ...productForm, promotional_price: e.target.value })}
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Estoque Atual *</Label>
                       <Input
                         type="number"
                         value={productForm.stock_quantity}
                         onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Estoque Mínimo</Label>
-                      <Input
-                        type="number"
-                        value={productForm.min_stock_quantity}
-                        onChange={(e) => setProductForm({ ...productForm, min_stock_quantity: e.target.value })}
                       />
                     </div>
                   </div>
@@ -647,6 +678,35 @@ const Products = () => {
                         <Camera className="h-4 w-4" />
                       </Button>
                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={productForm.hasSupplier}
+                        onCheckedChange={(checked) => setProductForm({ ...productForm, hasSupplier: checked, supplier_id: checked ? productForm.supplier_id : "" })}
+                      />
+                      <Label>Tem Fornecedor?</Label>
+                    </div>
+
+                    {productForm.hasSupplier && (
+                      <div className="space-y-2">
+                        <Label>Fornecedor</Label>
+                        <Select
+                          value={productForm.supplier_id}
+                          onValueChange={(value) => setProductForm({ ...productForm, supplier_id: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o fornecedor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {suppliers.map((supplier) => (
+                              <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
                   <ImageUpload
