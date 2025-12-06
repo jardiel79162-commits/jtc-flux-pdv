@@ -16,7 +16,6 @@ import {
   History,
   UserCog,
   Truck,
-  ShoppingBag,
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
@@ -85,7 +84,6 @@ const DashboardLayout = () => {
     { icon: ShoppingCart, label: "Venda", path: "/pdv", permission: canAccessRoute("/pdv") },
     { icon: Users, label: "Clientes", path: "/clientes", permission: canAccessRoute("/clientes") },
     { icon: Truck, label: "Fornecedores", path: "/fornecedores", permission: true },
-    { icon: ShoppingBag, label: "Compras", path: "/compras", permission: true },
     { icon: History, label: "Histórico", path: "/historico", permission: true },
     { icon: BarChart3, label: "Relatórios", path: "/relatorios", permission: true },
     { icon: UserCog, label: "Funcionários", path: "/funcionarios", permission: permissions.isAdmin && hasEmployees },

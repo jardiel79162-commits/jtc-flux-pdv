@@ -29,13 +29,18 @@ interface Product {
   name: string;
   description: string | null;
   price: number;
+  cost_price: number | null;
   promotional_price: number | null;
   stock_quantity: number;
-  min_stock_quantity: number | null;
   barcode: string | null;
-  internal_code: string | null;
   is_active: boolean;
   category_id: string | null;
+  supplier_id: string | null;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
 }
 
 const Products = () => {

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Search, Truck } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -33,7 +34,8 @@ const Suppliers = () => {
 
   const [form, setForm] = useState({
     name: "",
-    cnpj: "",
+    documentType: "cnpj" as "cpf" | "cnpj",
+    document: "",
     phone: "",
     email: "",
     address: "",
@@ -81,7 +83,7 @@ const Suppliers = () => {
 
     const supplierData = {
       name: form.name,
-      cnpj: form.cnpj || null,
+      cnpj: form.document || null,
       phone: form.phone || null,
       email: form.email || null,
       address: form.address || null,
@@ -134,7 +136,8 @@ const Suppliers = () => {
   const resetForm = () => {
     setForm({
       name: "",
-      cnpj: "",
+      documentType: "cnpj",
+      document: "",
       phone: "",
       email: "",
       address: "",
@@ -147,9 +150,16 @@ const Suppliers = () => {
 
   const startEdit = (supplier: Supplier) => {
     setEditingSupplier(supplier);
+    
+    // Detectar tipo de documento baseado no formato
+    const doc = supplier.cnpj || "";
+    const numbers = doc.replace(/\D/g, "");
+    const docType = numbers.length <= 11 ? "cpf" : "cnpj";
+    
     setForm({
       name: supplier.name,
-      cnpj: supplier.cnpj || "",
+      documentType: docType,
+      document: supplier.cnpj || "",
       phone: supplier.phone || "",
       email: supplier.email || "",
       address: supplier.address || "",
@@ -165,6 +175,14 @@ const Suppliers = () => {
     s.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+    if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9)}`;
+  };
+
   const formatCNPJ = (value: string) => {
     const numbers = value.replace(/\D/g, "").slice(0, 14);
     if (numbers.length <= 2) return numbers;
@@ -174,11 +192,22 @@ const Suppliers = () => {
     return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12)}`;
   };
 
+  const formatDocument = (value: string) => {
+    if (form.documentType === "cpf") {
+      return formatCPF(value);
+    }
+    return formatCNPJ(value);
+  };
+
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, "").slice(0, 11);
     if (numbers.length <= 2) return numbers;
     if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  };
+
+  const handleDocumentTypeChange = (type: "cpf" | "cnpj") => {
+    setForm({ ...form, documentType: type, document: "" });
   };
 
   return (
@@ -211,12 +240,28 @@ const Suppliers = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cnpj">CNPJ</Label>
+                <Label>Tipo de Documento</Label>
+                <Select
+                  value={form.documentType}
+                  onValueChange={(value: "cpf" | "cnpj") => handleDocumentTypeChange(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cpf">CPF</SelectItem>
+                    <SelectItem value="cnpj">CNPJ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="document">{form.documentType === "cpf" ? "CPF" : "CNPJ"}</Label>
                 <Input
-                  id="cnpj"
-                  value={form.cnpj}
-                  onChange={(e) => setForm({ ...form, cnpj: formatCNPJ(e.target.value) })}
-                  placeholder="00.000.000/0000-00"
+                  id="document"
+                  value={form.document}
+                  onChange={(e) => setForm({ ...form, document: formatDocument(e.target.value) })}
+                  placeholder={form.documentType === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
                   inputMode="numeric"
                 />
               </div>
