@@ -599,9 +599,9 @@ const Settings = () => {
                   <h4 className="font-semibold text-foreground">Benefícios do App:</h4>
                   <ul className="text-muted-foreground space-y-1">
                     <li>✅ Acesso rápido pela tela inicial</li>
-                    <li>✅ Funciona sem internet (modo offline)</li>
                     <li>✅ Abre em tela cheia (sem barra do navegador)</li>
                     <li>✅ Carrega mais rápido</li>
+                    <li>✅ Experiência mais fluida</li>
                   </ul>
                 </div>
 
@@ -718,11 +718,11 @@ const Settings = () => {
                         <ol className="list-decimal list-inside space-y-1 ml-2">
                           <li>Acesse "Produtos" no menu</li>
                           <li>Clique em "Novo Produto"</li>
-                          <li>Preencha os dados obrigatórios: Nome, Preço e Quantidade em Estoque</li>
-                          <li>Adicione dados opcionais: Descrição, Código Interno, Código de Barras, Preço Promocional</li>
+                          <li>Preencha: Nome, Preço de Custo, Preço de Venda e Estoque Atual</li>
+                          <li>Adicione dados opcionais: Descrição, Código de Barras, Preço Promocional</li>
                           <li>Selecione ou crie uma Categoria/Subcategoria</li>
+                          <li>Indique se o produto tem fornecedor e selecione-o</li>
                           <li>Faça upload de fotos do produto</li>
-                          <li>Defina o estoque mínimo para alertas</li>
                           <li>Clique em "Salvar"</li>
                         </ol>
                       </div>
@@ -734,8 +734,8 @@ const Settings = () => {
                         <h4 className="font-semibold text-foreground">Controle de Estoque</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
                           <li>O estoque é atualizado automaticamente a cada venda</li>
-                          <li>Produtos com estoque abaixo do mínimo aparecem em alerta no Dashboard</li>
                           <li>Você pode ajustar manualmente a quantidade editando o produto</li>
+                          <li>A margem de lucro é calculada automaticamente (Preço de Venda - Preço de Custo)</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
@@ -840,19 +840,26 @@ const Settings = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Tipos de Relatórios Disponíveis</h4>
+                        <h4 className="font-semibold text-foreground">Filtrar por Período</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Vendas Diárias:</strong> Resumo das vendas do dia</li>
-                          <li><strong>Vendas Mensais:</strong> Resumo das vendas do mês</li>
-                          <li><strong>Período Personalizado:</strong> Selecione datas específicas</li>
-                          <li><strong>Produtos Mais Vendidos:</strong> Ranking dos produtos</li>
-                          <li><strong>Relatório de Clientes:</strong> Análise por cliente</li>
-                          <li><strong>Relatório Financeiro:</strong> Resumo de receitas</li>
+                          <li>Digite a data inicial (formato DD/MM/AAAA - as barras aparecem automaticamente)</li>
+                          <li>Digite a data final no mesmo formato</li>
+                          <li>Clique em "Filtrar" para ver as vendas do período</li>
+                          <li>Ative "Ver todas as vendas" para exibir todo o histórico</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Exportar Relatórios</h4>
-                        <p>Todos os relatórios podem ser exportados em PDF ou CSV para análise externa ou impressão.</p>
+                        <h4 className="font-semibold text-foreground">Informações Exibidas</h4>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li><strong>Faturamento:</strong> Total de vendas no período</li>
+                          <li><strong>Lucro:</strong> Diferença entre vendas e custo dos produtos</li>
+                          <li><strong>Margem:</strong> Percentual de lucro sobre o faturamento</li>
+                          <li><strong>Quantidade de Vendas:</strong> Total de transações</li>
+                        </ul>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Ver Detalhes da Venda</h4>
+                        <p>Clique no ícone de olho ao lado de cada venda para ver os produtos vendidos e a margem de lucro de cada item.</p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -931,9 +938,9 @@ const Settings = () => {
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Regras Importantes</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Cada código só pode ser usado uma vez</li>
+                          <li>Cada código pode ser usado várias vezes por pessoas diferentes</li>
+                          <li>O mesmo dispositivo não pode usar o mesmo código mais de uma vez</li>
                           <li>O benefício é aplicado imediatamente após o cadastro</li>
-                          <li>Códigos já utilizados não funcionam para novos cadastros</li>
                         </ul>
                       </div>
                     </AccordionContent>
