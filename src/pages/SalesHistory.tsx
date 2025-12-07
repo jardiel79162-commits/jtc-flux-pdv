@@ -7,18 +7,21 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { formatCurrency } from "@/lib/utils";
-import { X, Eye, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatCurrency } from "@/lib/utils";
+import { Eye, Search, Download, Ban, FileText, File } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
+import jsPDF from "jspdf";
 
 interface SaleItem {
   product_id: string;
   quantity: number;
   unit_price: number;
   product_name?: string;
+  cost_price?: number;
 }
 
 interface Sale {
@@ -46,7 +49,6 @@ const SalesHistory = () => {
     fetchSales();
   }, []);
 
-  // Bloquear se assinatura expirada
   if (!loading && isExpired) {
     return <SubscriptionBlocker isTrial={isTrial} />;
   }
@@ -76,7 +78,7 @@ const SalesHistory = () => {
             .from("sale_items")
             .select(`
               *,
-              products (name)
+              products (name, cost_price)
             `)
             .eq("sale_id", sale.id);
 
@@ -88,6 +90,7 @@ const SalesHistory = () => {
               quantity: item.quantity,
               unit_price: item.unit_price,
               product_name: item.products?.name,
+              cost_price: item.products?.cost_price || 0,
             })) || [],
           };
         })
@@ -107,7 +110,6 @@ const SalesHistory = () => {
     if (!user) return;
 
     try {
-      // 1. Reverter estoque dos produtos
       for (const item of sale.items) {
         const { data: product } = await supabase
           .from("products")
@@ -123,7 +125,6 @@ const SalesHistory = () => {
         }
       }
 
-      // 2. Se for fiado, reverter saldo do cliente
       if (sale.payment_method === "fiado" && sale.customer_id) {
         const { data: customer } = await supabase
           .from("customers")
@@ -138,7 +139,6 @@ const SalesHistory = () => {
             .update({ current_balance: newBalance })
             .eq("id", sale.customer_id);
 
-          // Criar transação de estorno
           await supabase
             .from("customer_transactions")
             .insert({
@@ -151,13 +151,11 @@ const SalesHistory = () => {
         }
       }
 
-      // 3. Deletar itens da venda
       await supabase
         .from("sale_items")
         .delete()
         .eq("sale_id", saleToCancel);
 
-      // 4. Deletar a venda
       const { error } = await supabase
         .from("sales")
         .delete()
@@ -183,6 +181,18 @@ const SalesHistory = () => {
     setShowDetails(true);
   };
 
+  const calculateSaleMargin = (sale: Sale) => {
+    const revenue = sale.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+    const cost = sale.items.reduce((sum, item) => sum + item.quantity * (item.cost_price || 0), 0);
+    return revenue > 0 ? ((revenue - cost) / revenue) * 100 : 0;
+  };
+
+  const calculateSaleProfit = (sale: Sale) => {
+    const revenue = sale.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+    const cost = sale.items.reduce((sum, item) => sum + item.quantity * (item.cost_price || 0), 0);
+    return revenue - cost;
+  };
+
   const getPaymentMethodLabel = (method: string) => {
     const methods: Record<string, string> = {
       credit: "Crédito",
@@ -193,6 +203,87 @@ const SalesHistory = () => {
       credito: "Crédito Cliente",
     };
     return methods[method] || method;
+  };
+
+  const downloadAsTXT = (sale: Sale) => {
+    let content = `========================================\n`;
+    content += `           COMPROVANTE DE VENDA\n`;
+    content += `========================================\n\n`;
+    content += `Data: ${format(new Date(sale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}\n`;
+    content += `Cliente: ${sale.customer_name || "Cliente Avulso"}\n`;
+    content += `Pagamento: ${getPaymentMethodLabel(sale.payment_method)}\n\n`;
+    content += `----------------------------------------\n`;
+    content += `ITENS\n`;
+    content += `----------------------------------------\n`;
+    
+    sale.items.forEach(item => {
+      content += `${item.product_name}\n`;
+      content += `  ${item.quantity}x ${formatCurrency(item.unit_price)} = ${formatCurrency(item.quantity * item.unit_price)}\n`;
+    });
+    
+    content += `----------------------------------------\n`;
+    content += `Subtotal: ${formatCurrency(sale.total_amount + sale.discount)}\n`;
+    content += `Desconto: ${formatCurrency(sale.discount)}\n`;
+    content += `Lucro: ${formatCurrency(calculateSaleProfit(sale))}\n`;
+    content += `Margem: ${calculateSaleMargin(sale).toFixed(1)}%\n`;
+    content += `========================================\n`;
+    content += `TOTAL: ${formatCurrency(sale.total_amount)}\n`;
+    content += `========================================\n`;
+    content += `\nObrigado pela preferência!\n`;
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `venda-${format(new Date(sale.created_at), "dd-MM-yyyy-HHmm")}.txt`;
+    a.click();
+    toast({ title: "Comprovante baixado em TXT" });
+  };
+
+  const downloadAsPDF = (sale: Sale) => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text("COMPROVANTE DE VENDA", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.text(`Data: ${format(new Date(sale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}`, 20, 35);
+    doc.text(`Cliente: ${sale.customer_name || "Cliente Avulso"}`, 20, 42);
+    doc.text(`Pagamento: ${getPaymentMethodLabel(sale.payment_method)}`, 20, 49);
+    
+    doc.line(20, 55, 190, 55);
+    doc.text("ITENS", 20, 62);
+    doc.line(20, 65, 190, 65);
+    
+    let y = 72;
+    sale.items.forEach(item => {
+      doc.text(`${item.product_name}`, 20, y);
+      doc.text(`${item.quantity}x ${formatCurrency(item.unit_price)} = ${formatCurrency(item.quantity * item.unit_price)}`, 120, y);
+      y += 7;
+    });
+    
+    y += 5;
+    doc.line(20, y, 190, y);
+    y += 7;
+    
+    doc.text(`Subtotal: ${formatCurrency(sale.total_amount + sale.discount)}`, 20, y);
+    y += 7;
+    doc.text(`Desconto: ${formatCurrency(sale.discount)}`, 20, y);
+    y += 7;
+    doc.text(`Lucro: ${formatCurrency(calculateSaleProfit(sale))}`, 20, y);
+    y += 7;
+    doc.text(`Margem: ${calculateSaleMargin(sale).toFixed(1)}%`, 20, y);
+    y += 10;
+    
+    doc.setFontSize(14);
+    doc.text(`TOTAL: ${formatCurrency(sale.total_amount)}`, 20, y);
+    y += 15;
+    
+    doc.setFontSize(10);
+    doc.text("Obrigado pela preferência!", 105, y, { align: "center" });
+    
+    doc.save(`venda-${format(new Date(sale.created_at), "dd-MM-yyyy-HHmm")}.pdf`);
+    toast({ title: "Comprovante baixado em PDF" });
   };
 
   const filteredSales = sales.filter(sale => {
@@ -229,9 +320,9 @@ const SalesHistory = () => {
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs w-[50%]">Produto</TableHead>
-                <TableHead className="text-xs w-[25%]">Data</TableHead>
-                <TableHead className="text-xs text-right w-[25%]">Ações</TableHead>
+                <TableHead className="text-xs w-[40%]">Produto</TableHead>
+                <TableHead className="text-xs w-[20%]">Data</TableHead>
+                <TableHead className="text-xs text-right w-[40%]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -259,16 +350,42 @@ const SalesHistory = () => {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => viewSaleDetails(sale)}
+                          title="Ver detalhes"
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              title="Baixar comprovante"
+                            >
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => downloadAsTXT(sale)}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Baixar TXT
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => downloadAsPDF(sale)}>
+                              <File className="h-4 w-4 mr-2" />
+                              Baixar PDF
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-7 w-7 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                           onClick={() => setSaleToCancel(sale.id)}
+                          title="Cancelar venda"
                         >
-                          <X className="h-3 w-3" />
+                          <Ban className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
@@ -304,8 +421,10 @@ const SalesHistory = () => {
                   <p className="font-medium text-sm">{getPaymentMethodLabel(selectedSale.payment_method)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium text-sm">{selectedSale.payment_status === "paid" ? "Pago" : "Pendente"}</p>
+                  <p className="text-sm text-muted-foreground">Margem de Lucro</p>
+                  <p className={`font-medium text-sm ${calculateSaleMargin(selectedSale) > 0 ? "text-green-600" : "text-red-500"}`}>
+                    {calculateSaleMargin(selectedSale).toFixed(1)}%
+                  </p>
                 </div>
               </div>
 
@@ -318,18 +437,27 @@ const SalesHistory = () => {
                         <TableHead className="text-xs">Produto</TableHead>
                         <TableHead className="text-xs text-center">Qtd</TableHead>
                         <TableHead className="text-xs text-right">Preço</TableHead>
-                        <TableHead className="text-xs text-right">Subtotal</TableHead>
+                        <TableHead className="text-xs text-right">Margem</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedSale.items.map((item, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell className="text-xs">{item.product_name}</TableCell>
-                          <TableCell className="text-xs text-center">{item.quantity}</TableCell>
-                          <TableCell className="text-xs text-right">{formatCurrency(item.unit_price)}</TableCell>
-                          <TableCell className="text-xs text-right">{formatCurrency(item.unit_price * item.quantity)}</TableCell>
-                        </TableRow>
-                      ))}
+                      {selectedSale.items.map((item, idx) => {
+                        const itemRevenue = item.quantity * item.unit_price;
+                        const itemCost = item.quantity * (item.cost_price || 0);
+                        const itemMargin = itemRevenue > 0 ? ((itemRevenue - itemCost) / itemRevenue) * 100 : 0;
+                        return (
+                          <TableRow key={idx}>
+                            <TableCell className="text-xs">{item.product_name}</TableCell>
+                            <TableCell className="text-xs text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-xs text-right">{formatCurrency(item.unit_price)}</TableCell>
+                            <TableCell className="text-xs text-right">
+                              <span className={itemMargin > 0 ? "text-green-600" : "text-red-500"}>
+                                {itemMargin.toFixed(1)}%
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -343,6 +471,10 @@ const SalesHistory = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Desconto:</span>
                   <span>{formatCurrency(selectedSale.discount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Lucro:</span>
+                  <span className="text-green-600 font-medium">{formatCurrency(calculateSaleProfit(selectedSale))}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total:</span>
@@ -370,7 +502,7 @@ const SalesHistory = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction onClick={handleCancelSale} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Confirmar Cancelamento
             </AlertDialogAction>
