@@ -661,45 +661,60 @@ const Settings = () => {
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Passo 1: Acessar a Tela de Venda</h4>
-                        <p>Clique em "Venda" no menu superior ou use as ações rápidas do Dashboard (se ativadas).</p>
+                        <p>No menu superior, clique em "Venda". Você também pode usar as ações rápidas do Dashboard se estiverem ativadas nas configurações.</p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Passo 2: Adicionar Produtos ao Carrinho</h4>
+                        <h4 className="font-semibold text-foreground">Passo 2: Adicionar Produtos</h4>
+                        <p>Existem 3 formas de adicionar produtos:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Busca por nome/código:</strong> Digite o nome ou código do produto na barra de busca</li>
-                          <li><strong>Navegar produtos:</strong> Clique em "Ver Produtos" para abrir a visualização completa</li>
-                          <li><strong>Selecionar quantidade:</strong> Use os botões + e - para ajustar a quantidade</li>
-                          <li><strong>Múltipla seleção:</strong> Na tela de produtos, selecione vários produtos (ficam destacados em verde) e clique "Continuar"</li>
+                          <li><strong>Busca por nome:</strong> Digite o nome do produto na barra de busca e clique no produto desejado</li>
+                          <li><strong>Busca por código de barras:</strong> Digite o código de barras na busca</li>
+                          <li><strong>Leitor de código:</strong> Clique no ícone da câmera para escanear o código de barras do produto</li>
+                          <li><strong>Navegar produtos:</strong> Clique em "Ver Produtos" para abrir a lista completa. Selecione os produtos desejados (ficam destacados em verde) e clique "Continuar"</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Passo 3: Aplicar Desconto (Opcional)</h4>
-                        <p>Digite o valor do desconto no campo apropriado. O valor será subtraído do total.</p>
+                        <h4 className="font-semibold text-foreground">Passo 3: Ajustar Quantidades</h4>
+                        <p>No carrinho, use os botões + e - para ajustar a quantidade de cada produto. Clique no X para remover um produto.</p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Passo 4: Selecionar Cliente (Opcional)</h4>
-                        <p>Clique em "Selecionar Cliente" para associar a venda a um cliente cadastrado. Obrigatório para vendas no fiado.</p>
+                        <h4 className="font-semibold text-foreground">Passo 4: Aplicar Desconto (Opcional)</h4>
+                        <p>Se quiser dar desconto, digite o valor em reais no campo "Desconto". O valor será subtraído do total automaticamente.</p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Passo 5: Escolher Forma de Pagamento</h4>
+                        <h4 className="font-semibold text-foreground">Passo 5: Selecionar Cliente (Se necessário)</h4>
+                        <p>Clique em "Selecionar Cliente" para associar a venda a um cliente cadastrado. Isso é <strong>obrigatório</strong> para vendas no fiado.</p>
+                        <p>Se o cliente tiver crédito disponível, o valor será descontado automaticamente do total.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Passo 6: Escolher Forma de Pagamento</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Cartão de Crédito:</strong> Pagamento via maquininha</li>
-                          <li><strong>Cartão de Débito:</strong> Pagamento via maquininha</li>
-                          <li><strong>PIX:</strong> Pagamento instantâneo</li>
-                          <li><strong>Dinheiro:</strong> Pagamento em espécie</li>
-                          <li><strong>Fiado:</strong> Venda a prazo (requer cliente selecionado)</li>
-                          <li><strong>Crédito do Cliente:</strong> Usa saldo disponível do cliente</li>
+                          <li><strong>Cartão de Crédito:</strong> Cliente paga na maquininha de cartão</li>
+                          <li><strong>Cartão de Débito:</strong> Cliente paga na maquininha de cartão</li>
+                          <li><strong>PIX:</strong> Sistema gera QR Code para o cliente pagar (precisa configurar PIX nas Configurações)</li>
+                          <li><strong>Dinheiro:</strong> Cliente paga em espécie</li>
+                          <li><strong>Fiado:</strong> Venda a prazo - o valor fica como dívida do cliente (precisa selecionar um cliente)</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Passo 6: Finalizar Venda</h4>
+                        <h4 className="font-semibold text-foreground">Passo 7: Finalizar Venda</h4>
                         <p>Clique em "Finalizar Venda". O sistema irá:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Gerar automaticamente o ID da venda (ex: ML-000001)</li>
-                          <li>Atualizar o estoque dos produtos</li>
-                          <li>Registrar a transação no histórico</li>
-                          <li>Exibir o recibo para download (PDF ou TXT)</li>
+                          <li>Gerar o ID da venda automaticamente (ex: ML-000001)</li>
+                          <li>Atualizar o estoque dos produtos vendidos</li>
+                          <li>Registrar a venda no histórico</li>
+                          <li>Mostrar opção de baixar o recibo em PDF ou TXT</li>
                         </ul>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Usando o Leitor de Código de Barras</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Clique no ícone da câmera ao lado da busca</li>
+                          <li>Permita o acesso à câmera quando solicitado</li>
+                          <li>Aponte a câmera para o código de barras do produto</li>
+                          <li>O produto será adicionado automaticamente ao carrinho</li>
+                          <li>Se precisar de luz, use o botão de flash</li>
+                        </ol>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -714,41 +729,90 @@ const Settings = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Cadastrar Novo Produto</h4>
+                        <h4 className="font-semibold text-foreground">Como Cadastrar um Produto</h4>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
-                          <li>Acesse "Produtos" no menu</li>
-                          <li>Clique em "Novo Produto"</li>
-                          <li>Preencha: Nome, Preço de Custo, Preço de Venda e Estoque Atual</li>
-                          <li>Adicione dados opcionais: Descrição, Código de Barras, Preço Promocional</li>
-                          <li>Selecione ou crie uma Categoria/Subcategoria</li>
-                          <li>Indique se o produto tem fornecedor e selecione-o</li>
-                          <li>Faça upload de fotos do produto</li>
+                          <li>No menu, clique em "Produtos"</li>
+                          <li>Clique no botão "Novo Produto"</li>
+                          <li>Preencha o <strong>Nome</strong> do produto</li>
+                          <li>Digite o <strong>Preço de Custo</strong> (quanto você pagou pelo produto)</li>
+                          <li>Digite o <strong>Preço de Venda</strong> (quanto vai vender para o cliente)</li>
+                          <li>Informe o <strong>Estoque Atual</strong> (quantidade disponível)</li>
+                          <li>Adicione uma <strong>Descrição</strong> (opcional)</li>
+                          <li>Digite ou escaneie o <strong>Código de Barras</strong> (opcional)</li>
+                          <li>Se tiver promoção, coloque o <strong>Preço Promocional</strong></li>
+                          <li>Selecione a <strong>Categoria</strong> do produto</li>
+                          <li>Se o produto tem fornecedor, ative "Tem Fornecedor?" e selecione</li>
+                          <li>Faça upload de <strong>Fotos</strong> do produto (opcional)</li>
                           <li>Clique em "Salvar"</li>
                         </ol>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Editar Produto</h4>
-                        <p>Clique no ícone de edição ao lado do produto desejado. Faça as alterações e salve.</p>
+                        <h4 className="font-semibold text-foreground">Como Editar um Produto</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Na lista de produtos, encontre o produto desejado</li>
+                          <li>Clique no ícone de lápis (editar)</li>
+                          <li>Faça as alterações necessárias</li>
+                          <li>Clique em "Salvar"</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Como Excluir um Produto</h4>
+                        <p>Clique no ícone de lixeira ao lado do produto. <strong>Atenção:</strong> Produtos que já foram vendidos não podem ser excluídos. Nesse caso, você pode inativá-los.</p>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Controle de Estoque</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>O estoque é atualizado automaticamente a cada venda</li>
-                          <li>Você pode ajustar manualmente a quantidade editando o produto</li>
-                          <li>A margem de lucro é calculada automaticamente (Preço de Venda - Preço de Custo)</li>
+                          <li>O estoque é <strong>atualizado automaticamente</strong> a cada venda</li>
+                          <li>Para ajustar manualmente, edite o produto e altere o campo "Estoque Atual"</li>
+                          <li>A <strong>margem de lucro</strong> é calculada automaticamente (Preço de Venda - Preço de Custo)</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Inativar Produto</h4>
-                        <p>Produtos que já foram vendidos não podem ser excluídos. Use a opção "Inativar" para removê-los da lista de vendas sem perder o histórico.</p>
+                        <h4 className="font-semibold text-foreground">Como Criar Categorias</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Na página de Produtos, clique na aba "Categorias"</li>
+                          <li>Clique em "Nova Categoria"</li>
+                          <li>Digite o nome da categoria (ex: Bebidas, Alimentos, etc.)</li>
+                          <li>Clique em "Salvar"</li>
+                        </ol>
+                        <p className="mt-2">Você também pode criar <strong>subcategorias</strong>: ao criar uma nova categoria, selecione uma categoria pai.</p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Gerenciar Categorias</h4>
+                        <h4 className="font-semibold text-foreground">Importar/Exportar Produtos</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Crie categorias para organizar seus produtos</li>
-                          <li>Adicione subcategorias para maior detalhamento</li>
-                          <li>Exemplo: Categoria "Bebidas" → Subcategorias "Refrigerantes", "Sucos", "Água"</li>
+                          <li><strong>Exportar:</strong> Clique no menu (3 pontos) → "Exportar CSV" para baixar todos os produtos</li>
+                          <li><strong>Importar:</strong> Clique no menu → "Importar CSV" para adicionar produtos em massa</li>
                         </ul>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Gerenciamento de Fornecedores */}
+                  <AccordionItem value="fornecedores">
+                    <AccordionTrigger className="text-left">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-primary" />
+                        Gerenciamento de Fornecedores
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Como Cadastrar um Fornecedor</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>No menu, clique em "Fornecedores"</li>
+                          <li>Clique em "Novo Fornecedor"</li>
+                          <li>Preencha o <strong>Nome</strong> do fornecedor</li>
+                          <li>Selecione o tipo de documento: <strong>CPF</strong> ou <strong>CNPJ</strong></li>
+                          <li>Digite o número do documento (os pontos e traços aparecem automaticamente)</li>
+                          <li>Adicione <strong>Telefone</strong>, <strong>E-mail</strong> e <strong>Endereço</strong> (opcionais)</li>
+                          <li>Informe o <strong>Nome do Contato</strong> (pessoa responsável)</li>
+                          <li>Adicione <strong>Observações</strong> se necessário</li>
+                          <li>Clique em "Salvar"</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Vincular Fornecedor a Produto</h4>
+                        <p>Ao cadastrar ou editar um produto, ative "Tem Fornecedor?" e selecione o fornecedor na lista. Isso ajuda a controlar de onde vem cada produto.</p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -763,31 +827,51 @@ const Settings = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Cadastrar Novo Cliente</h4>
+                        <h4 className="font-semibold text-foreground">Como Cadastrar um Cliente</h4>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
-                          <li>Acesse "Clientes" no menu</li>
+                          <li>No menu, clique em "Clientes"</li>
                           <li>Clique em "Novo Cliente"</li>
-                          <li>Preencha: Nome, CPF, Data de Nascimento, Endereço e Telefone</li>
+                          <li>Preencha o <strong>Nome Completo</strong></li>
+                          <li>Digite o <strong>CPF</strong> (os pontos e traços aparecem automaticamente)</li>
+                          <li>Informe a <strong>Data de Nascimento</strong></li>
+                          <li>Digite o <strong>Endereço</strong> completo</li>
+                          <li>Adicione o <strong>Telefone</strong></li>
                           <li>Clique em "Salvar"</li>
                         </ol>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Sistema de Fiado (Crédito)</h4>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Venda no Fiado:</strong> O valor da compra é adicionado à dívida do cliente</li>
-                          <li><strong>Registrar Pagamento:</strong> Clique no botão de pagamento no perfil do cliente</li>
-                          <li><strong>Pagamento Parcial:</strong> O cliente pode pagar parte da dívida (ex: R$10 de R$50)</li>
-                          <li><strong>Pagamento com Troco:</strong> Se o cliente pagar mais que deve, você pode devolver o troco ou converter em crédito</li>
-                        </ul>
+                        <h4 className="font-semibold text-foreground">Sistema de Fiado (Venda a Prazo)</h4>
+                        <p>O fiado permite vender para o cliente pagar depois:</p>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Na tela de Venda, adicione os produtos</li>
+                          <li>Clique em "Selecionar Cliente" e escolha o cliente</li>
+                          <li>Escolha a forma de pagamento "Fiado"</li>
+                          <li>Finalize a venda - o valor será adicionado à dívida do cliente</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Como Registrar Pagamento de Fiado</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Acesse "Clientes" no menu</li>
+                          <li>Encontre o cliente e clique no ícone de dinheiro (pagamento)</li>
+                          <li>Digite o valor que o cliente está pagando</li>
+                          <li>Se pagar mais que deve, escolha: devolver troco ou converter em crédito</li>
+                          <li>Confirme o pagamento</li>
+                        </ol>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Crédito Antecipado</h4>
-                        <p>O cliente pode depositar um valor antecipado que será usado automaticamente nas próximas compras.</p>
-                        <p><strong>Exemplo:</strong> Cliente deposita R$200. Ao comprar R$100, o saldo vai para R$100 automaticamente.</p>
+                        <p>O cliente pode deixar dinheiro adiantado que será usado nas próximas compras:</p>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>No perfil do cliente, clique em "Adicionar Crédito"</li>
+                          <li>Digite o valor que o cliente está depositando</li>
+                          <li>Confirme - o crédito será usado automaticamente nas próximas vendas</li>
+                        </ol>
+                        <p className="mt-2"><strong>Exemplo:</strong> Cliente deposita R$200. Na próxima compra de R$80, sobra R$120 de crédito.</p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Visualizar Histórico</h4>
-                        <p>No perfil de cada cliente você pode ver todas as transações: compras, pagamentos e créditos.</p>
+                        <h4 className="font-semibold text-foreground">Visualizar Histórico do Cliente</h4>
+                        <p>Clique no cliente para ver todas as transações: compras, pagamentos e créditos depositados.</p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -803,29 +887,46 @@ const Settings = () => {
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Visualizar Vendas</h4>
-                        <p>Acesse "Histórico" no menu para ver todas as vendas realizadas com:</p>
+                        <p>No menu, clique em "Histórico" para ver todas as vendas. Cada venda mostra:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>ID da venda</li>
+                          <li>ID da venda (ex: ML-000001)</li>
                           <li>Data e hora</li>
-                          <li>Cliente (se houver)</li>
+                          <li>Nome do cliente (se houver)</li>
                           <li>Valor total</li>
                           <li>Forma de pagamento</li>
-                          <li>Itens vendidos</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Cancelar Venda</h4>
-                        <p>Clique no botão de cancelar ao lado da venda. O sistema irá:</p>
+                        <h4 className="font-semibold text-foreground">Ver Detalhes da Venda</h4>
+                        <p>Clique no ícone de <strong>olho</strong> para ver:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Devolver os produtos ao estoque</li>
-                          <li>Reverter o saldo do cliente (se venda no fiado)</li>
-                          <li>Restaurar crédito usado (se aplicável)</li>
-                          <li>Remover o registro da venda</li>
+                          <li>Todos os produtos vendidos</li>
+                          <li>Quantidade e preço de cada item</li>
+                          <li>Lucro obtido em cada produto</li>
+                          <li>Lucro total da venda</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Baixar Recibo</h4>
-                        <p>Clique no ícone de download para baixar o recibo em PDF ou TXT.</p>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Clique no ícone de <strong>download</strong></li>
+                          <li>Escolha o formato: <strong>PDF</strong> (com logo) ou <strong>TXT</strong> (texto simples)</li>
+                          <li>O arquivo será baixado automaticamente</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Cancelar uma Venda</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Encontre a venda que deseja cancelar</li>
+                          <li>Clique no ícone de <strong>cancelar</strong> (círculo com traço)</li>
+                          <li>Confirme o cancelamento</li>
+                        </ol>
+                        <p className="mt-2">Ao cancelar, o sistema automaticamente:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>Devolve os produtos ao estoque</li>
+                          <li>Remove a dívida do cliente (se foi fiado)</li>
+                          <li>Restaura o crédito usado (se aplicável)</li>
+                        </ul>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -840,26 +941,27 @@ const Settings = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Filtrar por Período</h4>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Digite a data inicial (formato DD/MM/AAAA - as barras aparecem automaticamente)</li>
-                          <li>Digite a data final no mesmo formato</li>
-                          <li>Clique em "Filtrar" para ver as vendas do período</li>
-                          <li>Ative "Ver todas as vendas" para exibir todo o histórico</li>
-                        </ul>
+                        <h4 className="font-semibold text-foreground">Como Gerar um Relatório</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>No menu, clique em "Relatórios"</li>
+                          <li>Digite a <strong>Data Inicial</strong> (ex: 01/12/2024) - as barras aparecem automaticamente</li>
+                          <li>Digite a <strong>Data Final</strong> (ex: 31/12/2024)</li>
+                          <li>Clique em "Filtrar"</li>
+                        </ol>
+                        <p className="mt-2">Para ver <strong>todas as vendas</strong> de todos os tempos, ative a opção "Ver todas as vendas".</p>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Informações Exibidas</h4>
+                        <h4 className="font-semibold text-foreground">Informações do Relatório</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Faturamento:</strong> Total de vendas no período</li>
-                          <li><strong>Lucro:</strong> Diferença entre vendas e custo dos produtos</li>
+                          <li><strong>Faturamento:</strong> Total de vendas no período (quanto entrou)</li>
+                          <li><strong>Lucro:</strong> Faturamento menos o custo dos produtos (quanto sobrou)</li>
                           <li><strong>Margem:</strong> Percentual de lucro sobre o faturamento</li>
-                          <li><strong>Quantidade de Vendas:</strong> Total de transações</li>
+                          <li><strong>Vendas:</strong> Quantidade total de vendas realizadas</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Ver Detalhes da Venda</h4>
-                        <p>Clique no ícone de olho ao lado de cada venda para ver os produtos vendidos e a margem de lucro de cada item.</p>
+                        <h4 className="font-semibold text-foreground">Analisar Lucro por Venda</h4>
+                        <p>Clique no ícone de <strong>olho</strong> ao lado de cada venda para ver o lucro detalhado de cada produto vendido.</p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -874,34 +976,85 @@ const Settings = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Informações Básicas</h4>
+                        <h4 className="font-semibold text-foreground">Informações da Loja</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Acesse "Configurações" no menu</li>
+                          <li>Clique em "Informações da Loja" para expandir</li>
+                          <li>Preencha o <strong>Nome da Loja</strong> (aparece no topo e nos recibos)</li>
+                          <li>Digite o <strong>Telefone Comercial</strong></li>
+                          <li>Informe o <strong>Endereço</strong> completo</li>
+                          <li>Selecione a <strong>Categoria</strong> (mercado, padaria, etc.)</li>
+                          <li>Faça upload da <strong>Logo</strong> da sua loja</li>
+                          <li>Escolha a <strong>Cor Primária</strong> do sistema</li>
+                          <li>Clique em "Salvar Configurações"</li>
+                        </ol>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Como Configurar o PIX (Passo a Passo)</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Acesse "Configurações" no menu</li>
+                          <li>Clique em "Configuração PIX" para expandir</li>
+                          <li>Em <strong>Tipo de Chave PIX</strong>, selecione uma opção:
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li><strong>CPF:</strong> Use seu CPF (ex: 123.456.789-00)</li>
+                              <li><strong>CNPJ:</strong> Use o CNPJ da empresa (ex: 12.345.678/0001-00)</li>
+                              <li><strong>E-mail:</strong> Use um e-mail (ex: loja@email.com)</li>
+                              <li><strong>Telefone:</strong> Use seu número (ex: +5598981091476)</li>
+                              <li><strong>Chave Aleatória:</strong> Use a chave gerada pelo banco (32 caracteres)</li>
+                            </ul>
+                          </li>
+                          <li>Digite sua <strong>Chave PIX</strong> no campo</li>
+                          <li>Digite o <strong>Nome do Recebedor</strong> (nome que aparece quando alguém paga)</li>
+                          <li>Clique em "Salvar Configurações"</li>
+                        </ol>
+                        <p className="mt-2 text-xs"><strong>Pronto!</strong> Agora quando você fizer uma venda com PIX, o sistema gera o QR Code automaticamente para o cliente pagar.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Ativar Ações Rápidas</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Clique em "Ações Rápidas" para expandir</li>
+                          <li>Ative o switch "Ativar Ações Rápidas"</li>
+                          <li>Clique em "Salvar Configurações"</li>
+                        </ol>
+                        <p className="mt-2">As ações rápidas são atalhos com ícones que aparecem no Dashboard para acessar as funções mais usadas rapidamente.</p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Baixar o App */}
+                  <AccordionItem value="app">
+                    <AccordionTrigger className="text-left">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="h-4 w-4 text-primary" />
+                        Baixar o App no Celular
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 text-sm text-muted-foreground">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Por que Baixar o App?</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Nome da Loja:</strong> Aparece no cabeçalho e nos recibos</li>
-                          <li><strong>Telefone Comercial:</strong> Contato da loja</li>
-                          <li><strong>Endereço:</strong> Localização da loja</li>
-                          <li><strong>Categoria:</strong> Tipo de estabelecimento (mercado, padaria, etc.)</li>
+                          <li>Acesso rápido pela tela inicial do celular</li>
+                          <li>Abre em tela cheia (sem barra do navegador)</li>
+                          <li>Carrega mais rápido</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Configuração PIX</h4>
-                        <p>Para aceitar pagamentos via PIX, configure:</p>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Tipo de Chave:</strong> CPF, CNPJ, E-mail, Telefone ou Chave Aleatória</li>
-                          <li><strong>Chave PIX:</strong> Sua chave conforme o tipo selecionado</li>
-                          <li><strong>Nome do Recebedor:</strong> Nome que aparecerá no PIX</li>
-                        </ul>
-                        <p className="text-xs mt-2">Quando configurado, o sistema gera QR Code automaticamente durante vendas PIX.</p>
+                        <h4 className="font-semibold text-foreground">Como Instalar no Android</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Acesse "Configurações" no menu</li>
+                          <li>Clique em "Baixar App"</li>
+                          <li>Clique no botão "Instalar App"</li>
+                          <li>Se não aparecer o botão, use o menu do navegador (⋮) → "Adicionar à tela inicial"</li>
+                        </ol>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Personalização Visual</h4>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Logo:</strong> Faça upload da logo da sua loja (aparece circular)</li>
-                          <li><strong>Cor Primária:</strong> Personalize as cores do sistema</li>
-                        </ul>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Ações Rápidas</h4>
-                        <p>Ative para exibir atalhos com ícones no Dashboard para acesso rápido às principais funções.</p>
+                        <h4 className="font-semibold text-foreground">Como Instalar no iPhone/iPad</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Abra o sistema no Safari</li>
+                          <li>Toque no ícone de Compartilhar (↑)</li>
+                          <li>Role para baixo e toque em "Adicionar à Tela de Início"</li>
+                          <li>Confirme tocando em "Adicionar"</li>
+                        </ol>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -917,30 +1070,32 @@ const Settings = () => {
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Como Funciona</h4>
-                        <p>Cada usuário recebe um código de convite único de 8 caracteres. Compartilhe seu código com amigos e ambos ganham benefícios!</p>
+                        <p>Você tem um código de convite único. Quando alguém se cadastra usando seu código, vocês dois ganham dias grátis!</p>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Benefícios</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li><strong>Para você (quem convida):</strong> Ganha 1 mês grátis adicionado ao seu período</li>
-                          <li><strong>Para seu amigo:</strong> Ganha 1 mês + 3 dias grátis (33 dias) ao se cadastrar</li>
-                          <li><strong>Sem limite:</strong> Convide quantos amigos quiser!</li>
+                          <li><strong>Você (quem convida):</strong> Ganha +30 dias grátis</li>
+                          <li><strong>Seu amigo:</strong> Ganha 33 dias grátis (1 mês + 3 dias)</li>
+                          <li>Você pode convidar <strong>quantas pessoas quiser</strong>!</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Como Compartilhar</h4>
+                        <h4 className="font-semibold text-foreground">Como Compartilhar seu Código</h4>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
-                          <li>Acesse "Configurações" e abra a seção "Meu Código de Convite"</li>
-                          <li>Copie o código ou use o botão de compartilhar</li>
-                          <li>Envie o código ou link para seus amigos</li>
+                          <li>Acesse "Configurações"</li>
+                          <li>Clique em "Meu Código de Convite"</li>
+                          <li>Clique em "Copiar" para copiar o código</li>
+                          <li>Ou clique em "Compartilhar" para enviar o link completo</li>
+                          <li>Envie para seus amigos por WhatsApp, Instagram, etc.</li>
                         </ol>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Regras Importantes</h4>
+                        <h4 className="font-semibold text-foreground">Regras</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Cada código pode ser usado várias vezes por pessoas diferentes</li>
-                          <li>O mesmo dispositivo não pode usar o mesmo código mais de uma vez</li>
-                          <li>O benefício é aplicado imediatamente após o cadastro</li>
+                          <li>Seu código pode ser usado por várias pessoas diferentes</li>
+                          <li>Cada pessoa só pode usar um código por dispositivo</li>
+                          <li>O benefício é aplicado na hora do cadastro</li>
                         </ul>
                       </div>
                     </AccordionContent>
@@ -957,30 +1112,32 @@ const Settings = () => {
                     <AccordionContent className="space-y-4 text-sm text-muted-foreground">
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Período de Teste</h4>
-                        <p>Ao criar sua conta, você ganha 3 dias de teste grátis com acesso completo ao sistema.</p>
+                        <p>Ao criar sua conta, você ganha <strong>3 dias grátis</strong> para testar todas as funcionalidades. Se usou um código de convite, ganha <strong>33 dias grátis</strong>!</p>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Planos Disponíveis</h4>
                         <ul className="list-disc list-inside space-y-1 ml-2">
                           <li><strong>Plano 3 Meses:</strong> R$ 29,99 - Acesso por 90 dias</li>
-                          <li><strong>Plano 1 Ano:</strong> R$ 69,99 - Acesso por 365 dias (melhor custo-benefício)</li>
+                          <li><strong>Plano 1 Ano:</strong> R$ 69,99 - Acesso por 365 dias (mais econômico!)</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Como Assinar</h4>
+                        <h4 className="font-semibold text-foreground">Como Assinar (Passo a Passo)</h4>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
                           <li>Acesse "Assinatura" no menu</li>
-                          <li>Escolha o plano desejado</li>
-                          <li>Clique em "Comprar" - você será direcionado ao WhatsApp</li>
-                          <li>Realize o pagamento conforme instruções</li>
-                          <li>Volte ao sistema e clique em "Já Paguei"</li>
-                          <li>Digite o código de validação recebido</li>
-                          <li>Pronto! Seu plano será ativado imediatamente</li>
+                          <li>Escolha o plano que deseja (3 meses ou 1 ano)</li>
+                          <li>Clique em "Comprar"</li>
+                          <li>Você será redirecionado para o WhatsApp</li>
+                          <li>Envie a mensagem e siga as instruções de pagamento</li>
+                          <li>Após pagar, volte ao sistema</li>
+                          <li>Clique em "Já Paguei"</li>
+                          <li>Digite o <strong>código de 6 dígitos</strong> que você recebeu</li>
+                          <li>Clique em "Validar" - seu plano será ativado na hora!</li>
                         </ol>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Após Expiração</h4>
-                        <p>Quando o período expira, você terá acesso apenas à área de pagamento e consultas básicas. Renove para continuar usando todas as funcionalidades.</p>
+                        <h4 className="font-semibold text-foreground">O que Acontece Quando Expira?</h4>
+                        <p>Quando seu período acabar, você ainda poderá acessar o sistema, mas só conseguirá ver os dados. Para voltar a vender e fazer alterações, é só renovar a assinatura.</p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
