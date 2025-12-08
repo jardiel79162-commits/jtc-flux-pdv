@@ -1384,150 +1384,148 @@ ${paymentInfo}
 
       {/* Modal de Produtos em Tela Cheia */}
       <Dialog open={showFullscreenBrowser} onOpenChange={setShowFullscreenBrowser}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
-          <div className="flex flex-col h-full">
-            <DialogHeader className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-2xl">
-                    Produtos Disponíveis
-                    {cart.length > 0 && (
-                      <span className="ml-3 text-sm font-normal text-muted-foreground">
-                        ({cart.length} {cart.length === 1 ? 'item' : 'itens'} no carrinho)
-                      </span>
-                    )}
-                  </DialogTitle>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowFullscreenBrowser(false)}
-                >
-                  <X className="h-6 w-6" />
-                </Button>
+        <DialogContent className="max-w-[95vw] w-full h-[95vh] max-h-[95vh] p-0 flex flex-col overflow-hidden">
+          <DialogHeader className="p-4 md:p-6 border-b shrink-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl md:text-2xl">
+                  Produtos Disponíveis
+                  {cart.length > 0 && (
+                    <span className="ml-2 md:ml-3 text-sm font-normal text-muted-foreground">
+                      ({cart.length} {cart.length === 1 ? 'item' : 'itens'} no carrinho)
+                    </span>
+                  )}
+                </DialogTitle>
               </div>
-            </DialogHeader>
-            
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar produto..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12 text-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {(searchTerm ? filteredProducts : products).map((product) => {
-                  const photoUrl = (product as any).photos?.[0];
-                  const cartItem = cart.find(item => item.product.id === product.id);
-                  const inCart = !!cartItem;
-                  return (
-                    <Card
-                      key={product.id}
-                      className={`hover:border-primary hover:shadow-lg transition-all group relative ${
-                        inCart ? 'border-2 border-accent' : ''
-                      }`}
-                    >
-                      <CardContent className="p-4 space-y-3">
-                        {inCart && (
-                          <div className="absolute top-2 right-2 bg-accent text-accent-foreground rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg z-10">
-                            {cartItem?.quantity}
-                          </div>
-                        )}
-                        {photoUrl ? (
-                          <img 
-                            src={photoUrl} 
-                            alt={product.name}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-32 bg-muted rounded-lg flex items-center justify-center">
-                            <ShoppingCart className="h-12 w-12 text-muted-foreground" />
-                          </div>
-                        )}
-                        <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary">
-                          {product.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          Estoque: {product.stock_quantity}
-                        </p>
-                        <div className="space-y-1">
-                          {product.promotional_price ? (
-                            <>
-                              <p className="text-xs line-through text-muted-foreground">
-                                R$ {product.price.toFixed(2)}
-                              </p>
-                              <p className="text-lg font-bold text-accent">
-                                R$ {product.promotional_price.toFixed(2)}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-lg font-bold text-accent">
-                              R$ {product.price.toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <div className="flex gap-2 pt-2">
-                          {inCart && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(product.id, -1);
-                                if (cartItem && cartItem.quantity === 1) {
-                                  removeFromCart(product.id);
-                                }
-                              }}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className={inCart ? "flex-1" : "w-full"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToCart(product);
-                            }}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              {(searchTerm ? filteredProducts : products).length === 0 && (
-                <div className="text-center py-12">
-                  <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-lg text-muted-foreground">
-                    {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto disponível"}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer com botão Continuar */}
-            <div className="border-t p-6 bg-card">
               <Button
-                className="w-full h-14 text-lg bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowFullscreenBrowser(false)}
               >
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                Continuar ({cart.length} {cart.length === 1 ? 'item' : 'itens'})
+                <X className="h-6 w-6" />
               </Button>
             </div>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 md:p-6 min-h-0">
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar produto..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-12 text-lg"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 pb-4">
+              {(searchTerm ? filteredProducts : products).map((product) => {
+                const photoUrl = (product as any).photos?.[0];
+                const cartItem = cart.find(item => item.product.id === product.id);
+                const inCart = !!cartItem;
+                return (
+                  <Card
+                    key={product.id}
+                    className={`hover:border-primary hover:shadow-lg transition-all group relative ${
+                      inCart ? 'border-2 border-accent' : ''
+                    }`}
+                  >
+                    <CardContent className="p-3 md:p-4 space-y-2 md:space-y-3">
+                      {inCart && (
+                        <div className="absolute top-2 right-2 bg-accent text-accent-foreground rounded-full w-7 h-7 md:w-8 md:h-8 flex items-center justify-center font-bold text-xs md:text-sm shadow-lg z-10">
+                          {cartItem?.quantity}
+                        </div>
+                      )}
+                      {photoUrl ? (
+                        <img 
+                          src={photoUrl} 
+                          alt={product.name}
+                          className="w-full h-24 md:h-32 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-24 md:h-32 bg-muted rounded-lg flex items-center justify-center">
+                          <ShoppingCart className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      <h3 className="font-semibold text-xs md:text-sm line-clamp-2 group-hover:text-primary">
+                        {product.name}
+                      </h3>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">
+                        Estoque: {product.stock_quantity}
+                      </p>
+                      <div className="space-y-1">
+                        {product.promotional_price ? (
+                          <>
+                            <p className="text-[10px] md:text-xs line-through text-muted-foreground">
+                              R$ {product.price.toFixed(2)}
+                            </p>
+                            <p className="text-base md:text-lg font-bold text-accent">
+                              R$ {product.promotional_price.toFixed(2)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-base md:text-lg font-bold text-accent">
+                            R$ {product.price.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2 pt-1 md:pt-2">
+                        {inCart && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 h-8 md:h-9"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(product.id, -1);
+                              if (cartItem && cartItem.quantity === 1) {
+                                removeFromCart(product.id);
+                              }
+                            }}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className={`${inCart ? "flex-1" : "w-full"} h-8 md:h-9`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product);
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {(searchTerm ? filteredProducts : products).length === 0 && (
+              <div className="text-center py-12">
+                <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-lg text-muted-foreground">
+                  {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto disponível"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer com botão Continuar */}
+          <div className="border-t p-4 md:p-6 bg-card shrink-0">
+            <Button
+              className="w-full h-12 md:h-14 text-base md:text-lg bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover"
+              onClick={() => setShowFullscreenBrowser(false)}
+            >
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Continuar ({cart.length} {cart.length === 1 ? 'item' : 'itens'})
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
