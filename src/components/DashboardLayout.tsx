@@ -167,8 +167,8 @@ const DashboardLayout = () => {
       )}
 
       {/* Main Content */}
-      <main className="pt-16 min-h-screen">
-        <div className="p-4 md:p-8">
+      <main className="pt-16 min-h-screen overflow-x-hidden">
+        <div className="p-4 md:p-8 w-full max-w-full overflow-x-hidden">
           <Outlet />
         </div>
       </main>
