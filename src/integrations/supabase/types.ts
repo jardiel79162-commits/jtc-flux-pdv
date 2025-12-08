@@ -554,6 +554,7 @@ export type Database = {
           commercial_phone: string | null
           created_at: string
           has_employees: boolean | null
+          hide_trial_message: boolean | null
           id: string
           logo_url: string | null
           operation_type: string | null
@@ -572,6 +573,7 @@ export type Database = {
           commercial_phone?: string | null
           created_at?: string
           has_employees?: boolean | null
+          hide_trial_message?: boolean | null
           id?: string
           logo_url?: string | null
           operation_type?: string | null
@@ -590,6 +592,7 @@ export type Database = {
           commercial_phone?: string | null
           created_at?: string
           has_employees?: boolean | null
+          hide_trial_message?: boolean | null
           id?: string
           logo_url?: string | null
           operation_type?: string | null
