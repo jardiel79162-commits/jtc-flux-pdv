@@ -257,23 +257,23 @@ const Settings = () => {
 
       <div className="grid gap-4 md:gap-6 w-full max-w-2xl">
         {/* Informações da Loja */}
-        <Card>
+        <Card className="overflow-hidden">
           <Collapsible open={storeInfoOpen} onOpenChange={setStoreInfoOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setStoreInfoOpen(!storeInfoOpen)}>
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2">
-                    <Store className="h-5 w-5" />
-                    Informações da Loja
+                  <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                    <Store className="h-5 w-5 shrink-0" />
+                    <span className="truncate">Informações da Loja</span>
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                     {storeInfoOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 overflow-hidden">
                 <div className="space-y-2">
                   <Label>Nome da Loja *</Label>
                   <Input
@@ -377,23 +377,23 @@ const Settings = () => {
         </Card>
 
         {/* Configuração PIX */}
-        <Card>
+        <Card className="overflow-hidden">
           <Collapsible open={pixConfigOpen} onOpenChange={setPixConfigOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setPixConfigOpen(!pixConfigOpen)}>
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2">
-                    <Smartphone className="h-5 w-5" />
-                    Configuração PIX
+                  <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                    <Smartphone className="h-5 w-5 shrink-0" />
+                    <span className="truncate">Configuração PIX</span>
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                     {pixConfigOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 overflow-hidden">
                 <p className="text-sm text-muted-foreground">
                   Configure sua chave PIX para receber pagamentos. A loja só poderá aceitar pagamentos via PIX se uma chave estiver cadastrada.
                 </p>
@@ -450,46 +450,48 @@ const Settings = () => {
         </Card>
 
         {/* Ações Rápidas */}
-        <Card>
+        <Card className="overflow-hidden">
           <Collapsible open={quickActionsOpen} onOpenChange={setQuickActionsOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setQuickActionsOpen(!quickActionsOpen)}>
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5" />
-                    Ações Rápidas
+                  <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                    <Zap className="h-5 w-5 shrink-0" />
+                    <span className="truncate">Ações Rápidas</span>
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                     {quickActionsOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Ativar Ações Rápidas</Label>
-                    <p className="text-sm text-muted-foreground">
+              <CardContent className="space-y-6 overflow-hidden">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <Label className="text-sm">Ativar Ações Rápidas</Label>
+                    <p className="text-xs md:text-sm text-muted-foreground">
                       Exibe atalhos com ícones no Dashboard
                     </p>
                   </div>
                   <Switch
                     checked={settings.quick_actions_enabled}
                     onCheckedChange={(checked) => setSettings({ ...settings, quick_actions_enabled: checked })}
+                    className="shrink-0"
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Ocultar Mensagem do Período de Teste</Label>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <Label className="text-sm">Ocultar Mensagem do Período de Teste</Label>
+                    <p className="text-xs md:text-sm text-muted-foreground">
                       Esconde o aviso de teste/assinatura no Dashboard
                     </p>
                   </div>
                   <Switch
                     checked={settings.hide_trial_message}
                     onCheckedChange={(checked) => setSettings({ ...settings, hide_trial_message: checked })}
+                    className="shrink-0"
                   />
                 </div>
               </CardContent>
@@ -498,38 +500,39 @@ const Settings = () => {
         </Card>
 
         {/* Meu Código de Convite */}
-        <Card className="border-accent/30 bg-accent/5">
+        <Card className="border-accent/30 bg-accent/5 overflow-hidden">
           <Collapsible open={inviteCodeOpen} onOpenChange={setInviteCodeOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setInviteCodeOpen(!inviteCodeOpen)}>
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2 text-accent">
-                    <Gift className="h-5 w-5" />
-                    Meu Código de Convite
+                  <CardTitle className="flex items-center gap-2 text-accent text-sm md:text-base">
+                    <Gift className="h-5 w-5 shrink-0" />
+                    <span className="truncate">Meu Código de Convite</span>
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                     {inviteCodeOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
+              <CardContent className="space-y-4 overflow-hidden">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Compartilhe seu código e ganhe <strong className="text-accent">1 mês grátis</strong> quando alguém se cadastrar usando ele!
                 </p>
 
-                <div className="bg-background rounded-xl p-6 text-center space-y-4 border border-accent/20">
-                  <div className="text-4xl font-mono font-bold tracking-widest text-primary">
+                <div className="bg-background rounded-xl p-4 md:p-6 text-center space-y-4 border border-accent/20">
+                  <div className="text-2xl md:text-4xl font-mono font-bold tracking-widest text-primary break-all">
                     {inviteCode || "Carregando..."}
                   </div>
                   
-                  <div className="flex gap-2 justify-center">
+                  <div className="flex gap-2 justify-center flex-wrap">
                     <Button
                       onClick={handleCopyCode}
                       variant="outline"
                       className="gap-2"
                       disabled={!inviteCode}
+                      size="sm"
                     >
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       {copied ? "Copiado!" : "Copiar"}
@@ -539,6 +542,7 @@ const Settings = () => {
                       onClick={handleShare}
                       className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
                       disabled={!inviteCode}
+                      size="sm"
                     >
                       <Share2 className="h-4 w-4" />
                       Compartilhar
@@ -546,7 +550,7 @@ const Settings = () => {
                   </div>
                 </div>
 
-                <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
+                <div className="bg-muted/50 rounded-lg p-3 md:p-4 text-xs md:text-sm space-y-2">
                   <h4 className="font-semibold text-foreground">Como funciona:</h4>
                   <ul className="text-muted-foreground space-y-1">
                     <li>• Você ganha <strong>1 mês grátis</strong> para cada pessoa que usar seu código</li>
@@ -561,76 +565,76 @@ const Settings = () => {
         </Card>
 
         {/* Baixar App */}
-        <Card className="border-primary/30 bg-primary/5">
+        <Card className="border-primary/30 bg-primary/5 overflow-hidden">
           <Collapsible open={downloadAppOpen} onOpenChange={setDownloadAppOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setDownloadAppOpen(!downloadAppOpen)}>
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2 text-primary">
-                    <Download className="h-5 w-5" />
-                    Baixar App
+                  <CardTitle className="flex items-center gap-2 text-primary text-sm md:text-base">
+                    <Download className="h-5 w-5 shrink-0" />
+                    <span className="truncate">Baixar App</span>
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                     {downloadAppOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Instale o JTC FluxPDV como um aplicativo no seu celular! Acesso rápido, funciona offline e sem barra do navegador.
+              <CardContent className="space-y-4 overflow-hidden">
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  Instale o JTC FluxPDV como um aplicativo no seu celular! Acesso rápido e sem barra do navegador.
                 </p>
 
                 {isInstalled ? (
-                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-500" />
-                    <div>
-                      <p className="font-medium text-green-600">App já instalado!</p>
-                      <p className="text-sm text-muted-foreground">O JTC FluxPDV está na sua tela inicial</p>
+                  <div className="p-3 md:p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-green-500 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-green-600 text-sm md:text-base">App já instalado!</p>
+                      <p className="text-xs md:text-sm text-muted-foreground">O JTC FluxPDV está na sua tela inicial</p>
                     </div>
                   </div>
                 ) : (
                   <Button
                     onClick={handleInstallApp}
-                    className="w-full h-14 text-lg gap-3"
+                    className="w-full h-12 md:h-14 text-sm md:text-lg gap-2 md:gap-3"
                     disabled={isInstalling}
                   >
                     {isInstalling ? (
                       <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
                         Instalando...
                       </>
                     ) : (
                       <>
-                        <Download className="h-5 w-5" />
-                        📲 Clique aqui para fazer a instalação
+                        <Download className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="truncate">📲 Clique para instalar</span>
                       </>
                     )}
                   </Button>
                 )}
 
-                <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3">
+                <div className="bg-muted/50 rounded-lg p-3 md:p-4 text-xs md:text-sm space-y-2 md:space-y-3">
                   <h4 className="font-semibold text-foreground">Benefícios do App:</h4>
                   <ul className="text-muted-foreground space-y-1">
                     <li>✅ Acesso rápido pela tela inicial</li>
-                    <li>✅ Abre em tela cheia (sem barra do navegador)</li>
+                    <li>✅ Abre em tela cheia</li>
                     <li>✅ Carrega mais rápido</li>
                     <li>✅ Experiência mais fluida</li>
                   </ul>
                 </div>
 
                 {!isInstalled && (
-                  <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3">
+                  <div className="bg-muted/50 rounded-lg p-3 md:p-4 text-xs md:text-sm space-y-2 md:space-y-3">
                     <h4 className="font-semibold text-foreground">📱 Como instalar manualmente:</h4>
                     <div className="space-y-2">
                       <div className="border-l-2 border-primary pl-3">
                         <p className="font-medium">No Android:</p>
-                        <p className="text-muted-foreground">Menu do navegador (⋮) → "Adicionar à tela inicial"</p>
+                        <p className="text-muted-foreground">Menu (⋮) → "Adicionar à tela inicial"</p>
                       </div>
                       <div className="border-l-2 border-primary pl-3">
                         <p className="font-medium">No iPhone/iPad:</p>
-                        <p className="text-muted-foreground">Toque em Compartilhar (↑) → "Adicionar à Tela de Início"</p>
+                        <p className="text-muted-foreground">Compartilhar (↑) → "Adicionar à Tela de Início"</p>
                       </div>
                     </div>
                   </div>
