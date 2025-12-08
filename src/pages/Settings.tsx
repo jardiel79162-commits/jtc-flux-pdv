@@ -26,6 +26,7 @@ const Settings = () => {
     category: "",
     has_employees: false,
     quick_actions_enabled: false,
+    hide_trial_message: false,
     pix_key_type: "",
     pix_key: "",
     pix_receiver_name: "",
@@ -173,6 +174,7 @@ const Settings = () => {
         category: data.category || "",
         has_employees: data.has_employees || false,
         quick_actions_enabled: data.quick_actions_enabled || false,
+        hide_trial_message: data.hide_trial_message || false,
         pix_key_type: data.pix_key_type || "",
         pix_key: data.pix_key || "",
         pix_receiver_name: data.pix_receiver_name || "",
@@ -464,7 +466,7 @@ const Settings = () => {
               </CollapsibleTrigger>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Ativar Ações Rápidas</Label>
@@ -475,6 +477,19 @@ const Settings = () => {
                   <Switch
                     checked={settings.quick_actions_enabled}
                     onCheckedChange={(checked) => setSettings({ ...settings, quick_actions_enabled: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Ocultar Mensagem do Período de Teste</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Esconde o aviso de teste/assinatura no Dashboard
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.hide_trial_message}
+                    onCheckedChange={(checked) => setSettings({ ...settings, hide_trial_message: checked })}
                   />
                 </div>
               </CardContent>
@@ -1017,6 +1032,15 @@ const Settings = () => {
                           <li>Clique em "Salvar Configurações"</li>
                         </ol>
                         <p className="mt-2">As ações rápidas são atalhos com ícones que aparecem no Dashboard para acessar as funções mais usadas rapidamente.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Ocultar Mensagem do Período de Teste</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Clique em "Ações Rápidas" para expandir</li>
+                          <li>Ative o switch "Ocultar Mensagem do Período de Teste"</li>
+                          <li>Clique em "Salvar Configurações"</li>
+                        </ol>
+                        <p className="mt-2">Isso esconde o aviso de teste/assinatura no Dashboard. Desative para voltar a exibir a mensagem.</p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>

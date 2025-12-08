@@ -24,6 +24,7 @@ interface DashboardData {
   subscriptionStatus: "active" | "trial" | "expired";
   trialDaysLeft?: number;
   quickActionsEnabled: boolean;
+  hideTrialMessage: boolean;
 }
 
 const quickActions = [
@@ -46,6 +47,7 @@ const Dashboard = () => {
     subscriptionStatus: "trial",
     trialDaysLeft: 0,
     quickActionsEnabled: false,
+    hideTrialMessage: false,
   });
   const [loading, setLoading] = useState(true);
 
@@ -68,7 +70,7 @@ const Dashboard = () => {
       // Carregar configurações da loja
       const { data: storeSettings } = await supabase
         .from("store_settings")
-        .select("quick_actions_enabled")
+        .select("quick_actions_enabled, hide_trial_message")
         .eq("user_id", user.id)
         .single();
 
@@ -142,6 +144,7 @@ const Dashboard = () => {
         subscriptionStatus,
         trialDaysLeft,
         quickActionsEnabled: storeSettings?.quick_actions_enabled || false,
+        hideTrialMessage: storeSettings?.hide_trial_message || false,
       });
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -167,55 +170,78 @@ const Dashboard = () => {
       </div>
 
       {/* Status da Assinatura */}
-      {data.subscriptionStatus === "trial" && (
-        <Card className="border-warning bg-warning/5">
-          <CardHeader>
+      {!data.hideTrialMessage && data.subscriptionStatus === "trial" && (
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-yellow-500/10 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5" />
+          <CardHeader className="relative pb-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-warning" />
-                <CardTitle className="text-warning">Período de Teste</CardTitle>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                    Período de Teste Ativo
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground/80">
+                    Explore todos os recursos do sistema
+                  </CardDescription>
+                </div>
               </div>
-              <Badge variant="outline" className="border-warning text-warning">
-                {data.trialDaysLeft} dias restantes
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-md px-4 py-1.5 text-sm font-semibold">
+                {data.trialDaysLeft} {data.trialDaysLeft === 1 ? 'dia' : 'dias'}
               </Badge>
             </div>
-            <CardDescription>
-              Aproveite seu período de teste gratuito e conheça todos os recursos
-            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative pt-2">
             <Link to="/assinatura">
-              <Button variant="default">Assinar Agora</Button>
+              <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]">
+                Assinar Agora
+              </Button>
             </Link>
           </CardContent>
         </Card>
       )}
 
-      {data.subscriptionStatus === "expired" && (
-        <Card className="border-destructive bg-destructive/5">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              <CardTitle className="text-destructive">Assinatura Expirada</CardTitle>
+      {!data.hideTrialMessage && data.subscriptionStatus === "expired" && (
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-red-500/10 via-rose-500/10 to-pink-500/10 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-rose-500/5" />
+          <CardHeader className="relative pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 shadow-lg">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
+                  Assinatura Expirada
+                </CardTitle>
+                <CardDescription className="text-muted-foreground/80">
+                  Renove para continuar usando o sistema
+                </CardDescription>
+              </div>
             </div>
-            <CardDescription>
-              Sua assinatura expirou. Assine um plano para continuar usando o sistema.
-            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative pt-2">
             <Link to="/assinatura">
-              <Button variant="destructive">Renovar Assinatura</Button>
+              <Button className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]">
+                Renovar Assinatura
+              </Button>
             </Link>
           </CardContent>
         </Card>
       )}
 
-      {data.subscriptionStatus === "active" && (
-        <Card className="border-success bg-success/5">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-success" />
-              <CardTitle className="text-success">Assinatura Ativa</CardTitle>
+      {!data.hideTrialMessage && data.subscriptionStatus === "active" && (
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500/10 via-green-500/10 to-teal-500/10 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-green-500/5" />
+          <CardHeader className="relative">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 shadow-lg">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <CardTitle className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                Assinatura Ativa
+              </CardTitle>
             </div>
           </CardHeader>
         </Card>
