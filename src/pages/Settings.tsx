@@ -261,14 +261,14 @@ const Settings = () => {
           <Collapsible open={storeInfoOpen} onOpenChange={setStoreInfoOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setStoreInfoOpen(!storeInfoOpen)}>
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-2">
                   <CardTitle className="flex items-center gap-2 text-sm md:text-base">
                     <Store className="h-5 w-5 shrink-0" />
-                    <span className="truncate">Informações da Loja</span>
+                    Informações da Loja
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    {storeInfoOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  <div className="shrink-0">
+                    {storeInfoOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </div>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
@@ -381,14 +381,14 @@ const Settings = () => {
           <Collapsible open={pixConfigOpen} onOpenChange={setPixConfigOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setPixConfigOpen(!pixConfigOpen)}>
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-2">
                   <CardTitle className="flex items-center gap-2 text-sm md:text-base">
                     <Smartphone className="h-5 w-5 shrink-0" />
-                    <span className="truncate">Configuração PIX</span>
+                    Configuração PIX
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    {pixConfigOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  <div className="shrink-0">
+                    {pixConfigOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </div>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
@@ -454,14 +454,14 @@ const Settings = () => {
           <Collapsible open={quickActionsOpen} onOpenChange={setQuickActionsOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setQuickActionsOpen(!quickActionsOpen)}>
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-2">
                   <CardTitle className="flex items-center gap-2 text-sm md:text-base">
                     <Zap className="h-5 w-5 shrink-0" />
-                    <span className="truncate">Ações Rápidas</span>
+                    Ações Rápidas
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    {quickActionsOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  <div className="shrink-0">
+                    {quickActionsOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </div>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
@@ -504,14 +504,14 @@ const Settings = () => {
           <Collapsible open={inviteCodeOpen} onOpenChange={setInviteCodeOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setInviteCodeOpen(!inviteCodeOpen)}>
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-2">
                   <CardTitle className="flex items-center gap-2 text-accent text-sm md:text-base">
                     <Gift className="h-5 w-5 shrink-0" />
-                    <span className="truncate">Meu Código de Convite</span>
+                    Meu Código de Convite
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    {inviteCodeOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  <div className="shrink-0">
+                    {inviteCodeOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </div>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
@@ -569,14 +569,14 @@ const Settings = () => {
           <Collapsible open={downloadAppOpen} onOpenChange={setDownloadAppOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setDownloadAppOpen(!downloadAppOpen)}>
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-2">
                   <CardTitle className="flex items-center gap-2 text-primary text-sm md:text-base">
                     <Download className="h-5 w-5 shrink-0" />
-                    <span className="truncate">Baixar App</span>
+                    Baixar App
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    {downloadAppOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  <div className="shrink-0">
+                    {downloadAppOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </div>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
@@ -600,15 +600,15 @@ const Settings = () => {
                     className="w-full h-12 md:h-14 text-sm md:text-lg gap-2 md:gap-3"
                     disabled={isInstalling}
                   >
-                    {isInstalling ? (
+                  {isInstalling ? (
                       <>
-                        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin shrink-0" />
                         Instalando...
                       </>
                     ) : (
                       <>
-                        <Download className="h-4 w-4 md:h-5 md:w-5" />
-                        <span className="truncate">📲 Clique para instalar</span>
+                        <Download className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+                        📲 Clique para instalar
                       </>
                     )}
                   </Button>
@@ -655,14 +655,14 @@ const Settings = () => {
           <Collapsible open={manualOpen} onOpenChange={setManualOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setManualOpen(!manualOpen)}>
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full gap-2">
                   <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
+                    <BookOpen className="h-5 w-5 shrink-0" />
                     Manual Completo do Sistema
                   </CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    {manualOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  <div className="shrink-0">
+                    {manualOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </div>
                 </div>
               </CollapsibleTrigger>
             </CardHeader>
