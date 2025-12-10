@@ -7,11 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/utils";
-import { Eye, Search, Download, Ban, FileText, File } from "lucide-react";
+import { Eye, Search, Download, Ban, FileText, File, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
@@ -42,12 +43,35 @@ const SalesHistory = () => {
   const [saleToCancel, setSaleToCancel] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDetails, setShowDetails] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailToSend, setEmailToSend] = useState("");
+  const [saleForEmail, setSaleForEmail] = useState<Sale | null>(null);
+  const [storeName, setStoreName] = useState("Loja");
+  const [userEmail, setUserEmail] = useState("");
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
   useEffect(() => {
     fetchSales();
+    fetchStoreInfo();
   }, []);
+
+  const fetchStoreInfo = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setUserEmail(user.email || "");
+
+    const { data } = await supabase
+      .from("store_settings")
+      .select("store_name")
+      .eq("user_id", user.id)
+      .single();
+
+    if (data?.store_name) {
+      setStoreName(data.store_name);
+    }
+  };
 
   if (!loading && isExpired) {
     return <SubscriptionBlocker isTrial={isTrial} />;
@@ -286,6 +310,53 @@ const SalesHistory = () => {
     toast({ title: "Comprovante baixado em PDF" });
   };
 
+  const openEmailDialog = (sale: Sale) => {
+    setSaleForEmail(sale);
+    setEmailToSend("");
+    setShowEmailDialog(true);
+  };
+
+  const handleSendEmail = () => {
+    if (!saleForEmail || !emailToSend) {
+      toast({ title: "Digite o e-mail do cliente", variant: "destructive" });
+      return;
+    }
+
+    // Gerar conteúdo do e-mail
+    const saleDate = format(new Date(saleForEmail.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    const subject = encodeURIComponent(`Comprovante de Venda - ${storeName} - ${saleDate}`);
+    
+    let body = `Olá${saleForEmail.customer_name ? ` ${saleForEmail.customer_name}` : ""},\n\n`;
+    body += `Segue o comprovante da sua compra realizada em ${storeName}.\n\n`;
+    body += `Data: ${saleDate}\n`;
+    body += `Pagamento: ${getPaymentMethodLabel(saleForEmail.payment_method)}\n\n`;
+    body += `ITENS:\n`;
+    body += `----------------------------------------\n`;
+    
+    saleForEmail.items.forEach(item => {
+      body += `${item.product_name}\n`;
+      body += `  ${item.quantity}x ${formatCurrency(item.unit_price)} = ${formatCurrency(item.quantity * item.unit_price)}\n`;
+    });
+    
+    body += `----------------------------------------\n`;
+    body += `Subtotal: ${formatCurrency(saleForEmail.total_amount + saleForEmail.discount)}\n`;
+    if (saleForEmail.discount > 0) {
+      body += `Desconto: ${formatCurrency(saleForEmail.discount)}\n`;
+    }
+    body += `TOTAL: ${formatCurrency(saleForEmail.total_amount)}\n\n`;
+    body += `Obrigado pela preferência!\n`;
+    body += `${storeName}`;
+
+    const encodedBody = encodeURIComponent(body);
+    const mailtoLink = `mailto:${emailToSend}?subject=${subject}&body=${encodedBody}`;
+    
+    // Abrir cliente de e-mail
+    window.location.href = mailtoLink;
+    
+    setShowEmailDialog(false);
+    toast({ title: "Redirecionando para o e-mail..." });
+  };
+
   const filteredSales = sales.filter(sale => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -374,6 +445,10 @@ const SalesHistory = () => {
                             <DropdownMenuItem onClick={() => downloadAsPDF(sale)}>
                               <File className="h-4 w-4 mr-2" />
                               Baixar PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEmailDialog(sale)}>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Enviar por E-mail
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -509,6 +584,42 @@ const SalesHistory = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de Enviar por E-mail */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar Comprovante por E-mail</DialogTitle>
+            <DialogDescription>
+              Digite o e-mail do cliente para enviar o comprovante
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customer-email">E-mail do Cliente</Label>
+              <Input
+                id="customer-email"
+                type="email"
+                placeholder="cliente@email.com"
+                value={emailToSend}
+                onChange={(e) => setEmailToSend(e.target.value)}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Ao clicar em "Me Direcionar", seu cliente de e-mail será aberto com o comprovante pronto para enviar.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSendEmail} disabled={!emailToSend}>
+              <Mail className="h-4 w-4 mr-2" />
+              Me Direcionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
