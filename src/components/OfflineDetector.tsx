@@ -1,22 +1,61 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { WifiOff } from "lucide-react";
 
 const OfflineDetector = () => {
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
+
+  const checkConnection = useCallback(async () => {
+    try {
+      // Try to fetch a small resource to verify real connectivity
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch("https://www.google.com/favicon.ico", {
+        method: "HEAD",
+        mode: "no-cors",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      setIsOffline(false);
+    } catch (error) {
+      setIsOffline(true);
+    } finally {
+      setHasChecked(true);
+    }
+  }, []);
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    // Initial check
+    checkConnection();
+
+    // Listen to browser online/offline events
+    const handleOnline = () => {
+      checkConnection();
+    };
+    
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
+    // Periodic check every 10 seconds
+    const interval = setInterval(checkConnection, 10000);
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      clearInterval(interval);
     };
-  }, []);
+  }, [checkConnection]);
 
+  // Don't render anything until first check is done
+  if (!hasChecked) return null;
+  
   if (!isOffline) return null;
 
   return (
