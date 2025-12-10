@@ -126,6 +126,62 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          created_at: string
+          customer_email: string
+          document_type: string
+          error_message: string | null
+          id: string
+          pdf_url: string | null
+          sale_id: string | null
+          sender_email: string
+          sent_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          document_type?: string
+          error_message?: string | null
+          id?: string
+          pdf_url?: string | null
+          sale_id?: string | null
+          sender_email: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          document_type?: string
+          error_message?: string | null
+          id?: string
+          pdf_url?: string | null
+          sale_id?: string | null
+          sender_email?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_permissions: {
         Row: {
           can_access_customers: boolean
