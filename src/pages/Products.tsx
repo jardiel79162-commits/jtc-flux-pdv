@@ -213,33 +213,6 @@ const Products = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Verificar se o produto já possui vendas registradas
-    const { data: relatedSales, error: salesError } = await supabase
-      .from("sale_items")
-      .select("id")
-      .eq("product_id", id)
-      .limit(1);
-
-    if (salesError) {
-      console.error("Erro ao verificar vendas relacionadas ao produto:", salesError);
-      toast({
-        title: "Erro ao verificar vendas do produto",
-        description: "Tente novamente em alguns instantes.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (relatedSales && relatedSales.length > 0) {
-      toast({
-        title: "Produto com vendas registradas",
-        description:
-          "Não é possível excluir produtos que já foram vendidos. Marque-o como inativo em vez disso.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const { error } = await supabase.from("products").delete().eq("id", id);
 
     if (error) {

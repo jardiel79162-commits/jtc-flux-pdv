@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/utils";
-import { Eye, Search, Download, Ban, FileText, File, Mail } from "lucide-react";
+import { Eye, Search, Download, Ban, FileText, File, Mail, Printer } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -357,6 +357,98 @@ const SalesHistory = () => {
     toast({ title: "Redirecionando para o e-mail..." });
   };
 
+  const printThermalReceipt = (sale: Sale) => {
+    const saleDate = format(new Date(sale.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    const subtotal = sale.total_amount + sale.discount;
+
+    const printWindow = window.open("", "_blank", "width=300,height=600");
+    if (!printWindow) {
+      toast({ title: "Erro ao abrir janela de impressão", variant: "destructive" });
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Comprovante</title>
+        <style>
+          @page { margin: 0; size: 80mm auto; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            width: 80mm; 
+            padding: 5mm;
+            line-height: 1.4;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: bold; }
+          .divider { border-top: 1px dashed #000; margin: 8px 0; }
+          .item { display: flex; justify-content: space-between; margin: 4px 0; }
+          .item-name { flex: 1; }
+          .item-price { text-align: right; min-width: 70px; }
+          .total-row { display: flex; justify-content: space-between; margin: 4px 0; }
+          .store-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="center store-name">${storeName}</div>
+        <div class="center">COMPROVANTE DE VENDA</div>
+        <div class="divider"></div>
+        
+        <div>Data: ${saleDate}</div>
+        ${sale.customer_name ? `<div class="bold">Cliente: ${sale.customer_name}</div>` : ""}
+        <div>Pagamento: ${getPaymentMethodLabel(sale.payment_method)}</div>
+        
+        <div class="divider"></div>
+        <div class="center bold">ITENS</div>
+        <div class="divider"></div>
+        
+        ${sale.items.map(item => `
+          <div>${item.product_name}</div>
+          <div class="item">
+            <span>${item.quantity}x R$ ${item.unit_price.toFixed(2)}</span>
+            <span class="item-price">R$ ${(item.quantity * item.unit_price).toFixed(2)}</span>
+          </div>
+        `).join("")}
+        
+        <div class="divider"></div>
+        
+        <div class="total-row">
+          <span>Subtotal:</span>
+          <span>R$ ${subtotal.toFixed(2)}</span>
+        </div>
+        ${sale.discount > 0 ? `
+          <div class="total-row">
+            <span>Desconto:</span>
+            <span>- R$ ${sale.discount.toFixed(2)}</span>
+          </div>
+        ` : ""}
+        <div class="total-row bold" style="font-size: 14px;">
+          <span>TOTAL:</span>
+          <span>R$ ${sale.total_amount.toFixed(2)}</span>
+        </div>
+        
+        <div class="divider"></div>
+        <div class="center" style="margin-top: 10px;">Obrigado pela preferência!</div>
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    toast({ title: "Enviando para impressora..." });
+  };
+
   const filteredSales = sales.filter(sale => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -449,6 +541,10 @@ const SalesHistory = () => {
                             <DropdownMenuItem onClick={() => openEmailDialog(sale)}>
                               <Mail className="h-4 w-4 mr-2" />
                               Enviar por E-mail
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => printThermalReceipt(sale)}>
+                              <Printer className="h-4 w-4 mr-2" />
+                              Imprimir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

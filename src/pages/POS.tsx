@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -673,6 +673,120 @@ const POS = () => {
     
     setShowEmailDialog(false);
     toast({ title: "Redirecionando para o e-mail..." });
+  };
+
+  const printThermalReceipt = () => {
+    if (!saleData) return;
+
+    const paymentMethodLabels: Record<string, string> = {
+      credit: "Cartão de Crédito",
+      debit: "Cartão de Débito",
+      pix: "PIX",
+      cash: "Dinheiro",
+      fiado: "Fiado (A Prazo)",
+      credito: "Crédito do Cliente",
+    };
+
+    const saleDate = format(new Date(saleData.created_at), "dd/MM/yyyy HH:mm");
+    const subtotal = saleData.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+
+    let paymentInfo = "";
+    if (saleData.credit_used && saleData.remaining_amount) {
+      paymentInfo = `Crédito: R$ ${saleData.credit_used.toFixed(2)}<br>${paymentMethodLabels[saleData.remaining_payment_method || ""] || saleData.remaining_payment_method}: R$ ${saleData.remaining_amount.toFixed(2)}`;
+    } else if (saleData.credit_used) {
+      paymentInfo = "Crédito do Cliente";
+    } else {
+      paymentInfo = paymentMethodLabels[saleData.payment_method] || saleData.payment_method;
+    }
+
+    const printWindow = window.open("", "_blank", "width=300,height=600");
+    if (!printWindow) {
+      toast({ title: "Erro ao abrir janela de impressão", variant: "destructive" });
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Comprovante</title>
+        <style>
+          @page { margin: 0; size: 80mm auto; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            width: 80mm; 
+            padding: 5mm;
+            line-height: 1.4;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: bold; }
+          .divider { border-top: 1px dashed #000; margin: 8px 0; }
+          .item { display: flex; justify-content: space-between; margin: 4px 0; }
+          .item-name { flex: 1; }
+          .item-price { text-align: right; min-width: 70px; }
+          .total-row { display: flex; justify-content: space-between; margin: 4px 0; }
+          .store-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+          h2 { font-size: 14px; margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="center store-name">${storeName}</div>
+        <div class="center">COMPROVANTE DE VENDA</div>
+        <div class="divider"></div>
+        
+        <div>Data: ${saleDate}</div>
+        <div>ID: ${saleData.id}</div>
+        ${saleData.customer_name ? `<div class="bold">Cliente: ${saleData.customer_name}</div>` : ""}
+        <div>Pagamento: ${paymentInfo}</div>
+        
+        <div class="divider"></div>
+        <div class="center bold">ITENS</div>
+        <div class="divider"></div>
+        
+        ${saleData.items.map(item => `
+          <div>${item.product_name}</div>
+          <div class="item">
+            <span>${item.quantity}x R$ ${item.unit_price.toFixed(2)}</span>
+            <span class="item-price">R$ ${(item.quantity * item.unit_price).toFixed(2)}</span>
+          </div>
+        `).join("")}
+        
+        <div class="divider"></div>
+        
+        <div class="total-row">
+          <span>Subtotal:</span>
+          <span>R$ ${subtotal.toFixed(2)}</span>
+        </div>
+        ${saleData.discount > 0 ? `
+          <div class="total-row">
+            <span>Desconto:</span>
+            <span>- R$ ${saleData.discount.toFixed(2)}</span>
+          </div>
+        ` : ""}
+        <div class="total-row bold" style="font-size: 14px;">
+          <span>TOTAL:</span>
+          <span>R$ ${saleData.total_amount.toFixed(2)}</span>
+        </div>
+        
+        <div class="divider"></div>
+        <div class="center" style="margin-top: 10px;">Obrigado pela preferência!</div>
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    toast({ title: "Enviando para impressora..." });
   };
 
   const generatePDF = async (sale: SaleData) => {
@@ -1418,30 +1532,38 @@ ${paymentInfo}
               <p className="text-sm text-muted-foreground">
                 Escolha o formato para baixar o comprovante da venda:
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
-                  className="h-20 flex-col border-2 hover:border-primary hover:bg-primary-light"
+                  className="h-16 flex-col border-2 hover:border-primary hover:bg-primary-light"
                   onClick={() => downloadReceipt("pdf")}
                 >
-                  <Download className="h-6 w-6 mb-2" />
-                  <span className="text-xs">Baixar PDF</span>
+                  <Download className="h-5 w-5 mb-1" />
+                  <span className="text-xs">PDF</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-20 flex-col border-2 hover:border-accent hover:bg-accent-light"
+                  className="h-16 flex-col border-2 hover:border-accent hover:bg-accent-light"
                   onClick={() => downloadReceipt("txt")}
                 >
-                  <FileText className="h-6 w-6 mb-2" />
-                  <span className="text-xs">Baixar TXT</span>
+                  <FileText className="h-5 w-5 mb-1" />
+                  <span className="text-xs">TXT</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-20 flex-col border-2 hover:border-blue-500 hover:bg-blue-50"
+                  className="h-16 flex-col border-2 hover:border-blue-500 hover:bg-blue-50"
                   onClick={openEmailDialog}
                 >
-                  <Mail className="h-6 w-6 mb-2" />
+                  <Mail className="h-5 w-5 mb-1" />
                   <span className="text-xs">E-mail</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-16 flex-col border-2 hover:border-green-500 hover:bg-green-50"
+                  onClick={printThermalReceipt}
+                >
+                  <Printer className="h-5 w-5 mb-1" />
+                  <span className="text-xs">Imprimir</span>
                 </Button>
               </div>
             </CardContent>
