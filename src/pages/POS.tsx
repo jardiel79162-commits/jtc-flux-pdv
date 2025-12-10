@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail } from "lucide-react";
 import { format } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
@@ -79,6 +79,8 @@ const POS = () => {
   const [isProcessingSale, setIsProcessingSale] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailToSend, setEmailToSend] = useState("");
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -606,6 +608,71 @@ const POS = () => {
       await generatePDF(saleData);
       toast({ title: "Comprovante PDF baixado!" });
     }
+  };
+
+  const openEmailDialog = () => {
+    setEmailToSend("");
+    setShowEmailDialog(true);
+  };
+
+  const handleSendEmail = () => {
+    if (!saleData || !emailToSend) {
+      toast({ title: "Digite o e-mail do cliente", variant: "destructive" });
+      return;
+    }
+
+    const paymentMethodLabels: Record<string, string> = {
+      credit: "Cartão de Crédito",
+      debit: "Cartão de Débito",
+      pix: "PIX",
+      cash: "Dinheiro",
+      fiado: "Fiado (A Prazo)",
+      credito: "Crédito do Cliente",
+    };
+
+    const saleDate = format(new Date(saleData.created_at), "dd/MM/yyyy 'às' HH:mm");
+    const subject = encodeURIComponent(`Comprovante de Venda - ${storeName} - ${saleDate}`);
+    
+    let body = `Olá${saleData.customer_name ? ` ${saleData.customer_name}` : ""},\n\n`;
+    body += `Segue o comprovante da sua compra realizada em ${storeName}.\n\n`;
+    body += `Data: ${saleDate}\n`;
+    body += `ID da Venda: ${saleData.id}\n`;
+    
+    if (saleData.credit_used && saleData.remaining_amount) {
+      body += `Formas de Pagamento:\n`;
+      body += `  - Crédito: R$ ${saleData.credit_used.toFixed(2)}\n`;
+      body += `  - ${paymentMethodLabels[saleData.remaining_payment_method || ""] || saleData.remaining_payment_method}: R$ ${saleData.remaining_amount.toFixed(2)}\n\n`;
+    } else if (saleData.credit_used) {
+      body += `Forma de Pagamento: Crédito do Cliente\n\n`;
+    } else {
+      body += `Forma de Pagamento: ${paymentMethodLabels[saleData.payment_method] || saleData.payment_method}\n\n`;
+    }
+
+    body += `ITENS:\n`;
+    body += `----------------------------------------\n`;
+    
+    saleData.items.forEach(item => {
+      body += `${item.product_name}\n`;
+      body += `  ${item.quantity}x R$ ${item.unit_price.toFixed(2)} = R$ ${(item.quantity * item.unit_price).toFixed(2)}\n`;
+    });
+    
+    const subtotal = saleData.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    body += `----------------------------------------\n`;
+    body += `Subtotal: R$ ${subtotal.toFixed(2)}\n`;
+    if (saleData.discount > 0) {
+      body += `Desconto: R$ ${saleData.discount.toFixed(2)}\n`;
+    }
+    body += `TOTAL: R$ ${saleData.total_amount.toFixed(2)}\n\n`;
+    body += `Obrigado pela preferência!\n`;
+    body += `${storeName}`;
+
+    const encodedBody = encodeURIComponent(body);
+    const mailtoLink = `mailto:${emailToSend}?subject=${subject}&body=${encodedBody}`;
+    
+    window.location.href = mailtoLink;
+    
+    setShowEmailDialog(false);
+    toast({ title: "Redirecionando para o e-mail..." });
   };
 
   const generatePDF = async (sale: SaleData) => {
@@ -1351,14 +1418,14 @@ ${paymentInfo}
               <p className="text-sm text-muted-foreground">
                 Escolha o formato para baixar o comprovante da venda:
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <Button
                   variant="outline"
                   className="h-20 flex-col border-2 hover:border-primary hover:bg-primary-light"
                   onClick={() => downloadReceipt("pdf")}
                 >
                   <Download className="h-6 w-6 mb-2" />
-                  <span>Baixar PDF</span>
+                  <span className="text-xs">Baixar PDF</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -1366,7 +1433,15 @@ ${paymentInfo}
                   onClick={() => downloadReceipt("txt")}
                 >
                   <FileText className="h-6 w-6 mb-2" />
-                  <span>Baixar TXT</span>
+                  <span className="text-xs">Baixar TXT</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-20 flex-col border-2 hover:border-blue-500 hover:bg-blue-50"
+                  onClick={openEmailDialog}
+                >
+                  <Mail className="h-6 w-6 mb-2" />
+                  <span className="text-xs">E-mail</span>
                 </Button>
               </div>
             </CardContent>
@@ -1537,6 +1612,42 @@ ${paymentInfo}
         onScan={handleBarcodeScan}
         getProductPreview={getProductPreview}
       />
+
+      {/* Dialog de Enviar por E-mail */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar Comprovante por E-mail</DialogTitle>
+            <DialogDescription>
+              Digite o e-mail do cliente para enviar o comprovante
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customer-email-pos">E-mail do Cliente</Label>
+              <Input
+                id="customer-email-pos"
+                type="email"
+                placeholder="cliente@email.com"
+                value={emailToSend}
+                onChange={(e) => setEmailToSend(e.target.value)}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Ao clicar em "Me Direcionar", seu cliente de e-mail será aberto com o comprovante pronto para enviar.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSendEmail} disabled={!emailToSend}>
+              <Mail className="h-4 w-4 mr-2" />
+              Me Direcionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
