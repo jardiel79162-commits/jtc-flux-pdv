@@ -33,9 +33,14 @@ const Employees = () => {
   const [newEmployeeId, setNewEmployeeId] = useState<string | null>(null);
   const [editSection, setEditSection] = useState<"info" | "permissions">("info");
   const [viewPermissions, setViewPermissions] = useState({
+    can_access_dashboard: true,
     can_access_pos: false,
     can_access_products: false,
     can_access_customers: false,
+    can_access_suppliers: false,
+    can_access_history: false,
+    can_access_mailbox: false,
+    can_access_reports: false,
     can_view_subscription: false,
     can_edit_own_profile: false,
     can_access_settings: false,
@@ -52,9 +57,14 @@ const Employees = () => {
   });
 
   const [permissions, setPermissions] = useState({
+    can_access_dashboard: true,
     can_access_pos: true,
     can_access_products: false,
     can_access_customers: true,
+    can_access_suppliers: false,
+    can_access_history: false,
+    can_access_mailbox: false,
+    can_access_reports: false,
     can_view_subscription: false,
     can_edit_own_profile: false,
     can_access_settings: false,
@@ -91,9 +101,14 @@ const Employees = () => {
       password: "",
     });
     setPermissions({
+      can_access_dashboard: true,
       can_access_pos: true,
       can_access_products: false,
       can_access_customers: true,
+      can_access_suppliers: false,
+      can_access_history: false,
+      can_access_mailbox: false,
+      can_access_reports: false,
       can_view_subscription: false,
       can_edit_own_profile: false,
       can_access_settings: false,
@@ -200,9 +215,14 @@ const Employees = () => {
 
       if (data) {
         setViewPermissions({
+          can_access_dashboard: data.can_access_dashboard ?? true,
           can_access_pos: data.can_access_pos,
           can_access_products: data.can_access_products,
           can_access_customers: data.can_access_customers,
+          can_access_suppliers: data.can_access_suppliers ?? false,
+          can_access_history: data.can_access_history ?? false,
+          can_access_mailbox: data.can_access_mailbox ?? false,
+          can_access_reports: data.can_access_reports ?? false,
           can_view_subscription: data.can_view_subscription,
           can_edit_own_profile: data.can_edit_own_profile,
           can_access_settings: data.can_access_settings,
@@ -233,18 +253,28 @@ const Employees = () => {
 
       if (data) {
         setPermissions({
+          can_access_dashboard: data.can_access_dashboard ?? true,
           can_access_pos: data.can_access_pos,
           can_access_products: data.can_access_products,
           can_access_customers: data.can_access_customers,
+          can_access_suppliers: data.can_access_suppliers ?? false,
+          can_access_history: data.can_access_history ?? false,
+          can_access_mailbox: data.can_access_mailbox ?? false,
+          can_access_reports: data.can_access_reports ?? false,
           can_view_subscription: data.can_view_subscription,
           can_edit_own_profile: data.can_edit_own_profile,
           can_access_settings: data.can_access_settings,
         });
       } else {
         setPermissions({
+          can_access_dashboard: true,
           can_access_pos: true,
           can_access_products: false,
           can_access_customers: true,
+          can_access_suppliers: false,
+          can_access_history: false,
+          can_access_mailbox: false,
+          can_access_reports: false,
           can_view_subscription: false,
           can_edit_own_profile: false,
           can_access_settings: false,
@@ -552,27 +582,23 @@ const Employees = () => {
               )}
 
               {editingEmployee && editSection === "permissions" && (
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Pode realizar vendas (PDV)?</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Permite acesso ao sistema de ponto de venda
-                        </p>
+                        <Label>Dashboard</Label>
+                        <p className="text-sm text-muted-foreground">Acesso ao painel principal</p>
                       </div>
                       <Switch
-                        checked={permissions.can_access_pos}
-                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_pos: checked })}
+                        checked={permissions.can_access_dashboard}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_dashboard: checked })}
                       />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Pode acessar produtos?</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Permite visualizar e gerenciar produtos
-                        </p>
+                        <Label>Produtos</Label>
+                        <p className="text-sm text-muted-foreground">Visualizar e gerenciar produtos</p>
                       </div>
                       <Switch
                         checked={permissions.can_access_products}
@@ -582,10 +608,19 @@ const Employees = () => {
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Pode acessar clientes?</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Permite visualizar e gerenciar clientes
-                        </p>
+                        <Label>Venda (PDV)</Label>
+                        <p className="text-sm text-muted-foreground">Realizar vendas no caixa</p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_pos}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_pos: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Clientes</Label>
+                        <p className="text-sm text-muted-foreground">Visualizar e gerenciar clientes</p>
                       </div>
                       <Switch
                         checked={permissions.can_access_customers}
@@ -595,10 +630,52 @@ const Employees = () => {
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Pode visualizar assinatura?</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Permite ver o status e detalhes da assinatura
-                        </p>
+                        <Label>Fornecedores</Label>
+                        <p className="text-sm text-muted-foreground">Visualizar e gerenciar fornecedores</p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_suppliers}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_suppliers: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Histórico</Label>
+                        <p className="text-sm text-muted-foreground">Acessar histórico de vendas</p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_history}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_history: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Caixa de Correios</Label>
+                        <p className="text-sm text-muted-foreground">Acessar logs de emails</p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_mailbox}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_mailbox: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Relatórios</Label>
+                        <p className="text-sm text-muted-foreground">Visualizar relatórios de vendas</p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_reports}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_reports: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Assinatura</Label>
+                        <p className="text-sm text-muted-foreground">Ver status da assinatura</p>
                       </div>
                       <Switch
                         checked={permissions.can_view_subscription}
@@ -608,23 +685,8 @@ const Employees = () => {
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Pode editar próprio perfil?</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Permite alterar nome e dados básicos
-                        </p>
-                      </div>
-                      <Switch
-                        checked={permissions.can_edit_own_profile}
-                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_edit_own_profile: checked })}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Pode acessar configurações? (não recomendado)</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Permite acesso às configurações da loja
-                        </p>
+                        <Label>Configurações (não recomendado)</Label>
+                        <p className="text-sm text-muted-foreground">Acesso às configurações da loja</p>
                       </div>
                       <Switch
                         checked={permissions.can_access_settings}
@@ -648,99 +710,73 @@ const Employees = () => {
               <DialogTitle>Permissões de {viewingEmployee?.full_name}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <Label>Pode realizar vendas (PDV)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Acesso ao sistema de ponto de venda
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    viewPermissions.can_access_pos 
-                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
-                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
-                  }`}>
-                    {viewPermissions.can_access_pos ? 'Permitido' : 'Bloqueado'}
+                  <div><Label>Dashboard</Label><p className="text-sm text-muted-foreground">Acesso ao painel principal</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_dashboard ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
+                    {viewPermissions.can_access_dashboard ? 'Permitido' : 'Bloqueado'}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <Label>Pode acessar produtos</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Visualizar e gerenciar produtos
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    viewPermissions.can_access_products 
-                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
-                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
-                  }`}>
+                  <div><Label>Produtos</Label><p className="text-sm text-muted-foreground">Visualizar e gerenciar produtos</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_products ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
                     {viewPermissions.can_access_products ? 'Permitido' : 'Bloqueado'}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <Label>Pode acessar clientes</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Visualizar e gerenciar clientes
-                    </p>
+                  <div><Label>Venda (PDV)</Label><p className="text-sm text-muted-foreground">Realizar vendas no caixa</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_pos ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
+                    {viewPermissions.can_access_pos ? 'Permitido' : 'Bloqueado'}
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    viewPermissions.can_access_customers 
-                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
-                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
-                  }`}>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div><Label>Clientes</Label><p className="text-sm text-muted-foreground">Visualizar e gerenciar clientes</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_customers ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
                     {viewPermissions.can_access_customers ? 'Permitido' : 'Bloqueado'}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <Label>Pode visualizar assinatura</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Ver status e detalhes da assinatura
-                    </p>
+                  <div><Label>Fornecedores</Label><p className="text-sm text-muted-foreground">Visualizar e gerenciar fornecedores</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_suppliers ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
+                    {viewPermissions.can_access_suppliers ? 'Permitido' : 'Bloqueado'}
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    viewPermissions.can_view_subscription 
-                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
-                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
-                  }`}>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div><Label>Histórico</Label><p className="text-sm text-muted-foreground">Acessar histórico de vendas</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_history ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
+                    {viewPermissions.can_access_history ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div><Label>Caixa de Correios</Label><p className="text-sm text-muted-foreground">Acessar logs de emails</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_mailbox ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
+                    {viewPermissions.can_access_mailbox ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div><Label>Relatórios</Label><p className="text-sm text-muted-foreground">Visualizar relatórios de vendas</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_reports ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
+                    {viewPermissions.can_access_reports ? 'Permitido' : 'Bloqueado'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div><Label>Assinatura</Label><p className="text-sm text-muted-foreground">Ver status da assinatura</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_view_subscription ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
                     {viewPermissions.can_view_subscription ? 'Permitido' : 'Bloqueado'}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <Label>Pode editar próprio perfil</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Alterar nome e dados básicos
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    viewPermissions.can_edit_own_profile 
-                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
-                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
-                  }`}>
-                    {viewPermissions.can_edit_own_profile ? 'Permitido' : 'Bloqueado'}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <Label>Pode acessar configurações</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Acesso às configurações da loja
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    viewPermissions.can_access_settings 
-                      ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
-                      : 'bg-red-500/20 text-red-700 dark:text-red-400'
-                  }`}>
+                  <div><Label>Configurações</Label><p className="text-sm text-muted-foreground">Acesso às configurações da loja</p></div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${viewPermissions.can_access_settings ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-red-500/20 text-red-700 dark:text-red-400'}`}>
                     {viewPermissions.can_access_settings ? 'Permitido' : 'Bloqueado'}
                   </div>
                 </div>
@@ -760,26 +796,22 @@ const Employees = () => {
               <DialogTitle>Configurar Permissões do Caixa</DialogTitle>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Pode realizar vendas (PDV)?</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permite acesso ao sistema de ponto de venda
-                    </p>
+                    <Label>Dashboard</Label>
+                    <p className="text-sm text-muted-foreground">Acesso ao painel principal</p>
                   </div>
                   <Switch
-                    checked={permissions.can_access_pos}
-                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_pos: checked })}
+                    checked={permissions.can_access_dashboard}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_dashboard: checked })}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Pode acessar produtos?</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permite visualizar e gerenciar produtos
-                    </p>
+                    <Label>Produtos</Label>
+                    <p className="text-sm text-muted-foreground">Visualizar e gerenciar produtos</p>
                   </div>
                   <Switch
                     checked={permissions.can_access_products}
@@ -789,10 +821,19 @@ const Employees = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Pode acessar clientes?</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permite visualizar e gerenciar clientes
-                    </p>
+                    <Label>Venda (PDV)</Label>
+                    <p className="text-sm text-muted-foreground">Realizar vendas no caixa</p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_pos}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_pos: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Clientes</Label>
+                    <p className="text-sm text-muted-foreground">Visualizar e gerenciar clientes</p>
                   </div>
                   <Switch
                     checked={permissions.can_access_customers}
@@ -802,10 +843,52 @@ const Employees = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Pode visualizar assinatura?</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permite ver o status e detalhes da assinatura
-                    </p>
+                    <Label>Fornecedores</Label>
+                    <p className="text-sm text-muted-foreground">Visualizar e gerenciar fornecedores</p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_suppliers}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_suppliers: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Histórico</Label>
+                    <p className="text-sm text-muted-foreground">Acessar histórico de vendas</p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_history}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_history: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Caixa de Correios</Label>
+                    <p className="text-sm text-muted-foreground">Acessar logs de emails</p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_mailbox}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_mailbox: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Relatórios</Label>
+                    <p className="text-sm text-muted-foreground">Visualizar relatórios de vendas</p>
+                  </div>
+                  <Switch
+                    checked={permissions.can_access_reports}
+                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_reports: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Assinatura</Label>
+                    <p className="text-sm text-muted-foreground">Ver status da assinatura</p>
                   </div>
                   <Switch
                     checked={permissions.can_view_subscription}
@@ -815,23 +898,8 @@ const Employees = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Pode editar próprio perfil?</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permite alterar nome e dados básicos
-                    </p>
-                  </div>
-                  <Switch
-                    checked={permissions.can_edit_own_profile}
-                    onCheckedChange={(checked) => setPermissions({ ...permissions, can_edit_own_profile: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Pode acessar configurações? (não recomendado)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permite acesso às configurações da loja
-                    </p>
+                    <Label>Configurações (não recomendado)</Label>
+                    <p className="text-sm text-muted-foreground">Acesso às configurações da loja</p>
                   </div>
                   <Switch
                     checked={permissions.can_access_settings}

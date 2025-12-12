@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar } from "lucide-react";
+import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar, UserCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 // Importar imagens de ações rápidas
 import quickActionProdutos from "@/assets/quick-action-produtos.png";
@@ -41,6 +42,7 @@ const quickActions = [
 ];
 
 const Dashboard = () => {
+  const { permissions } = useUserPermissions();
   const [data, setData] = useState<DashboardData>({
     salesToday: 0,
     salesMonth: 0,
@@ -55,25 +57,28 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [permissions]);
 
   const loadDashboardData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Carregar perfil para status da assinatura
+      // Se é funcionário, buscar dados do admin
+      const userId = permissions.isEmployee && permissions.adminId ? permissions.adminId : user.id;
+
+      // Carregar perfil para status da assinatura (do admin se for funcionário)
       const { data: profile } = await supabase
         .from("profiles")
         .select("trial_ends_at, subscription_ends_at, subscription_plan")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single();
 
-      // Carregar configurações da loja
+      // Carregar configurações da loja (do admin se for funcionário)
       const { data: storeSettings } = await supabase
         .from("store_settings")
         .select("quick_actions_enabled, hide_trial_message")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       // Calcular dias restantes de teste
@@ -171,8 +176,30 @@ const Dashboard = () => {
         <p className="text-muted-foreground">Visão geral do seu negócio</p>
       </div>
 
-      {/* Status da Assinatura */}
-      {!data.hideTrialMessage && data.subscriptionStatus === "trial" && (
+      {/* Identificação de Funcionário */}
+      {permissions.isEmployee && (
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-purple-500/10 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5" />
+          <CardHeader className="relative pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 shadow-lg">
+                <UserCheck className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Você é um funcionário
+                </CardTitle>
+                <CardDescription className="text-muted-foreground/80">
+                  Bem-vindo, {permissions.employeeName}! Você está acessando o sistema como funcionário.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Status da Assinatura - não mostrar para funcionários */}
+      {!permissions.isEmployee && !data.hideTrialMessage && data.subscriptionStatus === "trial" && (
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-yellow-500/10 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5" />
           <CardHeader className="relative pb-2">
@@ -205,7 +232,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {!data.hideTrialMessage && data.subscriptionStatus === "expired" && (
+      {!permissions.isEmployee && !data.hideTrialMessage && data.subscriptionStatus === "expired" && (
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-red-500/10 via-rose-500/10 to-pink-500/10 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-rose-500/5" />
           <CardHeader className="relative pb-2">
@@ -233,7 +260,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {!data.hideTrialMessage && data.subscriptionStatus === "active" && (
+      {!permissions.isEmployee && !data.hideTrialMessage && data.subscriptionStatus === "active" && (
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500/10 via-green-500/10 to-teal-500/10 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-green-500/5" />
           <CardHeader className="relative">
