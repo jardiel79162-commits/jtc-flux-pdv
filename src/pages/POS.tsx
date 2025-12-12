@@ -504,8 +504,8 @@ const POS = () => {
       let calculatedChange = 0;
       
       if (paymentMode === "multiple") {
-        // Para pagamento múltiplo, usar a primeira forma de pagamento como principal
-        finalPaymentMethod = payments.map(p => p.method).join(", ");
+        // Para pagamento múltiplo, usar "multiplo" como valor do banco
+        finalPaymentMethod = "multiplo";
         calculatedChange = changeAmount;
         // Se tiver fiado, é pending
         if (payments.some(p => p.method === "fiado")) {
@@ -1557,6 +1557,19 @@ ${paymentInfo}
                             setPaymentMethod(method.value);
                             if (method.value === "fiado") {
                               setShowCustomerBrowser(true);
+                            }
+                            // Mostrar QR code PIX automaticamente em múltiplos pagamentos
+                            if (method.value === "pix") {
+                              if (!pixSettings?.pix_key) {
+                                toast({
+                                  title: "Chave PIX não cadastrada",
+                                  description: "Por favor cadastre uma chave PIX nas configurações antes de usar este método",
+                                  variant: "destructive"
+                                });
+                                setPaymentMethod("");
+                                return;
+                              }
+                              setShowPixQrCode(true);
                             }
                           }}
                         >
