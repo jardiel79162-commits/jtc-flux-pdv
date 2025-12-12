@@ -54,35 +54,37 @@ const DashboardLayout = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const fetchStoreSettings = async () => {
+    if (!user || !permissions.isAdmin) return;
+
+    const { data: settings } = await supabase
+      .from("store_settings")
+      .select("has_employees")
+      .eq("user_id", user.id)
+      .single();
+    
+    if (settings) {
+      setHasEmployees(settings.has_employees || false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStoreSettings = async () => {
-      if (!user || !permissions.isAdmin) return;
-
-      const { data: settings } = await supabase
-        .from("store_settings")
-        .select("has_employees")
-        .eq("user_id", user.id)
-        .single();
-      
-      if (settings) {
-        setHasEmployees(settings.has_employees || false);
-      }
-    };
-
     if (!loading && user) {
       fetchStoreSettings();
     }
+  }, [loading, user, permissions.isAdmin]);
 
-    // Escutar mudanças na rota para atualizar has_employees
-    const handleRouteChange = () => {
-      if (!loading && user && permissions.isAdmin) {
-        fetchStoreSettings();
-      }
+  // Escutar evento de atualização das configurações
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      fetchStoreSettings();
     };
 
-    // Atualizar quando a rota mudar
-    handleRouteChange();
-  }, [loading, user, permissions.isAdmin, location.pathname]);
+    window.addEventListener('store-settings-updated', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('store-settings-updated', handleSettingsUpdate);
+    };
+  }, [user, permissions.isAdmin]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
