@@ -227,6 +227,8 @@ const Settings = () => {
       toast({ title: "Erro ao salvar configurações", variant: "destructive" });
     } else {
       toast({ title: "Configurações salvas com sucesso!" });
+      // Disparar evento para atualizar o menu
+      window.dispatchEvent(new CustomEvent('store-settings-updated'));
     }
   };
 
