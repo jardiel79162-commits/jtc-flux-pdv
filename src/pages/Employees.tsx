@@ -75,7 +75,7 @@ const Employees = () => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      toast({ title: "Erro ao carregar funcionários", variant: "destructive" });
+      toast({ title: "Erro ao carregar caixas", variant: "destructive" });
     } else {
       setEmployees(data || []);
     }
@@ -110,7 +110,7 @@ const Employees = () => {
     }
 
     if (!editingEmployee && !formData.password) {
-      toast({ title: "Senha é obrigatória para novos funcionários", variant: "destructive" });
+      toast({ title: "Senha é obrigatória para novos caixas", variant: "destructive" });
       return;
     }
 
@@ -133,7 +133,7 @@ const Employees = () => {
           .eq("id", editingEmployee.id);
 
         if (error) throw error;
-        toast({ title: "Funcionário atualizado com sucesso!" });
+        toast({ title: "Caixa atualizado com sucesso!" });
       } else {
         // Chamar Edge Function para criar funcionário
         const { data: sessionData } = await supabase.auth.getSession();
@@ -177,7 +177,7 @@ const Employees = () => {
       fetchEmployees();
     } catch (error: any) {
       toast({ 
-        title: "Erro ao salvar funcionário", 
+        title: "Erro ao salvar caixa", 
         description: error.message,
         variant: "destructive" 
       });
@@ -338,7 +338,7 @@ const Employees = () => {
 
       if (error) throw error;
 
-      toast({ title: "Funcionário cadastrado com sucesso!" });
+      toast({ title: "Caixa cadastrado com sucesso!" });
       setIsPermissionsDialogOpen(false);
       resetForm();
       fetchEmployees();
@@ -379,11 +379,11 @@ const Employees = () => {
         throw new Error(result.error || 'Erro ao remover funcionário');
       }
 
-      toast({ title: "Funcionário removido com sucesso!" });
+      toast({ title: "Caixa removido com sucesso!" });
       fetchEmployees();
     } catch (error: any) {
       toast({ 
-        title: "Erro ao remover funcionário", 
+        title: "Erro ao remover caixa", 
         description: error.message,
         variant: "destructive" 
       });
@@ -396,8 +396,8 @@ const Employees = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Funcionários</h1>
-          <p className="text-muted-foreground">Gerencie os funcionários da sua loja</p>
+          <h1 className="text-3xl font-bold text-foreground">Caixas</h1>
+          <p className="text-muted-foreground">Gerencie os caixas da sua loja</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
@@ -406,13 +406,13 @@ const Employees = () => {
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Novo Funcionário
+              Novo Caixa
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingEmployee ? "Editar Funcionário" : "Novo Funcionário"}
+                {editingEmployee ? "Editar Caixa" : "Novo Caixa"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -757,7 +757,7 @@ const Employees = () => {
         }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Configurar Permissões do Funcionário</DialogTitle>
+              <DialogTitle>Configurar Permissões do Caixa</DialogTitle>
             </DialogHeader>
             <div className="space-y-6 py-4">
               <div className="space-y-4">
@@ -854,9 +854,9 @@ const Employees = () => {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                Nenhum funcionário cadastrado ainda.
+                Nenhum caixa cadastrado ainda.
                 <br />
-                Clique em "Novo Funcionário" para começar.
+                Clique em "Novo Caixa" para começar.
               </p>
             </CardContent>
           </Card>

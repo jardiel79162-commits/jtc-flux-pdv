@@ -502,7 +502,7 @@ const Settings = () => {
           </Collapsible>
         </Card>
 
-        {/* Configuração de Funcionários */}
+        {/* Configuração de Caixas */}
         <Card className="overflow-hidden">
           <Collapsible open={employeesConfigOpen} onOpenChange={setEmployeesConfigOpen}>
             <CardHeader className="cursor-pointer" onClick={() => setEmployeesConfigOpen(!employeesConfigOpen)}>
@@ -510,7 +510,7 @@ const Settings = () => {
                 <div className="flex items-center justify-between w-full gap-2">
                   <CardTitle className="flex items-center gap-2 text-sm md:text-base">
                     <UserCog className="h-5 w-5 shrink-0" />
-                    Funcionários
+                    Caixas
                   </CardTitle>
                   <div className="shrink-0">
                     {employeesConfigOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
@@ -521,14 +521,14 @@ const Settings = () => {
             <CollapsibleContent>
               <CardContent className="space-y-4 overflow-hidden">
                 <p className="text-xs md:text-sm text-muted-foreground">
-                  Configure se sua loja possui outros funcionários além de você. Ao ativar, você poderá cadastrar funcionários com permissões específicas.
+                  Configure se sua loja possui caixas além de você. Ao ativar, você poderá cadastrar caixas com permissões específicas.
                 </p>
 
                 <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-muted/50">
                   <div className="space-y-0.5 min-w-0 flex-1">
-                    <Label className="text-sm font-medium">Minha loja tem funcionários</Label>
+                    <Label className="text-sm font-medium">Minha loja tem caixas</Label>
                     <p className="text-xs md:text-sm text-muted-foreground">
-                      Ative para cadastrar funcionários e definir permissões de acesso
+                      Ative para cadastrar caixas e definir permissões de acesso
                     </p>
                   </div>
                   <Switch
@@ -541,7 +541,7 @@ const Settings = () => {
                 {settings.has_employees && (
                   <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
                     <p className="text-sm text-primary font-medium">
-                      ✓ Após salvar, a opção "Funcionários" aparecerá no menu para gerenciar sua equipe.
+                      ✓ Após salvar, a opção "Caixas" aparecerá no menu para gerenciar sua equipe.
                     </p>
                   </div>
                 )}
