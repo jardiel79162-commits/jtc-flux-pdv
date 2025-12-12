@@ -113,7 +113,8 @@ const SalesHistory = () => {
               product_id: item.product_id,
               quantity: item.quantity,
               unit_price: item.unit_price,
-              product_name: item.products?.name,
+              // Usar product_name da sale_items se produto foi deletado
+              product_name: item.products?.name || item.product_name || "Produto removido",
               cost_price: item.products?.cost_price || 0,
             })) || [],
           };

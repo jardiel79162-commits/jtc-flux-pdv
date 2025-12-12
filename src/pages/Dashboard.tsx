@@ -35,7 +35,7 @@ const quickActions = [
   { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores },
   { label: "Histórico", path: "/historico", image: quickActionHistorico },
   { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios },
-  { label: "Correio", path: "/correio", image: quickActionCorreio },
+  { label: "Correio", path: "/caixa-correios", image: quickActionCorreio },
   { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
   { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura },
 ];
