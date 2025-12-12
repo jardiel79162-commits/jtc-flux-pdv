@@ -111,6 +111,19 @@ export const useUserPermissions = () => {
       setLoading(false);
     } catch (error) {
       console.error("Erro ao buscar permissões:", error);
+      // Em caso de erro, aplica menor privilégio por segurança
+      setPermissions({
+        isAdmin: false,
+        isEmployee: false,
+        can_access_pos: false,
+        can_access_products: false,
+        can_access_customers: false,
+        can_view_subscription: false,
+        can_edit_own_profile: false,
+        can_access_settings: false,
+        employeeId: null,
+        adminId: null,
+      });
       setLoading(false);
     }
   };
