@@ -356,17 +356,28 @@ const Employees = () => {
   const handleDelete = async (employeeId: string, userId: string) => {
     setLoading(true);
     try {
-      // Deletar funcionário (cascata vai deletar o user_role e permissões)
-      const { error: deleteError } = await supabase
-        .from("employees")
-        .delete()
-        .eq("id", employeeId);
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-employee`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionData.session?.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            employee_id: employeeId,
+            user_id: userId,
+          }),
+        }
+      );
 
-      if (deleteError) throw deleteError;
-
-      // Deletar usuário do auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      if (authError) throw authError;
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao remover funcionário');
+      }
 
       toast({ title: "Funcionário removido com sucesso!" });
       fetchEmployees();
