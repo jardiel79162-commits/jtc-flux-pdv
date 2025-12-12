@@ -55,7 +55,7 @@ const DashboardLayout = () => {
   }, [navigate]);
 
   const fetchStoreSettings = async () => {
-    if (!user || !permissions.isAdmin) return;
+    if (!user) return;
 
     const { data: settings } = await supabase
       .from("store_settings")
@@ -72,7 +72,7 @@ const DashboardLayout = () => {
     if (!loading && user) {
       fetchStoreSettings();
     }
-  }, [loading, user, permissions.isAdmin]);
+  }, [loading, user]);
 
   // Escutar evento de atualização das configurações
   useEffect(() => {
@@ -84,7 +84,7 @@ const DashboardLayout = () => {
     return () => {
       window.removeEventListener('store-settings-updated', handleSettingsUpdate);
     };
-  }, [user, permissions.isAdmin]);
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -100,7 +100,7 @@ const DashboardLayout = () => {
     { icon: History, label: "Histórico", path: "/historico", permission: true },
     { icon: Inbox, label: "Caixa de Correios", path: "/caixa-correios", permission: true },
     { icon: BarChart3, label: "Relatórios", path: "/relatorios", permission: true },
-    { icon: UserCog, label: "Funcionários", path: "/funcionarios", permission: permissions.isAdmin && hasEmployees },
+    { icon: UserCog, label: "Funcionários", path: "/funcionarios", permission: hasEmployees },
     { icon: Settings, label: "Configurações", path: "/configuracoes", permission: canAccessRoute("/configuracoes") },
     { icon: CreditCard, label: "Assinatura", path: "/assinatura", permission: canAccessRoute("/assinatura") },
   ];
