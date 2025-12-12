@@ -91,22 +91,19 @@ export const useUserPermissions = () => {
 
       if (employee) {
         // Buscar permissões do funcionário e assinatura do admin em paralelo
-        const [{ data: perms }, { data: adminProfile }] = await Promise.all([
+        const [{ data: perms }, { data: adminSubscription }] = await Promise.all([
           supabase
             .from("employee_permissions")
             .select("*")
             .eq("employee_id", employee.id)
             .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("trial_ends_at, subscription_ends_at, subscription_plan")
-            .eq("id", employee.admin_id)
-            .single(),
+          supabase.rpc('get_admin_subscription', { admin_user_id: employee.admin_id }),
         ]);
 
         // Verificar assinatura do admin (não do funcionário)
         let isActive = false;
-        if (adminProfile) {
+        if (adminSubscription && adminSubscription.length > 0) {
+          const adminProfile = adminSubscription[0];
           const now = new Date();
           if (adminProfile.trial_ends_at && new Date(adminProfile.trial_ends_at) > now) {
             isActive = true;
