@@ -43,13 +43,13 @@ export const useUserPermissions = () => {
         return;
       }
 
-      // Buscar roles e employee data em paralelo para performance
-      const [rolesResponse, employeeResponse] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", user.id),
-        supabase.from("employees").select("id, admin_id").eq("user_id", user.id).maybeSingle()
+      // Buscar se é admin usando função has_role e dados de funcionário em paralelo
+      const [{ data: isAdminResult }, employeeResponse] = await Promise.all([
+        supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
+        supabase.from("employees").select("id, admin_id").eq("user_id", user.id).maybeSingle(),
       ]);
 
-      const isAdmin = rolesResponse.data?.some(r => r.role === "admin") || false;
+      const isAdmin = !!isAdminResult;
 
       if (isAdmin) {
         // Admin tem todas as permissões
