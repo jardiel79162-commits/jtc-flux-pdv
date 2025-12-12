@@ -1541,29 +1541,30 @@ ${paymentInfo}
                   </div>
                 )}
 
-                {/* Adicionar novo pagamento */}
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Adicionar pagamento:</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {paymentMethods.map((method) => (
-                      <Button
-                        key={method.value}
-                        variant={paymentMethod === method.value ? "default" : "outline"}
-                        className={`h-16 flex-col text-xs ${
-                          paymentMethod === method.value ? "bg-accent hover:bg-accent-hover" : ""
-                        }`}
-                        onClick={() => {
-                          setPaymentMethod(method.value);
-                          if (method.value === "fiado") {
-                            setShowCustomerBrowser(true);
-                          }
-                        }}
-                      >
-                        <img src={method.image} alt={method.label} className="h-6 w-6 mb-1 rounded object-cover" />
-                        <span>{method.label}</span>
-                      </Button>
-                    ))}
-                  </div>
+                {/* Adicionar novo pagamento - só mostra se ainda falta pagar */}
+                {remainingToPay > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Adicionar pagamento:</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {paymentMethods.map((method) => (
+                        <Button
+                          key={method.value}
+                          variant={paymentMethod === method.value ? "default" : "outline"}
+                          className={`h-20 flex-col text-xs p-2 ${
+                            paymentMethod === method.value ? "bg-accent hover:bg-accent-hover" : ""
+                          }`}
+                          onClick={() => {
+                            setPaymentMethod(method.value);
+                            if (method.value === "fiado") {
+                              setShowCustomerBrowser(true);
+                            }
+                          }}
+                        >
+                          <img src={method.image} alt={method.label} className="h-8 w-8 mb-1 rounded object-contain" />
+                          <span className="text-center leading-tight">{method.label}</span>
+                        </Button>
+                      ))}
+                    </div>
 
                   {paymentMethod && (
                     <div className="flex gap-2">
@@ -1588,6 +1589,7 @@ ${paymentInfo}
                     </div>
                   )}
                 </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -1697,7 +1699,12 @@ ${paymentInfo}
             <Button
               className="flex-1 bg-gradient-to-r from-success to-accent hover:opacity-90"
               onClick={finalizeSale}
-              disabled={!paymentMethod || isProcessingSale}
+              disabled={
+                isProcessingSale || 
+                !paymentMode ||
+                (paymentMode === "single" && !paymentMethod) ||
+                (paymentMode === "multiple" && (payments.length === 0 || totalPaid < total))
+              }
             >
               <DollarSign className="mr-2 h-5 w-5" />
               {isProcessingSale ? "Processando..." : "Finalizar Venda"}
