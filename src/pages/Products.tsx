@@ -213,6 +213,21 @@ const Products = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Primeiro, salvar o nome do produto nos itens de venda antes de deletar
+    const productToDelete = products.find(p => p.id === id);
+    if (productToDelete) {
+      // Atualizar sale_items e purchase_items para salvar o nome do produto
+      await supabase
+        .from("sale_items")
+        .update({ product_name: productToDelete.name })
+        .eq("product_id", id);
+      
+      await supabase
+        .from("purchase_items")
+        .update({ product_name: productToDelete.name })
+        .eq("product_id", id);
+    }
+
     const { error } = await supabase.from("products").delete().eq("id", id);
 
     if (error) {
