@@ -29,16 +29,16 @@ interface DashboardData {
   hideTrialMessage: boolean;
 }
 
-const quickActions = [
-  { label: "Produtos", path: "/produtos", image: quickActionProdutos },
-  { label: "Venda", path: "/pdv", image: quickActionVenda },
-  { label: "Clientes", path: "/clientes", image: quickActionClientes },
-  { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores },
-  { label: "Histórico", path: "/historico", image: quickActionHistorico },
-  { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios },
-  { label: "Correio", path: "/caixa-correios", image: quickActionCorreio },
-  { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
-  { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura },
+const allQuickActions = [
+  { label: "Produtos", path: "/produtos", image: quickActionProdutos, permKey: "can_access_products" },
+  { label: "Venda", path: "/pdv", image: quickActionVenda, permKey: "can_access_pos" },
+  { label: "Clientes", path: "/clientes", image: quickActionClientes, permKey: "can_access_customers" },
+  { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores, permKey: "can_access_suppliers" },
+  { label: "Histórico", path: "/historico", image: quickActionHistorico, permKey: "can_access_history" },
+  { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios, permKey: "can_access_reports" },
+  { label: "Correio", path: "/caixa-correios", image: quickActionCorreio, permKey: "can_access_mailbox" },
+  { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes, permKey: "can_access_settings" },
+  { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura, permKey: "can_view_subscription" },
 ];
 
 const Dashboard = () => {
@@ -64,22 +64,40 @@ const Dashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Se é funcionário, buscar dados do admin
-      const userId = permissions.isEmployee && permissions.adminId ? permissions.adminId : user.id;
+      // Se é funcionário, usar funções RPC para buscar dados do admin
+      const isEmployee = permissions.isEmployee && permissions.adminId;
+      const userId = isEmployee ? permissions.adminId : user.id;
 
-      // Carregar perfil para status da assinatura (do admin se for funcionário)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("trial_ends_at, subscription_ends_at, subscription_plan")
-        .eq("id", userId)
-        .single();
+      let profile = null;
+      let storeSettings = null;
 
-      // Carregar configurações da loja (do admin se for funcionário)
-      const { data: storeSettings } = await supabase
-        .from("store_settings")
-        .select("quick_actions_enabled, hide_trial_message")
-        .eq("user_id", userId)
-        .single();
+      if (isEmployee) {
+        // Usar RPC para buscar dados do admin (bypass RLS)
+        const { data: adminSub } = await supabase.rpc('get_admin_subscription', { admin_user_id: userId });
+        if (adminSub && adminSub.length > 0) {
+          profile = adminSub[0];
+        }
+
+        const { data: adminSettings } = await supabase.rpc('get_admin_store_settings', { admin_user_id: userId });
+        if (adminSettings && adminSettings.length > 0) {
+          storeSettings = adminSettings[0];
+        }
+      } else {
+        // Admin busca normalmente
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("trial_ends_at, subscription_ends_at, subscription_plan")
+          .eq("id", user.id)
+          .single();
+        profile = profileData;
+
+        const { data: settingsData } = await supabase
+          .from("store_settings")
+          .select("quick_actions_enabled, hide_trial_message")
+          .eq("user_id", user.id)
+          .single();
+        storeSettings = settingsData;
+      }
 
       // Calcular dias restantes de teste
       let trialDaysLeft = 0;
@@ -276,23 +294,31 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Ações Rápidas com Logos */}
+      {/* Ações Rápidas com Logos - filtradas por permissão para funcionários */}
       {data.quickActionsEnabled && (
         <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-          {quickActions.map((action) => (
-            <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
-                <img 
-                  src={action.image} 
-                  alt={action.label} 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
-                {action.label}
-              </span>
-            </Link>
-          ))}
+          {allQuickActions
+            .filter((action) => {
+              // Admin vê tudo
+              if (permissions.isAdmin) return true;
+              // Funcionário vê apenas o que tem permissão
+              const permKey = action.permKey as keyof typeof permissions;
+              return permissions[permKey] === true;
+            })
+            .map((action) => (
+              <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
+                  <img 
+                    src={action.image} 
+                    alt={action.label} 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
+                  {action.label}
+                </span>
+              </Link>
+            ))}
         </div>
       )}
 

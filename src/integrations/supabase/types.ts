@@ -781,6 +781,21 @@ export type Database = {
     }
     Functions: {
       generate_invite_code: { Args: never; Returns: string }
+      get_admin_store_settings: {
+        Args: { admin_user_id: string }
+        Returns: {
+          hide_trial_message: boolean
+          quick_actions_enabled: boolean
+        }[]
+      }
+      get_admin_subscription: {
+        Args: { admin_user_id: string }
+        Returns: {
+          subscription_ends_at: string
+          subscription_plan: string
+          trial_ends_at: string
+        }[]
+      }
       get_user_email_by_cpf: {
         Args: { search_cpf: string }
         Returns: {
