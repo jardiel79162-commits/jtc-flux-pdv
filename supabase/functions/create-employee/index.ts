@@ -44,7 +44,7 @@ serve(async (req) => {
 
     const { email, password, full_name, cpf, phone, role, admin_id } = await req.json();
 
-    // Criar usuário no Auth
+    // Criar usuário no Auth - marcando como funcionário para não receber admin role
     const { data: newUser, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -53,6 +53,7 @@ serve(async (req) => {
         full_name,
         cpf,
         phone,
+        is_employee: true, // Flag para impedir que receba role admin no trigger
       },
     });
 

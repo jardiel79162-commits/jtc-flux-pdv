@@ -100,7 +100,7 @@ const DashboardLayout = () => {
     { icon: History, label: "Histórico", path: "/historico", permission: canAccessRoute("/historico") },
     { icon: Inbox, label: "Caixa de Correios", path: "/caixa-correios", permission: canAccessRoute("/caixa-correios") },
     { icon: BarChart3, label: "Relatórios", path: "/relatorios", permission: canAccessRoute("/relatorios") },
-    { icon: UserCog, label: "Funcionários", path: "/funcionarios", permission: permissions.isAdmin && hasEmployees },
+    { icon: UserCog, label: "Caixas", path: "/funcionarios", permission: permissions.isAdmin && hasEmployees },
     { icon: Settings, label: "Configurações", path: "/configuracoes", permission: canAccessRoute("/configuracoes") },
     { icon: CreditCard, label: "Assinatura", path: "/assinatura", permission: canAccessRoute("/assinatura") },
   ];
