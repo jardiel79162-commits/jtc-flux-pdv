@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff, Gift, Copy, Check, Share2, Download, CheckCircle, Loader2 } from "lucide-react";
+import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff, Gift, Copy, Check, Share2, Download, CheckCircle, Loader2, UserCog } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -38,6 +38,7 @@ const Settings = () => {
   const [storeInfoOpen, setStoreInfoOpen] = useState(false);
   const [pixConfigOpen, setPixConfigOpen] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [employeesConfigOpen, setEmployeesConfigOpen] = useState(false);
   const [inviteCodeOpen, setInviteCodeOpen] = useState(false);
   const [downloadAppOpen, setDownloadAppOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
@@ -494,6 +495,62 @@ const Settings = () => {
                     className="shrink-0"
                   />
                 </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* Configuração de Funcionários */}
+        <Card className="overflow-hidden">
+          <Collapsible open={employeesConfigOpen} onOpenChange={setEmployeesConfigOpen}>
+            <CardHeader className="cursor-pointer" onClick={() => setEmployeesConfigOpen(!employeesConfigOpen)}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between w-full gap-2">
+                  <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                    <UserCog className="h-5 w-5 shrink-0" />
+                    Funcionários
+                  </CardTitle>
+                  <div className="shrink-0">
+                    {employeesConfigOpen ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </div>
+              </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="space-y-4 overflow-hidden">
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  Configure se sua loja possui outros funcionários além de você. Ao ativar, você poderá cadastrar funcionários com permissões específicas.
+                </p>
+
+                <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-muted/50">
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <Label className="text-sm font-medium">Minha loja tem funcionários</Label>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      Ative para cadastrar funcionários e definir permissões de acesso
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.has_employees}
+                    onCheckedChange={(checked) => setSettings({ ...settings, has_employees: checked })}
+                    className="shrink-0"
+                  />
+                </div>
+
+                {settings.has_employees && (
+                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                    <p className="text-sm text-primary font-medium">
+                      ✓ Após salvar, a opção "Funcionários" aparecerá no menu para gerenciar sua equipe.
+                    </p>
+                  </div>
+                )}
+
+                {!settings.has_employees && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      <strong>Apenas você:</strong> Todas as funcionalidades estarão disponíveis apenas para sua conta de administrador.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
