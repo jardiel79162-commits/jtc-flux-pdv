@@ -47,21 +47,19 @@ export const signUp = async (data: SignUpData) => {
 
 export const signIn = async (identifier: string, password: string) => {
   // Verificar se é CPF ou email
-  const isCPF = /^\d{11}$/.test(identifier.replace(/\D/g, ""));
+  const cleanIdentifier = identifier.replace(/\D/g, "");
+  const isCPF = /^\d{11}$/.test(cleanIdentifier);
   
   if (isCPF) {
-    // Buscar email pelo CPF
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("cpf", identifier.replace(/\D/g, ""))
-      .single();
+    // Buscar email pelo CPF usando função segura que busca em profiles e employees
+    const { data, error: rpcError } = await supabase
+      .rpc('get_user_email_by_cpf', { search_cpf: cleanIdentifier });
 
-    if (profileError || !profile) {
+    if (rpcError || !data || data.length === 0) {
       throw new Error("CPF não encontrado");
     }
 
-    identifier = profile.email;
+    identifier = data[0].email;
   }
 
   const { error } = await supabase.auth.signInWithPassword({

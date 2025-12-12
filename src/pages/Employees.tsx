@@ -334,16 +334,52 @@ const Employees = () => {
                 <Label>Telefone</Label>
                 <Input
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    // Formatar telefone automaticamente: (00) 00000-0000
+                    let value = e.target.value.replace(/\D/g, "");
+                    if (value.length > 11) value = value.slice(0, 11);
+                    
+                    let formatted = value;
+                    if (value.length > 0) {
+                      formatted = "(" + value;
+                    }
+                    if (value.length > 2) {
+                      formatted = "(" + value.slice(0, 2) + ") " + value.slice(2);
+                    }
+                    if (value.length > 7) {
+                      formatted = "(" + value.slice(0, 2) + ") " + value.slice(2, 7) + "-" + value.slice(7);
+                    }
+                    setFormData({ ...formData, phone: formatted });
+                  }}
                   placeholder="(00) 00000-0000"
+                  inputMode="numeric"
+                  maxLength={15}
                 />
               </div>
               <div className="space-y-2">
                 <Label>CPF *</Label>
                 <Input
                   value={formData.cpf}
-                  onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                  onChange={(e) => {
+                    // Formatar CPF automaticamente: 000.000.000-00
+                    let value = e.target.value.replace(/\D/g, "");
+                    if (value.length > 11) value = value.slice(0, 11);
+                    
+                    let formatted = value;
+                    if (value.length > 3) {
+                      formatted = value.slice(0, 3) + "." + value.slice(3);
+                    }
+                    if (value.length > 6) {
+                      formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
+                    }
+                    if (value.length > 9) {
+                      formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
+                    }
+                    setFormData({ ...formData, cpf: formatted });
+                  }}
                   placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  maxLength={14}
                   disabled={!!editingEmployee}
                 />
               </div>

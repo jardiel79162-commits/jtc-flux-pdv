@@ -77,19 +77,34 @@ export const useUserPermissions = () => {
           .from("employee_permissions")
           .select("*")
           .eq("employee_id", employee.id)
-          .single();
+          .maybeSingle();
 
+        // Se não encontrou permissões, funcionário não tem acesso a nada
         setPermissions({
           isAdmin: false,
           isEmployee: true,
-          can_access_pos: perms?.can_access_pos || false,
-          can_access_products: perms?.can_access_products || false,
-          can_access_customers: perms?.can_access_customers || false,
-          can_view_subscription: perms?.can_view_subscription || false,
-          can_edit_own_profile: perms?.can_edit_own_profile || false,
-          can_access_settings: perms?.can_access_settings || false,
+          can_access_pos: perms?.can_access_pos ?? false,
+          can_access_products: perms?.can_access_products ?? false,
+          can_access_customers: perms?.can_access_customers ?? false,
+          can_view_subscription: perms?.can_view_subscription ?? false,
+          can_edit_own_profile: perms?.can_edit_own_profile ?? false,
+          can_access_settings: perms?.can_access_settings ?? false,
           employeeId: employee.id,
           adminId: employee.admin_id,
+        });
+      } else {
+        // Usuário não é admin nem funcionário - sem permissões
+        setPermissions({
+          isAdmin: false,
+          isEmployee: false,
+          can_access_pos: false,
+          can_access_products: false,
+          can_access_customers: false,
+          can_view_subscription: false,
+          can_edit_own_profile: false,
+          can_access_settings: false,
+          employeeId: null,
+          adminId: null,
         });
       }
 
@@ -119,8 +134,16 @@ export const useUserPermissions = () => {
         return permissions.can_view_subscription;
       case "/configuracoes":
         return permissions.can_access_settings;
+      case "/dashboard":
+        return true; // Dashboard sempre acessível
+      case "/historico":
+      case "/relatorios":
+      case "/fornecedores":
+      case "/caixa-correios":
+        // Funcionários só podem acessar se tiverem permissão de PDV ou produtos
+        return permissions.can_access_pos || permissions.can_access_products;
       default:
-        return true;
+        return false; // Por padrão, funcionários não têm acesso
     }
   };
 
