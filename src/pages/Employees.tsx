@@ -99,6 +99,7 @@ const Employees = () => {
     });
     setEditingEmployee(null);
     setNewEmployeeId(null);
+    setEditSection("info");
   };
 
   const handleSubmit = async () => {
@@ -218,6 +219,47 @@ const Employees = () => {
     }
   };
 
+  const loadEmployeePermissions = async (employeeId: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("employee_permissions")
+        .select("*")
+        .eq("employee_id", employeeId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setPermissions({
+          can_access_pos: data.can_access_pos,
+          can_access_products: data.can_access_products,
+          can_access_customers: data.can_access_customers,
+          can_view_subscription: data.can_view_subscription,
+          can_edit_own_profile: data.can_edit_own_profile,
+          can_access_settings: data.can_access_settings,
+        });
+      } else {
+        setPermissions({
+          can_access_pos: true,
+          can_access_products: false,
+          can_access_customers: true,
+          can_view_subscription: false,
+          can_edit_own_profile: false,
+          can_access_settings: false,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar permissões",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEdit = (employee: Employee) => {
     setEditingEmployee(employee);
     setFormData({
@@ -228,7 +270,57 @@ const Employees = () => {
       role: employee.role === "admin" ? "gerente" : employee.role,
       password: "",
     });
+    setEditSection("info");
+    loadEmployeePermissions(employee.id);
     setIsDialogOpen(true);
+  };
+
+  const handleUpdatePermissions = async () => {
+    if (!editingEmployee) return;
+
+    setLoading(true);
+    try {
+      const { data: existing, error: fetchError } = await supabase
+        .from("employee_permissions")
+        .select("id")
+        .eq("employee_id", editingEmployee.id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("employee_permissions")
+          .update({
+            ...permissions,
+          })
+          .eq("employee_id", editingEmployee.id);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("employee_permissions")
+          .insert({
+            employee_id: editingEmployee.id,
+            ...permissions,
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      toast({ title: "Permissões atualizadas com sucesso!" });
+      setIsDialogOpen(false);
+      resetForm();
+      fetchEmployees();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar permissões",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSavePermissions = async () => {
@@ -312,106 +404,228 @@ const Employees = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Nome Completo *</Label>
-                <Input
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  placeholder="Nome completo"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>E-mail *</Label>
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@exemplo.com"
-                  disabled={!!editingEmployee}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telefone</Label>
-                <Input
-                  value={formData.phone}
-                  onChange={(e) => {
-                    // Formatar telefone automaticamente: (00) 00000-0000
-                    let value = e.target.value.replace(/\D/g, "");
-                    if (value.length > 11) value = value.slice(0, 11);
-                    
-                    let formatted = value;
-                    if (value.length > 0) {
-                      formatted = "(" + value;
-                    }
-                    if (value.length > 2) {
-                      formatted = "(" + value.slice(0, 2) + ") " + value.slice(2);
-                    }
-                    if (value.length > 7) {
-                      formatted = "(" + value.slice(0, 2) + ") " + value.slice(2, 7) + "-" + value.slice(7);
-                    }
-                    setFormData({ ...formData, phone: formatted });
-                  }}
-                  placeholder="(00) 00000-0000"
-                  inputMode="numeric"
-                  maxLength={15}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>CPF *</Label>
-                <Input
-                  value={formData.cpf}
-                  onChange={(e) => {
-                    // Formatar CPF automaticamente: 000.000.000-00
-                    let value = e.target.value.replace(/\D/g, "");
-                    if (value.length > 11) value = value.slice(0, 11);
-                    
-                    let formatted = value;
-                    if (value.length > 3) {
-                      formatted = value.slice(0, 3) + "." + value.slice(3);
-                    }
-                    if (value.length > 6) {
-                      formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
-                    }
-                    if (value.length > 9) {
-                      formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
-                    }
-                    setFormData({ ...formData, cpf: formatted });
-                  }}
-                  placeholder="000.000.000-00"
-                  inputMode="numeric"
-                  maxLength={14}
-                  disabled={!!editingEmployee}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Cargo *</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value: "gerente" | "caixa") => setFormData({ ...formData, role: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gerente">Gerente</SelectItem>
-                    <SelectItem value="caixa">Funcionário do Caixa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {!editingEmployee && (
-                <div className="space-y-2">
-                  <Label>Senha *</Label>
-                  <Input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Senha do funcionário"
-                  />
+              {editingEmployee && (
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/50 p-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    O que você deseja editar?
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={editSection === "info" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setEditSection("info")}
+                    >
+                      Informações
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={editSection === "permissions" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setEditSection("permissions")}
+                    >
+                      Permissões
+                    </Button>
+                  </div>
                 </div>
               )}
-              <Button onClick={handleSubmit} disabled={loading} className="w-full">
-                {loading ? "Salvando..." : editingEmployee ? "Atualizar" : "Continuar"}
-              </Button>
+
+              {(!editingEmployee || editSection === "info") && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Nome Completo *</Label>
+                    <Input
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      placeholder="Nome completo"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>E-mail *</Label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="email@exemplo.com"
+                      disabled={!!editingEmployee}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Telefone</Label>
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) => {
+                        // Formatar telefone automaticamente: (00) 00000-0000
+                        let value = e.target.value.replace(/\D/g, "");
+                        if (value.length > 11) value = value.slice(0, 11);
+                        
+                        let formatted = value;
+                        if (value.length > 0) {
+                          formatted = "(" + value;
+                        }
+                        if (value.length > 2) {
+                          formatted = "(" + value.slice(0, 2) + ") " + value.slice(2);
+                        }
+                        if (value.length > 7) {
+                          formatted = "(" + value.slice(0, 2) + ") " + value.slice(2, 7) + "-" + value.slice(7);
+                        }
+                        setFormData({ ...formData, phone: formatted });
+                      }}
+                      placeholder="(00) 00000-0000"
+                      inputMode="numeric"
+                      maxLength={15}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CPF *</Label>
+                    <Input
+                      value={formData.cpf}
+                      onChange={(e) => {
+                        // Formatar CPF automaticamente: 000.000.000-00
+                        let value = e.target.value.replace(/\D/g, "");
+                        if (value.length > 11) value = value.slice(0, 11);
+                        
+                        let formatted = value;
+                        if (value.length > 3) {
+                          formatted = value.slice(0, 3) + "." + value.slice(3);
+                        }
+                        if (value.length > 6) {
+                          formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
+                        }
+                        if (value.length > 9) {
+                          formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
+                        }
+                        setFormData({ ...formData, cpf: formatted });
+                      }}
+                      placeholder="000.000.000-00"
+                      inputMode="numeric"
+                      maxLength={14}
+                      disabled={!!editingEmployee}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cargo *</Label>
+                    <Select
+                      value={formData.role}
+                      onValueChange={(value: "gerente" | "caixa") => setFormData({ ...formData, role: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gerente">Gerente</SelectItem>
+                        <SelectItem value="caixa">Funcionário do Caixa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {!editingEmployee && (
+                    <div className="space-y-2">
+                      <Label>Senha *</Label>
+                      <Input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Senha do funcionário"
+                      />
+                    </div>
+                  )}
+                  <Button onClick={handleSubmit} disabled={loading} className="w-full">
+                    {loading
+                      ? "Salvando..."
+                      : editingEmployee
+                        ? "Salvar informações"
+                        : "Continuar"}
+                  </Button>
+                </div>
+              )}
+
+              {editingEmployee && editSection === "permissions" && (
+                <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Pode realizar vendas (PDV)?</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permite acesso ao sistema de ponto de venda
+                        </p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_pos}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_pos: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Pode acessar produtos?</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permite visualizar e gerenciar produtos
+                        </p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_products}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_products: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Pode acessar clientes?</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permite visualizar e gerenciar clientes
+                        </p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_customers}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_customers: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Pode visualizar assinatura?</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permite ver o status e detalhes da assinatura
+                        </p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_view_subscription}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_view_subscription: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Pode editar próprio perfil?</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permite alterar nome e dados básicos
+                        </p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_edit_own_profile}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_edit_own_profile: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Pode acessar configurações? (não recomendado)</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permite acesso às configurações da loja
+                        </p>
+                      </div>
+                      <Switch
+                        checked={permissions.can_access_settings}
+                        onCheckedChange={(checked) => setPermissions({ ...permissions, can_access_settings: checked })}
+                      />
+                    </div>
+                  </div>
+
+                  <Button onClick={handleUpdatePermissions} disabled={loading} className="w-full">
+                    {loading ? "Salvando..." : "Salvar permissões"}
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
