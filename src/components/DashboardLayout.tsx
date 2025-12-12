@@ -72,7 +72,17 @@ const DashboardLayout = () => {
     if (!loading && user) {
       fetchStoreSettings();
     }
-  }, [loading, user, permissions.isAdmin]);
+
+    // Escutar mudanças na rota para atualizar has_employees
+    const handleRouteChange = () => {
+      if (!loading && user && permissions.isAdmin) {
+        fetchStoreSettings();
+      }
+    };
+
+    // Atualizar quando a rota mudar
+    handleRouteChange();
+  }, [loading, user, permissions.isAdmin, location.pathname]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
