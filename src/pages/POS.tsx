@@ -6,7 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, CreditCard, DollarSign, Smartphone, Banknote, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer } from "lucide-react";
+import { Search, Plus, Minus, Trash2, DollarSign, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer } from "lucide-react";
+
+// Imagens dos métodos de pagamento
+import paymentCredit from "@/assets/payment-credit.jpg";
+import paymentDebit from "@/assets/payment-debit.jpg";
+import paymentPix from "@/assets/payment-pix.png";
+import paymentCash from "@/assets/payment-cash.png";
+import paymentFiado from "@/assets/payment-fiado.png";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -1152,11 +1159,11 @@ ${paymentInfo}
   };
 
   const paymentMethods = [
-    { value: "credit", label: "Cartão de Crédito", icon: CreditCard },
-    { value: "debit", label: "Cartão de Débito", icon: CreditCard },
-    { value: "pix", label: "PIX", icon: Smartphone },
-    { value: "cash", label: "Dinheiro", icon: Banknote },
-    { value: "fiado", label: "Fiado", icon: User },
+    { value: "credit", label: "Cartão de Crédito", image: paymentCredit },
+    { value: "debit", label: "Cartão de Débito", image: paymentDebit },
+    { value: "pix", label: "PIX", image: paymentPix },
+    { value: "cash", label: "Dinheiro", image: paymentCash },
+    { value: "fiado", label: "Fiado", image: paymentFiado },
   ];
 
   return (
@@ -1166,29 +1173,6 @@ ${paymentInfo}
         <p className="text-muted-foreground">Sistema de vendas</p>
       </div>
 
-      {/* Indicador de etapas */}
-      <div className="flex items-center justify-center mb-8 gap-4">
-        <div className={`flex items-center gap-2 ${currentStep === "cart" ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === "cart" ? "bg-primary text-white" : "bg-muted"}`}>
-            1
-          </div>
-          <span>Carrinho</span>
-        </div>
-        <ArrowRight className="text-muted-foreground" />
-        <div className={`flex items-center gap-2 ${currentStep === "payment" ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === "payment" ? "bg-primary text-white" : "bg-muted"}`}>
-            2
-          </div>
-          <span>Pagamento</span>
-        </div>
-        <ArrowRight className="text-muted-foreground" />
-        <div className={`flex items-center gap-2 ${currentStep === "receipt" ? "text-success font-semibold" : "text-muted-foreground"}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === "receipt" ? "bg-success text-white" : "bg-muted"}`}>
-            3
-          </div>
-          <span>Comprovante</span>
-        </div>
-      </div>
 
       {/* Etapa 1: Carrinho */}
       {currentStep === "cart" && (
@@ -1425,7 +1409,7 @@ ${paymentInfo}
                     className="h-24 flex-col border-2 hover:border-accent hover:bg-accent-light"
                     onClick={() => setPaymentMode("multiple")}
                   >
-                    <CreditCard className="h-8 w-8 mb-2" />
+                    <img src={paymentCredit} alt="Múltiplo" className="h-8 w-8 mb-2 rounded object-cover" />
                     <span className="text-sm font-medium">Pagamento Múltiplo</span>
                     <span className="text-xs text-muted-foreground">Dividir em várias formas</span>
                   </Button>
@@ -1447,33 +1431,30 @@ ${paymentInfo}
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  {paymentMethods.map((method) => {
-                    const Icon = method.icon;
-                    return (
-                      <Button
-                        key={method.value}
-                        variant={paymentMethod === method.value ? "default" : "outline"}
-                        className={`h-24 flex-col ${
-                          paymentMethod === method.value
-                            ? "bg-accent hover:bg-accent-hover border-2 border-accent"
-                            : ""
-                        }`}
-                        onClick={() => {
-                          if (method.value === "pix") {
-                            handlePixPayment();
-                          } else {
-                            setPaymentMethod(method.value);
-                            if (method.value === "fiado") {
-                              setShowCustomerBrowser(true);
-                            }
+                  {paymentMethods.map((method) => (
+                    <Button
+                      key={method.value}
+                      variant={paymentMethod === method.value ? "default" : "outline"}
+                      className={`h-24 flex-col ${
+                        paymentMethod === method.value
+                          ? "bg-accent hover:bg-accent-hover border-2 border-accent"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        if (method.value === "pix") {
+                          handlePixPayment();
+                        } else {
+                          setPaymentMethod(method.value);
+                          if (method.value === "fiado") {
+                            setShowCustomerBrowser(true);
                           }
-                        }}
-                      >
-                        <Icon className="h-8 w-8 mb-2" />
-                        <span className="text-sm">{method.label}</span>
-                      </Button>
-                    );
-                  })}
+                        }
+                      }}
+                    >
+                      <img src={method.image} alt={method.label} className="h-10 w-10 mb-2 rounded object-cover" />
+                      <span className="text-sm">{method.label}</span>
+                    </Button>
+                  ))}
                 </div>
 
                 {paymentMethod === "fiado" && (
@@ -1564,27 +1545,24 @@ ${paymentInfo}
                 <div className="space-y-3">
                   <p className="text-sm font-medium">Adicionar pagamento:</p>
                   <div className="grid grid-cols-3 gap-2">
-                    {paymentMethods.map((method) => {
-                      const Icon = method.icon;
-                      return (
-                        <Button
-                          key={method.value}
-                          variant={paymentMethod === method.value ? "default" : "outline"}
-                          className={`h-16 flex-col text-xs ${
-                            paymentMethod === method.value ? "bg-accent hover:bg-accent-hover" : ""
-                          }`}
-                          onClick={() => {
-                            setPaymentMethod(method.value);
-                            if (method.value === "fiado") {
-                              setShowCustomerBrowser(true);
-                            }
-                          }}
-                        >
-                          <Icon className="h-5 w-5 mb-1" />
-                          <span>{method.label}</span>
-                        </Button>
-                      );
-                    })}
+                    {paymentMethods.map((method) => (
+                      <Button
+                        key={method.value}
+                        variant={paymentMethod === method.value ? "default" : "outline"}
+                        className={`h-16 flex-col text-xs ${
+                          paymentMethod === method.value ? "bg-accent hover:bg-accent-hover" : ""
+                        }`}
+                        onClick={() => {
+                          setPaymentMethod(method.value);
+                          if (method.value === "fiado") {
+                            setShowCustomerBrowser(true);
+                          }
+                        }}
+                      >
+                        <img src={method.image} alt={method.label} className="h-6 w-6 mb-1 rounded object-cover" />
+                        <span>{method.label}</span>
+                      </Button>
+                    ))}
                   </div>
 
                   {paymentMethod && (
