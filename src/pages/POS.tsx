@@ -826,8 +826,10 @@ const POS = () => {
 
     // Gerar info de pagamento
     let paymentInfo = "";
+    let paymentLabel = "Pagamento:";
     if (saleData.payments && saleData.payments.length > 0) {
       // Pagamento múltiplo
+      paymentLabel = "MÚLTIPLOS PAGAMENTOS:";
       paymentInfo = saleData.payments.map(p => 
         `${paymentMethodLabels[p.method] || p.method}: R$ ${p.amount.toFixed(2)}`
       ).join("<br>");
@@ -918,7 +920,7 @@ const POS = () => {
         </div>
         
         <div class="divider"></div>
-        <div class="bold">Pagamento:</div>
+        <div class="bold">${paymentLabel}</div>
         <div>${paymentInfo}</div>
         
         ${saleData.change_amount && saleData.change_amount > 0 ? `
@@ -1011,7 +1013,17 @@ const POS = () => {
       credito: "Crédito do Cliente",
     };
     
-    if (sale.credit_used && sale.remaining_amount) {
+    if (sale.payments && sale.payments.length > 0) {
+      // Pagamento múltiplo
+      doc.setFont("helvetica", "bold");
+      doc.text("MÚLTIPLOS PAGAMENTOS:", 20, yPos);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+      sale.payments.forEach(p => {
+        doc.text(`  - ${paymentMethodLabels[p.method] || p.method}: R$ ${p.amount.toFixed(2)}`, 20, yPos);
+        yPos += 6;
+      });
+    } else if (sale.credit_used && sale.remaining_amount) {
       doc.text("Formas de Pagamento:", 20, yPos);
       yPos += 7;
       doc.text(`  - Crédito: R$ ${sale.credit_used.toFixed(2)}`, 20, yPos);
@@ -1098,7 +1110,12 @@ const POS = () => {
     const subtotal = sale.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
 
     let paymentInfo = "";
-    if (sale.credit_used && sale.remaining_amount) {
+    if (sale.payments && sale.payments.length > 0) {
+      // Pagamento múltiplo
+      paymentInfo = `MÚLTIPLOS PAGAMENTOS:\n${sale.payments.map(p => 
+        `  - ${paymentMethodLabels[p.method] || p.method}: R$ ${p.amount.toFixed(2)}`
+      ).join('\n')}`;
+    } else if (sale.credit_used && sale.remaining_amount) {
       paymentInfo = `Formas de Pagamento:
   - Crédito: R$ ${sale.credit_used.toFixed(2)}
   - ${paymentMethodLabels[sale.remaining_payment_method || ""] || sale.remaining_payment_method}: R$ ${sale.remaining_amount.toFixed(2)}`;
