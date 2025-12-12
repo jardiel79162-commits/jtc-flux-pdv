@@ -15,6 +15,7 @@ import quickActionRelatorios from "@/assets/quick-action-relatorios.png";
 import quickActionConfiguracoes from "@/assets/quick-action-configuracoes.png";
 import quickActionAssinatura from "@/assets/quick-action-assinatura.png";
 import quickActionFornecedores from "@/assets/quick-action-fornecedores.jpg";
+import quickActionCorreio from "@/assets/quick-action-correio.jpg";
 
 interface DashboardData {
   salesToday: number;
@@ -34,6 +35,7 @@ const quickActions = [
   { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores },
   { label: "Histórico", path: "/historico", image: quickActionHistorico },
   { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios },
+  { label: "Correio", path: "/correio", image: quickActionCorreio },
   { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
   { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura },
 ];

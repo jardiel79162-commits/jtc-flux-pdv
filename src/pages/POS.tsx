@@ -30,6 +30,11 @@ interface CartItem {
   quantity: number;
 }
 
+interface PaymentEntry {
+  method: string;
+  amount: number;
+}
+
 interface SaleData {
   id: string;
   total_amount: number;
@@ -40,6 +45,8 @@ interface SaleData {
   credit_used?: number;
   remaining_payment_method?: string;
   remaining_amount?: number;
+  change_amount?: number;
+  payments?: PaymentEntry[];
   items: Array<{
     product_name: string;
     quantity: number;
@@ -81,6 +88,13 @@ const POS = () => {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailToSend, setEmailToSend] = useState("");
+  
+  // Estados para pagamento múltiplo
+  const [paymentMode, setPaymentMode] = useState<"single" | "multiple" | null>(null);
+  const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [currentPaymentAmount, setCurrentPaymentAmount] = useState("");
+  const [printerWidth, setPrinterWidth] = useState<"80mm" | "58mm">("80mm");
+  
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
@@ -364,7 +378,45 @@ const POS = () => {
       toast({ title: "Carrinho vazio", description: "Adicione produtos ao carrinho primeiro", variant: "destructive" });
       return;
     }
+    setPaymentMode(null);
+    setPayments([]);
+    setCurrentPaymentAmount("");
+    setPaymentMethod("");
     setCurrentStep("payment");
+  };
+
+  // Calcular total pago e restante para pagamento múltiplo
+  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const remainingToPay = total - totalPaid;
+  const changeAmount = totalPaid > total ? totalPaid - total : 0;
+
+  // Adicionar pagamento no modo múltiplo
+  const addPayment = () => {
+    if (!paymentMethod) {
+      toast({ title: "Selecione uma forma de pagamento", variant: "destructive" });
+      return;
+    }
+    const amount = parseFloat(currentPaymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Digite um valor válido", variant: "destructive" });
+      return;
+    }
+    if (paymentMethod === "fiado" && !selectedCustomer) {
+      toast({ 
+        title: "Cliente não selecionado", 
+        description: "Selecione um cliente para pagamento fiado",
+        variant: "destructive" 
+      });
+      return;
+    }
+    setPayments([...payments, { method: paymentMethod, amount }]);
+    setCurrentPaymentAmount("");
+    setPaymentMethod("");
+  };
+
+  // Remover pagamento
+  const removePayment = (index: number) => {
+    setPayments(payments.filter((_, i) => i !== index));
   };
 
   const generateSaleId = (saleNumber: number) => {
@@ -377,17 +429,50 @@ const POS = () => {
   const finalizeSale = async () => {
     if (isProcessingSale) return;
     
-    if (!paymentMethod) {
-      toast({ title: "Selecione a forma de pagamento", variant: "destructive" });
-      return;
+    // Validações para pagamento único
+    if (paymentMode === "single") {
+      if (!paymentMethod) {
+        toast({ title: "Selecione a forma de pagamento", variant: "destructive" });
+        return;
+      }
+      if (paymentMethod === "fiado" && !selectedCustomer) {
+        toast({ 
+          title: "Cliente não selecionado", 
+          description: "Por favor, selecione um cliente para venda a prazo",
+          variant: "destructive" 
+        });
+        return;
+      }
+    }
+    
+    // Validações para pagamento múltiplo
+    if (paymentMode === "multiple") {
+      if (payments.length === 0) {
+        toast({ title: "Adicione pelo menos uma forma de pagamento", variant: "destructive" });
+        return;
+      }
+      if (totalPaid < total) {
+        toast({ 
+          title: "Valor insuficiente", 
+          description: `Faltam R$ ${remainingToPay.toFixed(2)} para completar o pagamento`,
+          variant: "destructive" 
+        });
+        return;
+      }
+      // Verificar se há pagamento fiado sem cliente selecionado
+      const hasFiado = payments.some(p => p.method === "fiado");
+      if (hasFiado && !selectedCustomer) {
+        toast({ 
+          title: "Cliente não selecionado", 
+          description: "Selecione um cliente para pagamento fiado",
+          variant: "destructive" 
+        });
+        return;
+      }
     }
 
-    if (paymentMethod === "fiado" && !selectedCustomer) {
-      toast({ 
-        title: "Cliente não selecionado", 
-        description: "Por favor, selecione um cliente para venda a prazo",
-        variant: "destructive" 
-      });
+    if (!paymentMode) {
+      toast({ title: "Selecione o tipo de pagamento", variant: "destructive" });
       return;
     }
 
@@ -405,20 +490,34 @@ const POS = () => {
       const saleNumber = (count || 0) + 1;
       const customSaleId = generateSaleId(saleNumber);
 
-      // Verificar se cliente tem crédito disponível
-      let creditUsed = 0;
-      let remainingAmount = total;
+      // Determinar forma de pagamento final
       let finalPaymentMethod = paymentMethod;
-      let finalPaymentStatus = paymentMethod === "fiado" ? "pending" : "paid";
-
-      if (selectedCustomer && selectedCustomer.current_balance > 0) {
-        creditUsed = Math.min(selectedCustomer.current_balance, total);
-        remainingAmount = total - creditUsed;
-        
-        // Se o crédito cobriu tudo
-        if (remainingAmount === 0) {
-          finalPaymentMethod = "credito";
-          finalPaymentStatus = "paid";
+      let finalPaymentStatus = "paid";
+      let creditUsed = 0;
+      let calculatedChange = 0;
+      
+      if (paymentMode === "multiple") {
+        // Para pagamento múltiplo, usar a primeira forma de pagamento como principal
+        finalPaymentMethod = payments.map(p => p.method).join(", ");
+        calculatedChange = changeAmount;
+        // Se tiver fiado, é pending
+        if (payments.some(p => p.method === "fiado")) {
+          finalPaymentStatus = "pending";
+        }
+      } else {
+        // Pagamento único
+        if (paymentMethod === "fiado") {
+          finalPaymentStatus = "pending";
+        }
+        // Verificar se cliente tem crédito disponível
+        if (selectedCustomer && selectedCustomer.current_balance > 0) {
+          creditUsed = Math.min(selectedCustomer.current_balance, total);
+          const remainingAfterCredit = total - creditUsed;
+          
+          // Se o crédito cobriu tudo
+          if (remainingAfterCredit === 0) {
+            finalPaymentMethod = "credito";
+          }
         }
       }
 
@@ -480,8 +579,11 @@ const POS = () => {
         }
       }
 
+      // Calcular valor restante após crédito (para pagamento único)
+      const remainingAfterCredit = paymentMode === "single" ? total - creditUsed : total;
+
       // Processar pagamento com crédito e/ou outras formas
-      if (selectedCustomer) {
+      if (selectedCustomer && paymentMode === "single") {
         if (creditUsed > 0) {
           // Descontar crédito do cliente
           const newBalance = selectedCustomer.current_balance - creditUsed;
@@ -518,9 +620,9 @@ const POS = () => {
         }
 
         // Se ainda resta valor e é fiado, adicionar dívida
-        if (remainingAmount > 0 && paymentMethod === "fiado") {
+        if (remainingAfterCredit > 0 && paymentMethod === "fiado") {
           const currentBalance = selectedCustomer.current_balance - creditUsed;
-          const newBalance = currentBalance - remainingAmount;
+          const newBalance = currentBalance - remainingAfterCredit;
           
           const { error: balanceError } = await supabase
             .from("customers")
@@ -543,7 +645,7 @@ const POS = () => {
               customer_id: selectedCustomer.id,
               user_id: user.id,
               type: "debt",
-              amount: remainingAmount,
+              amount: remainingAfterCredit,
               description: `Compra a prazo - Venda ${customSaleId}`,
             });
 
@@ -559,6 +661,29 @@ const POS = () => {
         }
       }
 
+      // Processar pagamento múltiplo com fiado
+      if (paymentMode === "multiple" && selectedCustomer) {
+        const fiadoPayment = payments.find(p => p.method === "fiado");
+        if (fiadoPayment) {
+          const newBalance = selectedCustomer.current_balance - fiadoPayment.amount;
+          
+          await supabase
+            .from("customers")
+            .update({ current_balance: newBalance })
+            .eq("id", selectedCustomer.id);
+
+          await supabase
+            .from("customer_transactions")
+            .insert({
+              customer_id: selectedCustomer.id,
+              user_id: user.id,
+              type: "debt",
+              amount: fiadoPayment.amount,
+              description: `Compra a prazo - Venda ${customSaleId}`,
+            });
+        }
+      }
+
       // Preparar dados do comprovante
       setSaleData({
         id: customSaleId,
@@ -568,8 +693,10 @@ const POS = () => {
         created_at: sale.created_at,
         customer_name: selectedCustomer?.name,
         credit_used: creditUsed > 0 ? creditUsed : undefined,
-        remaining_payment_method: creditUsed > 0 && remainingAmount > 0 ? paymentMethod : undefined,
-        remaining_amount: creditUsed > 0 && remainingAmount > 0 ? remainingAmount : undefined,
+        remaining_payment_method: paymentMode === "single" && creditUsed > 0 && remainingAfterCredit > 0 ? paymentMethod : undefined,
+        remaining_amount: paymentMode === "single" && creditUsed > 0 && remainingAfterCredit > 0 ? remainingAfterCredit : undefined,
+        change_amount: calculatedChange > 0 ? calculatedChange : undefined,
+        payments: paymentMode === "multiple" ? payments : undefined,
         items: cart.map(item => ({
           product_name: item.product.name,
           quantity: item.quantity,
@@ -690,14 +817,27 @@ const POS = () => {
     const saleDate = format(new Date(saleData.created_at), "dd/MM/yyyy HH:mm");
     const subtotal = saleData.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
 
+    // Gerar info de pagamento
     let paymentInfo = "";
-    if (saleData.credit_used && saleData.remaining_amount) {
+    if (saleData.payments && saleData.payments.length > 0) {
+      // Pagamento múltiplo
+      paymentInfo = saleData.payments.map(p => 
+        `${paymentMethodLabels[p.method] || p.method}: R$ ${p.amount.toFixed(2)}`
+      ).join("<br>");
+    } else if (saleData.credit_used && saleData.remaining_amount) {
       paymentInfo = `Crédito: R$ ${saleData.credit_used.toFixed(2)}<br>${paymentMethodLabels[saleData.remaining_payment_method || ""] || saleData.remaining_payment_method}: R$ ${saleData.remaining_amount.toFixed(2)}`;
     } else if (saleData.credit_used) {
       paymentInfo = "Crédito do Cliente";
     } else {
       paymentInfo = paymentMethodLabels[saleData.payment_method] || saleData.payment_method;
     }
+
+    // Configurações baseadas no tamanho da impressora
+    const width = printerWidth;
+    const fontSize = printerWidth === "58mm" ? "10px" : "12px";
+    const storeNameSize = printerWidth === "58mm" ? "14px" : "16px";
+    const totalSize = printerWidth === "58mm" ? "12px" : "14px";
+    const padding = printerWidth === "58mm" ? "3mm" : "5mm";
 
     const printWindow = window.open("", "_blank", "width=300,height=600");
     if (!printWindow) {
@@ -712,24 +852,24 @@ const POS = () => {
         <meta charset="UTF-8">
         <title>Comprovante</title>
         <style>
-          @page { margin: 0; size: 80mm auto; }
+          @page { margin: 0; size: ${width} auto; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: 'Courier New', monospace; 
-            font-size: 12px; 
-            width: 80mm; 
-            padding: 5mm;
-            line-height: 1.4;
+            font-size: ${fontSize}; 
+            width: ${width}; 
+            padding: ${padding};
+            line-height: 1.3;
           }
           .center { text-align: center; }
           .bold { font-weight: bold; }
-          .divider { border-top: 1px dashed #000; margin: 8px 0; }
-          .item { display: flex; justify-content: space-between; margin: 4px 0; }
+          .divider { border-top: 1px dashed #000; margin: 6px 0; }
+          .item { display: flex; justify-content: space-between; margin: 3px 0; }
           .item-name { flex: 1; }
-          .item-price { text-align: right; min-width: 70px; }
-          .total-row { display: flex; justify-content: space-between; margin: 4px 0; }
-          .store-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-          h2 { font-size: 14px; margin: 8px 0; }
+          .item-price { text-align: right; min-width: 60px; }
+          .total-row { display: flex; justify-content: space-between; margin: 3px 0; }
+          .store-name { font-size: ${storeNameSize}; font-weight: bold; margin-bottom: 4px; }
+          .change { background: #f0f0f0; padding: 5px; margin: 5px 0; font-weight: bold; }
         </style>
       </head>
       <body>
@@ -740,14 +880,13 @@ const POS = () => {
         <div>Data: ${saleDate}</div>
         <div>ID: ${saleData.id}</div>
         ${saleData.customer_name ? `<div class="bold">Cliente: ${saleData.customer_name}</div>` : ""}
-        <div>Pagamento: ${paymentInfo}</div>
         
         <div class="divider"></div>
         <div class="center bold">ITENS</div>
         <div class="divider"></div>
         
         ${saleData.items.map(item => `
-          <div>${item.product_name}</div>
+          <div style="font-size: ${printerWidth === "58mm" ? "9px" : "11px"};">${item.product_name}</div>
           <div class="item">
             <span>${item.quantity}x R$ ${item.unit_price.toFixed(2)}</span>
             <span class="item-price">R$ ${(item.quantity * item.unit_price).toFixed(2)}</span>
@@ -766,13 +905,23 @@ const POS = () => {
             <span>- R$ ${saleData.discount.toFixed(2)}</span>
           </div>
         ` : ""}
-        <div class="total-row bold" style="font-size: 14px;">
+        <div class="total-row bold" style="font-size: ${totalSize};">
           <span>TOTAL:</span>
           <span>R$ ${saleData.total_amount.toFixed(2)}</span>
         </div>
         
         <div class="divider"></div>
-        <div class="center" style="margin-top: 10px;">Obrigado pela preferência!</div>
+        <div class="bold">Pagamento:</div>
+        <div>${paymentInfo}</div>
+        
+        ${saleData.change_amount && saleData.change_amount > 0 ? `
+          <div class="change center">
+            TROCO: R$ ${saleData.change_amount.toFixed(2)}
+          </div>
+        ` : ""}
+        
+        <div class="divider"></div>
+        <div class="center" style="margin-top: 8px;">Obrigado pela preferência!</div>
         
         <script>
           window.onload = function() {
@@ -996,6 +1145,9 @@ ${paymentInfo}
     setSelectedCustomer(null);
     setCurrentStep("cart");
     setSaleData(null);
+    setPaymentMode(null);
+    setPayments([]);
+    setCurrentPaymentAmount("");
     fetchProducts();
   };
 
@@ -1251,117 +1403,261 @@ ${paymentInfo}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Forma de Pagamento</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {paymentMethods.map((method) => {
-                  const Icon = method.icon;
-                  return (
-                    <Button
-                      key={method.value}
-                      variant={paymentMethod === method.value ? "default" : "outline"}
-                      className={`h-24 flex-col ${
-                        paymentMethod === method.value
-                          ? "bg-accent hover:bg-accent-hover border-2 border-accent"
-                          : ""
-                      }`}
-                      onClick={() => {
-                        if (method.value === "pix") {
-                          handlePixPayment();
-                        } else {
-                          setPaymentMethod(method.value);
-                          if (method.value === "fiado") {
-                            setShowCustomerBrowser(true);
+          {/* Seleção do Modo de Pagamento */}
+          {!paymentMode && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tipo de Pagamento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button
+                    variant="outline"
+                    className="h-24 flex-col border-2 hover:border-primary hover:bg-primary-light"
+                    onClick={() => setPaymentMode("single")}
+                  >
+                    <DollarSign className="h-8 w-8 mb-2" />
+                    <span className="text-sm font-medium">Pagamento Único</span>
+                    <span className="text-xs text-muted-foreground">Tudo em uma forma</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-24 flex-col border-2 hover:border-accent hover:bg-accent-light"
+                    onClick={() => setPaymentMode("multiple")}
+                  >
+                    <CreditCard className="h-8 w-8 mb-2" />
+                    <span className="text-sm font-medium">Pagamento Múltiplo</span>
+                    <span className="text-xs text-muted-foreground">Dividir em várias formas</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pagamento Único */}
+          {paymentMode === "single" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Forma de Pagamento</span>
+                  <Button variant="ghost" size="sm" onClick={() => setPaymentMode(null)}>
+                    Voltar
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  {paymentMethods.map((method) => {
+                    const Icon = method.icon;
+                    return (
+                      <Button
+                        key={method.value}
+                        variant={paymentMethod === method.value ? "default" : "outline"}
+                        className={`h-24 flex-col ${
+                          paymentMethod === method.value
+                            ? "bg-accent hover:bg-accent-hover border-2 border-accent"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          if (method.value === "pix") {
+                            handlePixPayment();
+                          } else {
+                            setPaymentMethod(method.value);
+                            if (method.value === "fiado") {
+                              setShowCustomerBrowser(true);
+                            }
                           }
-                        }
-                      }}
-                    >
-                      <Icon className="h-8 w-8 mb-2" />
-                      <span className="text-sm">{method.label}</span>
-                    </Button>
-                  );
-                })}
-              </div>
+                        }}
+                      >
+                        <Icon className="h-8 w-8 mb-2" />
+                        <span className="text-sm">{method.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
 
-              {/* Dialog do QR Code PIX */}
-              <Dialog open={showPixQrCode} onOpenChange={setShowPixQrCode}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <QrCode className="h-5 w-5 text-primary" />
-                      Pagamento PIX
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="flex flex-col items-center space-y-4 py-4">
-                    <div className="bg-white p-4 rounded-lg">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixPayload(total))}`}
-                        alt="QR Code PIX"
-                        width={200}
-                        height={200}
-                      />
-                    </div>
-                    <div className="text-center space-y-2">
-                      <p className="text-2xl font-bold text-accent">R$ {total.toFixed(2)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Escaneie o QR Code para pagar
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Recebedor: {pixSettings?.pix_receiver_name}
-                      </p>
-                    </div>
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => {
-                        setShowPixQrCode(false);
-                        toast({ title: "Pagamento PIX confirmado!" });
-                      }}
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Confirmar Pagamento
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {paymentMethod === "fiado" && (
-                <div className="mt-4 p-4 bg-muted rounded-lg">
-                  {selectedCustomer ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Cliente selecionado:</p>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">{selectedCustomer.name}</p>
-                          <p className="text-xs text-muted-foreground">CPF: {selectedCustomer.cpf}</p>
+                {paymentMethod === "fiado" && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    {selectedCustomer ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Cliente selecionado:</p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">{selectedCustomer.name}</p>
+                            <p className="text-xs text-muted-foreground">CPF: {selectedCustomer.cpf}</p>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => setShowCustomerBrowser(true)}>
+                            Trocar
+                          </Button>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowCustomerBrowser(true)}
-                        >
-                          Trocar
+                      </div>
+                    ) : (
+                      <div className="text-center space-y-2">
+                        <p className="text-sm text-destructive font-medium">Por favor, selecione um cliente.</p>
+                        <Button variant="outline" size="sm" onClick={() => setShowCustomerBrowser(true)}>
+                          Selecionar Cliente
                         </Button>
                       </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pagamento Múltiplo */}
+          {paymentMode === "multiple" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Pagamento Múltiplo</span>
+                  <Button variant="ghost" size="sm" onClick={() => setPaymentMode(null)}>
+                    Voltar
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Lista de pagamentos adicionados */}
+                {payments.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Pagamentos adicionados:</p>
+                    {payments.map((payment, index) => {
+                      const methodLabel = paymentMethods.find(m => m.value === payment.method)?.label || payment.method;
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <span>{methodLabel}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">R$ {payment.amount.toFixed(2)}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6"
+                              onClick={() => removePayment(index)}
+                            >
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="border-t pt-2 space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span>Total pago:</span>
+                        <span className="font-semibold">R$ {totalPaid.toFixed(2)}</span>
+                      </div>
+                      {remainingToPay > 0 ? (
+                        <div className="flex justify-between text-sm text-destructive">
+                          <span>Falta pagar:</span>
+                          <span className="font-semibold">R$ {remainingToPay.toFixed(2)}</span>
+                        </div>
+                      ) : changeAmount > 0 ? (
+                        <div className="flex justify-between text-lg text-green-600 font-bold bg-green-50 p-2 rounded">
+                          <span>TROCO:</span>
+                          <span>R$ {changeAmount.toFixed(2)}</span>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : (
-                    <div className="text-center space-y-2">
-                      <p className="text-sm text-destructive font-medium">Por favor, selecione um cliente.</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowCustomerBrowser(true)}
-                      >
-                        Selecionar Cliente
+                  </div>
+                )}
+
+                {/* Adicionar novo pagamento */}
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Adicionar pagamento:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {paymentMethods.map((method) => {
+                      const Icon = method.icon;
+                      return (
+                        <Button
+                          key={method.value}
+                          variant={paymentMethod === method.value ? "default" : "outline"}
+                          className={`h-16 flex-col text-xs ${
+                            paymentMethod === method.value ? "bg-accent hover:bg-accent-hover" : ""
+                          }`}
+                          onClick={() => {
+                            setPaymentMethod(method.value);
+                            if (method.value === "fiado") {
+                              setShowCustomerBrowser(true);
+                            }
+                          }}
+                        >
+                          <Icon className="h-5 w-5 mb-1" />
+                          <span>{method.label}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  {paymentMethod && (
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Valor"
+                        value={currentPaymentAmount}
+                        onChange={(e) => setCurrentPaymentAmount(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={addPayment}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Adicionar
                       </Button>
                     </div>
                   )}
+
+                  {paymentMethod === "fiado" && selectedCustomer && (
+                    <div className="p-2 bg-muted rounded text-sm">
+                      Cliente: <span className="font-semibold">{selectedCustomer.name}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dialog do QR Code PIX */}
+          <Dialog open={showPixQrCode} onOpenChange={setShowPixQrCode}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <QrCode className="h-5 w-5 text-primary" />
+                  Pagamento PIX
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center space-y-4 py-4">
+                <div className="bg-white p-4 rounded-lg">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixPayload(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total))}`}
+                    alt="QR Code PIX"
+                    width={200}
+                    height={200}
+                  />
+                </div>
+                <div className="text-center space-y-2">
+                  <p className="text-2xl font-bold text-accent">
+                    R$ {(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total).toFixed(2)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Escaneie o QR Code para pagar</p>
+                  <p className="text-xs text-muted-foreground">Recebedor: {pixSettings?.pix_receiver_name}</p>
+                </div>
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    if (paymentMode === "multiple") {
+                      const amount = parseFloat(currentPaymentAmount) || remainingToPay;
+                      setPayments([...payments, { method: "pix", amount }]);
+                      setCurrentPaymentAmount("");
+                    }
+                    setShowPixQrCode(false);
+                    setPaymentMethod(paymentMode === "multiple" ? "" : "pix");
+                    toast({ title: "Pagamento PIX confirmado!" });
+                  }}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Confirmar Pagamento
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Dialog para seleção de clientes */}
           <Dialog open={showCustomerBrowser} onOpenChange={setShowCustomerBrowser}>
