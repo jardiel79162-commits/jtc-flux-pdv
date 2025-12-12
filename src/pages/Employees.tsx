@@ -31,6 +31,7 @@ const Employees = () => {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const [newEmployeeId, setNewEmployeeId] = useState<string | null>(null);
+  const [editSection, setEditSection] = useState<"info" | "permissions">("info");
   const [viewPermissions, setViewPermissions] = useState({
     can_access_pos: false,
     can_access_products: false,
