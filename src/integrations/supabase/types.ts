@@ -185,9 +185,14 @@ export type Database = {
       employee_permissions: {
         Row: {
           can_access_customers: boolean
+          can_access_dashboard: boolean
+          can_access_history: boolean
+          can_access_mailbox: boolean
           can_access_pos: boolean
           can_access_products: boolean
+          can_access_reports: boolean
           can_access_settings: boolean
+          can_access_suppliers: boolean
           can_edit_own_profile: boolean
           can_view_subscription: boolean
           created_at: string
@@ -197,9 +202,14 @@ export type Database = {
         }
         Insert: {
           can_access_customers?: boolean
+          can_access_dashboard?: boolean
+          can_access_history?: boolean
+          can_access_mailbox?: boolean
           can_access_pos?: boolean
           can_access_products?: boolean
+          can_access_reports?: boolean
           can_access_settings?: boolean
+          can_access_suppliers?: boolean
           can_edit_own_profile?: boolean
           can_view_subscription?: boolean
           created_at?: string
@@ -209,9 +219,14 @@ export type Database = {
         }
         Update: {
           can_access_customers?: boolean
+          can_access_dashboard?: boolean
+          can_access_history?: boolean
+          can_access_mailbox?: boolean
           can_access_pos?: boolean
           can_access_products?: boolean
+          can_access_reports?: boolean
           can_access_settings?: boolean
+          can_access_suppliers?: boolean
           can_edit_own_profile?: boolean
           can_view_subscription?: boolean
           created_at?: string
