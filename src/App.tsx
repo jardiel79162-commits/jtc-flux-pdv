@@ -13,7 +13,6 @@ import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import SalesHistory from "./pages/SalesHistory";
-import Employees from "./pages/Employees";
 import Suppliers from "./pages/Suppliers";
 import Mailbox from "./pages/Mailbox";
 import DashboardLayout from "./components/DashboardLayout";
@@ -42,7 +41,6 @@ const App = () => (
             <Route path="/caixa-correios" element={<Mailbox />} />
             <Route path="/relatorios" element={<Reports />} />
             <Route path="/configuracoes" element={<Settings />} />
-            <Route path="/funcionarios" element={<Employees />} />
             <Route path="/fornecedores" element={<Suppliers />} />
           </Route>
 

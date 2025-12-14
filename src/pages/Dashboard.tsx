@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar, UserCheck } from "lucide-react";
+import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useUserPermissions } from "@/hooks/useUserPermissions";
 
 // Importar imagens de ações rápidas
 import quickActionProdutos from "@/assets/quick-action-produtos.png";
@@ -31,20 +30,19 @@ interface DashboardData {
   hideTrialMessage: boolean;
 }
 
-const allQuickActions = [
-  { label: "Produtos", path: "/produtos", image: quickActionProdutos, permKey: "can_access_products" },
-  { label: "Venda", path: "/pdv", image: quickActionVenda, permKey: "can_access_pos" },
-  { label: "Clientes", path: "/clientes", image: quickActionClientes, permKey: "can_access_customers" },
-  { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores, permKey: "can_access_suppliers" },
-  { label: "Histórico", path: "/historico", image: quickActionHistorico, permKey: "can_access_history" },
-  { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios, permKey: "can_access_reports" },
-  { label: "Correio", path: "/caixa-correios", image: quickActionCorreio, permKey: "can_access_mailbox" },
-  { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes, permKey: "can_access_settings" },
-  { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura, permKey: "can_view_subscription" },
+const quickActions = [
+  { label: "Produtos", path: "/produtos", image: quickActionProdutos },
+  { label: "Venda", path: "/pdv", image: quickActionVenda },
+  { label: "Clientes", path: "/clientes", image: quickActionClientes },
+  { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores },
+  { label: "Histórico", path: "/historico", image: quickActionHistorico },
+  { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios },
+  { label: "Correio", path: "/caixa-correios", image: quickActionCorreio },
+  { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
+  { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura },
 ];
 
 const Dashboard = () => {
-  const { permissions } = useUserPermissions();
   const [data, setData] = useState<DashboardData>({
     salesToday: 0,
     salesMonth: 0,
@@ -61,47 +59,26 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, [permissions]);
+  }, []);
 
   const loadDashboardData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Se é funcionário, usar funções RPC para buscar dados do admin
-      const isEmployee = permissions.isEmployee && permissions.adminId;
-      const userId = isEmployee ? permissions.adminId : user.id;
-
-      let profile = null;
-      let storeSettings = null;
-
-      if (isEmployee) {
-        // Usar RPC para buscar dados do admin (bypass RLS)
-        const { data: adminSub } = await supabase.rpc('get_admin_subscription', { admin_user_id: userId });
-        if (adminSub && adminSub.length > 0) {
-          profile = adminSub[0];
-        }
-
-        const { data: adminSettings } = await supabase.rpc('get_admin_store_settings', { admin_user_id: userId });
-        if (adminSettings && adminSettings.length > 0) {
-          storeSettings = adminSettings[0];
-        }
-      } else {
-        // Admin busca normalmente
-        const { data: profileData } = await supabase
+      // Buscar perfil e configurações
+      const [{ data: profile }, { data: storeSettings }] = await Promise.all([
+        supabase
           .from("profiles")
           .select("trial_ends_at, subscription_ends_at, subscription_plan")
           .eq("id", user.id)
-          .single();
-        profile = profileData;
-
-        const { data: settingsData } = await supabase
+          .single(),
+        supabase
           .from("store_settings")
           .select("quick_actions_enabled, hide_trial_message")
           .eq("user_id", user.id)
-          .single();
-        storeSettings = settingsData;
-      }
+          .single(),
+      ]);
 
       // Calcular dias restantes de teste e assinatura
       let trialDaysLeft = 0;
@@ -150,14 +127,10 @@ const Dashboard = () => {
       const totalMonth = salesMonth?.reduce((sum, sale) => sum + Number(sale.total_amount), 0) || 0;
 
       // Produtos com estoque baixo
-      const { data: productsForStock, error: lowStockError } = await supabase
+      const { data: productsForStock } = await supabase
         .from("products")
         .select("id, stock_quantity, min_stock_quantity")
         .eq("user_id", user.id);
-
-      if (lowStockError) {
-        console.error("Erro ao carregar produtos com estoque baixo:", lowStockError);
-      }
 
       const lowStockCount =
         productsForStock?.filter(
@@ -207,30 +180,8 @@ const Dashboard = () => {
         <p className="text-muted-foreground">Visão geral do seu negócio</p>
       </div>
 
-      {/* Identificação de Funcionário */}
-      {permissions.isEmployee && (
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-purple-500/10 shadow-lg">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5" />
-          <CardHeader className="relative pb-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 shadow-lg">
-                <UserCheck className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Você é um funcionário
-                </CardTitle>
-                <CardDescription className="text-muted-foreground/80">
-                  Bem-vindo, {permissions.employeeName}! Você está acessando o sistema como funcionário.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-      )}
-
-      {/* Status da Assinatura - não mostrar para funcionários */}
-      {!permissions.isEmployee && !data.hideTrialMessage && data.subscriptionStatus === "trial" && (
+      {/* Status da Assinatura */}
+      {!data.hideTrialMessage && data.subscriptionStatus === "trial" && (
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-yellow-500/10 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5" />
           <CardHeader className="relative pb-2">
@@ -263,7 +214,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {!permissions.isEmployee && !data.hideTrialMessage && data.subscriptionStatus === "expired" && (
+      {!data.hideTrialMessage && data.subscriptionStatus === "expired" && (
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-red-500/10 via-rose-500/10 to-pink-500/10 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-rose-500/5" />
           <CardHeader className="relative pb-2">
@@ -291,7 +242,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {!permissions.isEmployee && !data.hideTrialMessage && data.subscriptionStatus === "active" && (
+      {!data.hideTrialMessage && data.subscriptionStatus === "active" && (
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500/10 via-green-500/10 to-teal-500/10 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-green-500/5" />
           <CardHeader className="relative pb-2">
@@ -329,31 +280,23 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Ações Rápidas com Logos - filtradas por permissão para funcionários */}
+      {/* Ações Rápidas com Logos */}
       {data.quickActionsEnabled && (
         <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-          {allQuickActions
-            .filter((action) => {
-              // Admin vê tudo
-              if (permissions.isAdmin) return true;
-              // Funcionário vê apenas o que tem permissão
-              const permKey = action.permKey as keyof typeof permissions;
-              return permissions[permKey] === true;
-            })
-            .map((action) => (
-              <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
-                  <img 
-                    src={action.image} 
-                    alt={action.label} 
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
-                  {action.label}
-                </span>
-              </Link>
-            ))}
+          {quickActions.map((action) => (
+            <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
+                <img 
+                  src={action.image} 
+                  alt={action.label} 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
+                {action.label}
+              </span>
+            </Link>
+          ))}
         </div>
       )}
 
