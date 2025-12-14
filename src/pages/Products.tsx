@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import PageLoader from "@/components/PageLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,7 @@ const Products = () => {
     photo_url: "",
     hasSupplier: false,
     supplier_id: "",
+    product_type: "unidade" as "peso" | "unidade" | "servico",
   });
 
   const [categoryForm, setCategoryForm] = useState({
@@ -312,6 +314,7 @@ const Products = () => {
       photo_url: "",
       hasSupplier: false,
       supplier_id: "",
+      product_type: "unidade",
     });
     setEditingProduct(null);
     setIsProductDialogOpen(false);
@@ -338,6 +341,7 @@ const Products = () => {
       photo_url: (product as any).photos?.[0] || "",
       hasSupplier: !!product.supplier_id,
       supplier_id: product.supplier_id || "",
+      product_type: (product as any).product_type || "unidade",
     });
     setIsProductDialogOpen(true);
   };
@@ -506,6 +510,7 @@ const Products = () => {
   };
 
   return (
+    <PageLoader pageName="Produtos">
     <div className="p-6 space-y-6 overflow-hidden">
       <div className="flex justify-between items-center">
         <div>
@@ -583,6 +588,25 @@ const Products = () => {
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label>Tipo de Produto *</Label>
+                      <Select
+                        value={productForm.product_type}
+                        onValueChange={(value: "peso" | "unidade" | "servico") => setProductForm({ ...productForm, product_type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unidade">Unidade</SelectItem>
+                          <SelectItem value="peso">Peso (kg)</SelectItem>
+                          <SelectItem value="servico">Serviço</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <Label>Categoria</Label>
                       <Select
                         value={productForm.category_id}
@@ -597,6 +621,14 @@ const Products = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Estoque Atual *</Label>
+                      <Input
+                        type="number"
+                        value={productForm.stock_quantity}
+                        onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
+                      />
                     </div>
                   </div>
 
@@ -629,24 +661,14 @@ const Products = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Preço Promocional</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={productForm.promotional_price}
-                        onChange={(e) => setProductForm({ ...productForm, promotional_price: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Estoque Atual *</Label>
-                      <Input
-                        type="number"
-                        value={productForm.stock_quantity}
-                        onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Preço Promocional</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={productForm.promotional_price}
+                      onChange={(e) => setProductForm({ ...productForm, promotional_price: e.target.value })}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -873,6 +895,7 @@ const Products = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </PageLoader>
   );
 };
 

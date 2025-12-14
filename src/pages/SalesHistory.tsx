@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PageLoader from "@/components/PageLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -479,6 +480,7 @@ const SalesHistory = () => {
   });
 
   return (
+    <PageLoader pageName="Histórico">
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-hidden">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">Histórico de Vendas</h1>
@@ -737,6 +739,7 @@ const SalesHistory = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </PageLoader>
   );
 };
 

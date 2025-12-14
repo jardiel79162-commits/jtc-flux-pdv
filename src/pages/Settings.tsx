@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PageLoader from "@/components/PageLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -299,6 +300,7 @@ const Settings = () => {
   };
 
   return (
+    <PageLoader pageName="Configurações">
     <div className="p-4 md:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
@@ -1379,6 +1381,7 @@ const Settings = () => {
         </Card>
       </div>
     </div>
+    </PageLoader>
   );
 };
 

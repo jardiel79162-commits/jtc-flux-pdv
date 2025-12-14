@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PageLoader from "@/components/PageLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -226,6 +227,7 @@ const Reports = () => {
   };
 
   return (
+    <PageLoader pageName="Relatórios">
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -547,6 +549,7 @@ const Reports = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </PageLoader>
   );
 };
 

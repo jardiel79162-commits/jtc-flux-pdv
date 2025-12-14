@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PageLoader from "@/components/PageLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -256,6 +257,7 @@ const Customers = () => {
   };
 
   return (
+    <PageLoader pageName="Clientes">
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Clientes</h1>
@@ -700,6 +702,7 @@ const Customers = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </PageLoader>
   );
 };
 
