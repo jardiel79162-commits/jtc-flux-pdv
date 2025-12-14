@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PageLoader from "@/components/PageLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -211,6 +212,7 @@ const Suppliers = () => {
   };
 
   return (
+    <PageLoader pageName="Fornecedores">
     <div className="p-6 space-y-6 overflow-hidden">
       <div className="flex justify-between items-center">
         <div>
@@ -376,6 +378,7 @@ const Suppliers = () => {
         </div>
       )}
     </div>
+    </PageLoader>
   );
 };
 

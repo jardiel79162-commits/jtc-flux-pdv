@@ -16,8 +16,8 @@ import quickActionRelatorios from "@/assets/quick-action-relatorios.png";
 import quickActionConfiguracoes from "@/assets/quick-action-configuracoes.png";
 import quickActionAssinatura from "@/assets/quick-action-assinatura.png";
 import quickActionFornecedores from "@/assets/quick-action-fornecedores.jpg";
-import quickActionCorreio from "@/assets/quick-action-correio.jpg";
 import quickActionCalculadora from "@/assets/quick-action-calculadora.png";
+import PageLoader from "@/components/PageLoader";
 
 interface DashboardData {
   salesToday: number;
@@ -39,7 +39,6 @@ const quickActions = [
   { label: "Fornecedores", path: "/fornecedores", image: quickActionFornecedores },
   { label: "Histórico", path: "/historico", image: quickActionHistorico },
   { label: "Relatórios", path: "/relatorios", image: quickActionRelatorios },
-  { label: "Correio", path: "/caixa-correios", image: quickActionCorreio },
   { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
   { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura },
   { label: "Calculadora", path: "#calculadora", image: quickActionCalculadora, isModal: true },
@@ -177,6 +176,7 @@ const Dashboard = () => {
   }
 
   return (
+    <PageLoader pageName="Dashboard">
     <div className="space-y-8">
       {/* Header */}
       <div>
@@ -377,6 +377,7 @@ const Dashboard = () => {
         </Card>
       </div>
     </div>
+    </PageLoader>
   );
 };
 

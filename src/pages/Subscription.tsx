@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import PageLoader from "@/components/PageLoader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -236,6 +237,7 @@ const Subscription = () => {
   };
 
   return (
+    <PageLoader pageName="Assinatura">
     <div className="space-y-8 max-w-6xl mx-auto">
       <div>
         <h1 className="text-4xl font-bold mb-2">Assinatura</h1>
@@ -455,6 +457,7 @@ const Subscription = () => {
         </Card>
       )}
     </div>
+    </PageLoader>
   );
 };
 

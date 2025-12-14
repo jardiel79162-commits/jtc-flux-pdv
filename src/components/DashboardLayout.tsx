@@ -15,7 +15,6 @@ import {
   X,
   History,
   Truck,
-  Inbox,
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
@@ -64,7 +63,6 @@ const DashboardLayout = () => {
     { icon: Users, label: "Clientes", path: "/clientes" },
     { icon: Truck, label: "Fornecedores", path: "/fornecedores" },
     { icon: History, label: "Histórico", path: "/historico" },
-    { icon: Inbox, label: "Caixa de Correios", path: "/caixa-correios" },
     { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
     { icon: Settings, label: "Configurações", path: "/configuracoes" },
     { icon: CreditCard, label: "Assinatura", path: "/assinatura" },

@@ -23,6 +23,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import PageLoader from "@/components/PageLoader";
 
 interface Product {
   id: string;
@@ -1129,15 +1130,10 @@ const POS = () => {
     
     setShowEmailDialog(false);
     setEmailToSend("");
-    toast({ title: "E-mail registrado! Redirecionando para Caixa de Correios..." });
+    toast({ title: "Abrindo cliente de e-mail..." });
     
-    // Primeiro redirecionar para a página de Caixa de Correios
-    navigate("/caixa-correios");
-    
-    // Depois abrir o cliente de e-mail em uma nova aba/janela
-    setTimeout(() => {
-      window.open(mailtoLink, '_blank');
-    }, 500);
+    // Abrir o cliente de e-mail
+    window.open(mailtoLink, '_blank');
   };
 
   const printThermalReceipt = () => {
@@ -1515,6 +1511,7 @@ ${paymentInfo}
   ];
 
   return (
+    <PageLoader pageName="Venda">
     <div className="p-6 overflow-hidden">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">PDV - Ponto de Venda</h1>
@@ -2721,6 +2718,7 @@ ${paymentInfo}
         </DialogContent>
       </Dialog>
     </div>
+    </PageLoader>
   );
 };
 
