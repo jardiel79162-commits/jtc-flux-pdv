@@ -360,7 +360,9 @@ const POS = () => {
 
     // Para PIX automático, mostrar pergunta sobre taxa
     if (pixSettings.pix_mode === 'automatic') {
-      const fee = amount * PIX_FEE_RATE;
+      // Calculate fee - round UP to match Mercado Pago behavior (minimum 1 centavo)
+      const rawFee = amount * PIX_FEE_RATE;
+      const fee = amount > 0 ? Math.max(0.01, Math.ceil(rawFee * 100) / 100) : 0;
       setPixOriginalAmount(amount);
       setPixFeeAmount(fee);
       setPixPassFeeToCustomer(null);
