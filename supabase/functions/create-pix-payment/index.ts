@@ -70,6 +70,7 @@ serve(async (req) => {
       payer: {
         email: user.email,
       },
+      date_of_expiration: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     };
 
     console.log('Creating Mercado Pago payment:', JSON.stringify(paymentData));

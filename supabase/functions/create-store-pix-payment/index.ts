@@ -109,8 +109,8 @@ serve(async (req) => {
       payer: {
         email: user.email || 'cliente@loja.com'
       },
-      // Expiração de 5 minutos
-      date_of_expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      // Expiração de 15 minutos
+      date_of_expiration: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     };
 
     console.log('Creating Mercado Pago payment:', JSON.stringify(paymentData));
@@ -152,7 +152,7 @@ serve(async (req) => {
       qrCodeBase64,
       pixCopyPaste,
       amount: amount,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
