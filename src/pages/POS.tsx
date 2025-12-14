@@ -72,6 +72,7 @@ interface PixSettings {
   pix_key_type: string | null;
   pix_key: string | null;
   pix_receiver_name: string | null;
+  pix_mode: string | null;
 }
 
 const POS = () => {
@@ -122,7 +123,7 @@ const POS = () => {
 
     const { data } = await supabase
       .from("store_settings")
-      .select("store_name, pix_key_type, pix_key, pix_receiver_name, logo_url")
+      .select("store_name, pix_key_type, pix_key, pix_receiver_name, logo_url, pix_mode, mercado_pago_cpf, mercado_pago_name")
       .eq("user_id", user.id)
       .single();
 
@@ -134,11 +135,16 @@ const POS = () => {
       setLogoUrl(data.logo_url);
     }
     
-    if (data?.pix_key && data?.pix_receiver_name) {
+    // Verificar se PIX está configurado (manual OU automático)
+    const isManualConfigured = data?.pix_mode === 'manual' && data?.pix_key && data?.pix_receiver_name;
+    const isAutomaticConfigured = data?.pix_mode === 'automatico' && data?.mercado_pago_cpf && data?.mercado_pago_name;
+    
+    if (isManualConfigured || isAutomaticConfigured) {
       setPixSettings({
         pix_key_type: data.pix_key_type,
         pix_key: data.pix_key,
         pix_receiver_name: data.pix_receiver_name,
+        pix_mode: data.pix_mode,
       });
     }
   };
@@ -208,7 +214,11 @@ const POS = () => {
   };
 
   const handlePixPayment = () => {
-    if (!pixSettings?.pix_key) {
+    // Verificar se PIX está configurado (manual OU automático)
+    const isManualConfigured = pixSettings?.pix_mode === 'manual' && pixSettings?.pix_key;
+    const isAutomaticConfigured = pixSettings?.pix_mode === 'automatico';
+    
+    if (!isManualConfigured && !isAutomaticConfigured) {
       toast({ 
         title: "PIX não configurado", 
         description: "Configure sua chave PIX nas Configurações para aceitar pagamentos via PIX.",
