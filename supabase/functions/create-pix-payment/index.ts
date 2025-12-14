@@ -11,7 +11,7 @@ interface CreatePaymentRequest {
 }
 
 const PLANS = {
-  '3_months': { price: 0.01, days: 90, name: 'Plano 3 Meses' }, // TESTE - voltar para 29.99
+  '3_months': { price: 29.99, days: 90, name: 'Plano 3 Meses' },
   '1_year': { price: 69.99, days: 365, name: 'Plano 1 Ano' },
 };
 

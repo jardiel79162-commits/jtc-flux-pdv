@@ -2,16 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Calendar, CreditCard, Copy, Loader2, CheckCircle2 } from "lucide-react";
+import { Check, Calendar, CreditCard, Copy, Loader2, CheckCircle2, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
+
 const Subscription = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<Date | null>(null);
   const [paymentData, setPaymentData] = useState<{
     paymentId: string;
     qrCodeBase64: string;
@@ -26,7 +29,7 @@ const Subscription = () => {
     {
       id: "3_months" as const,
       name: "Plano 3 Meses",
-      price: 0.01, // TESTE - voltar para 29.99
+      price: 29.99,
       duration: "90 dias",
       features: [
         "Acesso completo ao PDV",
@@ -50,6 +53,38 @@ const Subscription = () => {
       ],
     },
   ];
+
+  // Buscar dados da assinatura
+  useEffect(() => {
+    const fetchSubscriptionData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_ends_at, trial_ends_at')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        const endDate = profile.subscription_ends_at 
+          ? new Date(profile.subscription_ends_at) 
+          : profile.trial_ends_at 
+            ? new Date(profile.trial_ends_at) 
+            : null;
+
+        if (endDate) {
+          setSubscriptionEndDate(endDate);
+          const now = new Date();
+          const diffTime = endDate.getTime() - now.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          setDaysRemaining(Math.max(0, diffDays));
+        }
+      }
+    };
+
+    fetchSubscriptionData();
+  }, [paymentStatus]);
 
   // Limpar intervalo ao desmontar
   useEffect(() => {
@@ -206,6 +241,33 @@ const Subscription = () => {
         <h1 className="text-4xl font-bold mb-2">Assinatura</h1>
         <p className="text-muted-foreground">Escolha o plano ideal para o seu negócio</p>
       </div>
+
+      {/* Card de status do plano */}
+      {daysRemaining !== null && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Clock className="w-7 h-7 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Seu plano expira em</p>
+                  <p className="text-3xl font-bold text-primary">{daysRemaining} dias</p>
+                  {subscriptionEndDate && (
+                    <p className="text-xs text-muted-foreground">
+                      Válido até {subscriptionEndDate.toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Badge variant={daysRemaining > 7 ? "default" : "destructive"} className="text-sm px-3 py-1">
+                {daysRemaining > 7 ? "Plano Ativo" : "Expirando em breve"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {!paymentData ? (
         <>
