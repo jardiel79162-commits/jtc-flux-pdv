@@ -137,7 +137,7 @@ const POS = () => {
     
     // Verificar se PIX está configurado (manual OU automático)
     const isManualConfigured = data?.pix_mode === 'manual' && data?.pix_key && data?.pix_receiver_name;
-    const isAutomaticConfigured = data?.pix_mode === 'automatico' && data?.mercado_pago_cpf && data?.mercado_pago_name;
+    const isAutomaticConfigured = data?.pix_mode === 'automatic' && data?.mercado_pago_cpf && data?.mercado_pago_name;
     
     if (isManualConfigured || isAutomaticConfigured) {
       setPixSettings({
@@ -216,7 +216,7 @@ const POS = () => {
   const handlePixPayment = () => {
     // Verificar se PIX está configurado (manual OU automático)
     const isManualConfigured = pixSettings?.pix_mode === 'manual' && pixSettings?.pix_key;
-    const isAutomaticConfigured = pixSettings?.pix_mode === 'automatico';
+    const isAutomaticConfigured = pixSettings?.pix_mode === 'automatic';
     
     if (!isManualConfigured && !isAutomaticConfigured) {
       toast({ 
