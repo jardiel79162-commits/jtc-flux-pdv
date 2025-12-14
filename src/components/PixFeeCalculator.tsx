@@ -59,9 +59,9 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
         <div className="space-y-5 py-2">
           {/* Valor da venda */}
           <div className="space-y-2">
-            <Label htmlFor="amount" className="text-sm font-medium">Valor da venda</Label>
+            <Label htmlFor="amount" className="text-sm font-medium text-foreground">Valor da venda</Label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">R$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground font-medium">R$</span>
               <Input
                 id="amount"
                 type="text"
@@ -77,14 +77,14 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
 
           {/* Taxa info */}
           <div className="flex items-center justify-center gap-2 py-2 px-4 bg-muted/50 rounded-lg">
-            <Percent className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Taxa PIX: <span className="font-semibold text-foreground">0,49%</span></span>
+            <Percent className="h-4 w-4 text-foreground" />
+            <span className="text-sm text-foreground">Taxa PIX: <span className="font-semibold">0,49%</span></span>
           </div>
 
           {/* Pergunta sobre repasse */}
           {numericAmount > 0 && (
             <div className="space-y-3">
-              <p className="text-sm font-medium text-center">Repassar taxa para o cliente?</p>
+              <p className="text-sm font-medium text-center text-foreground">Repassar taxa para o cliente?</p>
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant={passToCustomer === true ? "default" : "outline"}
@@ -108,10 +108,10 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
 
           {/* Resultados */}
           {numericAmount > 0 && passToCustomer !== null && (
-            <div className="space-y-4 p-4 bg-gradient-to-br from-secondary/80 to-secondary/40 rounded-xl border">
+            <div className="space-y-4 p-4 bg-white dark:bg-card rounded-xl border">
               {/* Taxa */}
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Taxa cobrada (0,49%):</span>
+                <span className="text-foreground font-medium">Taxa cobrada (0,49%):</span>
                 <span className="font-semibold text-destructive">- {formatCurrency(fee)}</span>
               </div>
               
@@ -120,14 +120,14 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
               {/* Resultados principais */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Cliente paga:</span>
-                  <span className={`font-bold text-lg ${passToCustomer ? "text-amber-600" : ""}`}>
+                  <span className="text-foreground font-medium">Cliente paga:</span>
+                  <span className={`font-bold text-lg ${passToCustomer ? "text-amber-600" : "text-foreground"}`}>
                     {formatCurrency(customerPays)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                  <span className="text-muted-foreground font-medium">Você recebe:</span>
+                  <span className="text-foreground font-medium">Você recebe:</span>
                   <span className="font-bold text-xl text-green-600">
                     {formatCurrency(youReceive)}
                   </span>
