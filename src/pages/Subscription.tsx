@@ -26,7 +26,7 @@ const Subscription = () => {
     {
       id: "3_months" as const,
       name: "Plano 3 Meses",
-      price: 29.99,
+      price: 0.01, // TESTE - voltar para 29.99
       duration: "90 dias",
       features: [
         "Acesso completo ao PDV",
