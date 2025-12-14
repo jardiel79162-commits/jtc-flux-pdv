@@ -82,6 +82,8 @@ serve(async (req) => {
 
     const mpData = await mpResponse.json();
     console.log('MP payment status:', mpData.status);
+    console.log('MP status_detail:', mpData.status_detail);
+    console.log('MP full response:', JSON.stringify(mpData));
 
     if (!mpResponse.ok) {
       console.error('Mercado Pago error:', mpData);
