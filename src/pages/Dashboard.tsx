@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PixFeeCalculator } from "@/components/PixFeeCalculator";
 
 // Importar imagens de ações rápidas
 import quickActionProdutos from "@/assets/quick-action-produtos.png";
@@ -16,6 +17,7 @@ import quickActionConfiguracoes from "@/assets/quick-action-configuracoes.png";
 import quickActionAssinatura from "@/assets/quick-action-assinatura.png";
 import quickActionFornecedores from "@/assets/quick-action-fornecedores.jpg";
 import quickActionCorreio from "@/assets/quick-action-correio.jpg";
+import quickActionCalculadora from "@/assets/quick-action-calculadora.png";
 
 interface DashboardData {
   salesToday: number;
@@ -40,6 +42,7 @@ const quickActions = [
   { label: "Correio", path: "/caixa-correios", image: quickActionCorreio },
   { label: "Configurações", path: "/configuracoes", image: quickActionConfiguracoes },
   { label: "Assinatura", path: "/assinatura", image: quickActionAssinatura },
+  { label: "Calculadora", path: "#calculadora", image: quickActionCalculadora, isModal: true },
 ];
 
 const Dashboard = () => {
@@ -56,6 +59,7 @@ const Dashboard = () => {
     hideTrialMessage: false,
   });
   const [loading, setLoading] = useState(true);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -282,23 +286,45 @@ const Dashboard = () => {
 
       {/* Ações Rápidas com Logos */}
       {data.quickActionsEnabled && (
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+        <div className="grid grid-cols-4 md:grid-cols-10 gap-4">
           {quickActions.map((action) => (
-            <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
-                <img 
-                  src={action.image} 
-                  alt={action.label} 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
-                {action.label}
-              </span>
-            </Link>
+            action.isModal ? (
+              <button 
+                key={action.path} 
+                onClick={() => setShowCalculator(true)}
+                className="flex flex-col items-center gap-2 group"
+              >
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
+                  <img 
+                    src={action.image} 
+                    alt={action.label} 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
+                  {action.label}
+                </span>
+              </button>
+            ) : (
+              <Link key={action.path} to={action.path} className="flex flex-col items-center gap-2 group">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-card border border-border p-2 transition-all group-hover:scale-105 group-hover:shadow-lg">
+                  <img 
+                    src={action.image} 
+                    alt={action.label} 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="text-xs md:text-sm font-medium text-center text-muted-foreground group-hover:text-foreground transition-colors">
+                  {action.label}
+                </span>
+              </Link>
+            )
           ))}
         </div>
       )}
+
+      {/* Modal da Calculadora PIX */}
+      <PixFeeCalculator open={showCalculator} onOpenChange={setShowCalculator} />
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
