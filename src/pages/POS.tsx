@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, DollarSign, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer, XCircle, Clock, RefreshCw } from "lucide-react";
+import { Search, Plus, Minus, Trash2, DollarSign, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer, XCircle, Clock, RefreshCw, Copy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 // Imagens dos métodos de pagamento
@@ -94,6 +94,7 @@ const POS = () => {
   const [showPixQrCode, setShowPixQrCode] = useState(false);
   const [pixPaymentLoading, setPixPaymentLoading] = useState(false);
   const [pixQrCodeImage, setPixQrCodeImage] = useState<string | null>(null);
+  const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null);
   const [pixPaymentId, setPixPaymentId] = useState<string | null>(null);
   const [pixPaymentStatus, setPixPaymentStatus] = useState<"waiting" | "approved" | "expired">("waiting");
   const [pixTimeRemaining, setPixTimeRemaining] = useState(300); // 5 minutos em segundos
@@ -357,6 +358,7 @@ const POS = () => {
         setPixPaymentLoading(true);
         setShowPixQrCode(true);
         setPixQrCodeImage(null);
+        setPixCopyPaste(null);
 
         const { data, error } = await supabase.functions.invoke('create-store-pix-payment', {
           body: {
@@ -378,12 +380,17 @@ const POS = () => {
 
         const qrCodeBase64 = (data as any).qrCodeBase64 as string | undefined;
         const qrCode = (data as any).qrCode as string | undefined;
+        const copyPaste = (data as any).pixCopyPaste as string | undefined;
         const paymentId = (data as any).paymentId as string;
 
         if (qrCodeBase64) {
           setPixQrCodeImage(`data:image/png;base64,${qrCodeBase64}`);
         } else if (qrCode) {
           setPixQrCodeImage(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`);
+        }
+        
+        if (copyPaste) {
+          setPixCopyPaste(copyPaste);
         }
 
         // Iniciar fluxo automático com polling e countdown
@@ -1934,6 +1941,37 @@ ${paymentInfo}
                       <p className="text-xs text-muted-foreground">Recebedor: {pixSettings?.pix_receiver_name}</p>
                     )}
                   </div>
+
+                  {/* Botão de copiar código PIX para modo automático */}
+                  {pixSettings?.pix_mode === 'automatic' && pixCopyPaste && !pixPaymentLoading && (
+                    <div className="w-full space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={pixCopyPaste}
+                          readOnly
+                          className="flex-1 px-3 py-2 text-xs rounded-md border bg-muted truncate"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(pixCopyPaste);
+                              toast({ title: "Código PIX copiado!" });
+                            } catch (error) {
+                              toast({ title: "Erro ao copiar", variant: "destructive" });
+                            }
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-center text-muted-foreground">
+                        Ou copie o código acima para pagar
+                      </p>
+                    </div>
+                  )}
 
                   {/* Botão de confirmar apenas para PIX manual */}
                   {pixSettings?.pix_mode !== 'automatic' && (
