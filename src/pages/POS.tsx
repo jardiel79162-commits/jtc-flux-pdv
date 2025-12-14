@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, DollarSign, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer } from "lucide-react";
+import { Search, Plus, Minus, Trash2, DollarSign, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer, XCircle, Clock, RefreshCw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 // Imagens dos métodos de pagamento
 import paymentCredit from "@/assets/payment-credit.jpg";
@@ -93,6 +94,12 @@ const POS = () => {
   const [showPixQrCode, setShowPixQrCode] = useState(false);
   const [pixPaymentLoading, setPixPaymentLoading] = useState(false);
   const [pixQrCodeImage, setPixQrCodeImage] = useState<string | null>(null);
+  const [pixPaymentId, setPixPaymentId] = useState<string | null>(null);
+  const [pixPaymentStatus, setPixPaymentStatus] = useState<"waiting" | "approved" | "expired">("waiting");
+  const [pixTimeRemaining, setPixTimeRemaining] = useState(300); // 5 minutos em segundos
+  const [pixPaymentAmount, setPixPaymentAmount] = useState(0);
+  const pixPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pixCountdownRef = useRef<NodeJS.Timeout | null>(null);
   const [isProcessingSale, setIsProcessingSale] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -215,6 +222,78 @@ const POS = () => {
     return crc.toString(16).toUpperCase().padStart(4, '0');
   };
 
+  // Limpar polling e countdown ao fechar diálogo
+  const cleanupPixTimers = useCallback(() => {
+    if (pixPollingRef.current) {
+      clearInterval(pixPollingRef.current);
+      pixPollingRef.current = null;
+    }
+    if (pixCountdownRef.current) {
+      clearInterval(pixCountdownRef.current);
+      pixCountdownRef.current = null;
+    }
+  }, []);
+
+  // Verificar status do pagamento PIX
+  const checkPixPaymentStatus = useCallback(async (paymentId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-store-payment-status', {
+        body: { paymentId },
+      });
+
+      if (error) {
+        console.error('Erro ao verificar status do pagamento:', error);
+        return;
+      }
+
+      if (data?.status === 'approved') {
+        setPixPaymentStatus('approved');
+        cleanupPixTimers();
+        
+        // Adicionar pagamento automaticamente
+        if (paymentMode === "multiple") {
+          setPayments(prev => [...prev, { method: "pix", amount: pixPaymentAmount }]);
+          setCurrentPaymentAmount("");
+        }
+        
+        toast({ title: "Pagamento PIX confirmado!" });
+        
+        // Fechar diálogo após 2 segundos
+        setTimeout(() => {
+          setShowPixQrCode(false);
+          setPaymentMethod(paymentMode === "multiple" ? "" : "pix");
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status:', error);
+    }
+  }, [paymentMode, pixPaymentAmount, cleanupPixTimers, toast]);
+
+  // Iniciar polling e countdown para PIX automático
+  const startPixAutomaticFlow = useCallback((paymentId: string, amount: number) => {
+    setPixPaymentId(paymentId);
+    setPixPaymentStatus('waiting');
+    setPixTimeRemaining(300); // 5 minutos
+    setPixPaymentAmount(amount);
+
+    // Polling a cada 3 segundos para verificar status
+    pixPollingRef.current = setInterval(() => {
+      checkPixPaymentStatus(paymentId);
+    }, 3000);
+
+    // Countdown de 1 em 1 segundo
+    pixCountdownRef.current = setInterval(() => {
+      setPixTimeRemaining(prev => {
+        if (prev <= 1) {
+          cleanupPixTimers();
+          setPixPaymentStatus('expired');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [checkPixPaymentStatus, cleanupPixTimers]);
+
   const openPixDialog = async (amount: number) => {
     if (!pixSettings) {
       toast({
@@ -225,6 +304,12 @@ const POS = () => {
       return;
     }
 
+    // Limpar timers anteriores
+    cleanupPixTimers();
+    setPixPaymentStatus('waiting');
+    setPixTimeRemaining(300);
+    setPixPaymentId(null);
+
     if (pixSettings.pix_mode === 'automatic') {
       try {
         setPixPaymentLoading(true);
@@ -234,7 +319,7 @@ const POS = () => {
         const { data, error } = await supabase.functions.invoke('create-store-pix-payment', {
           body: {
             amount,
-            saleId: 'pdv-sale-temp',
+            saleId: `pdv-sale-${Date.now()}`,
           },
         });
 
@@ -242,7 +327,7 @@ const POS = () => {
           console.error('Erro ao criar pagamento PIX automático', error || data);
           toast({
             title: "Erro ao gerar QR Code PIX",
-            description: "Verifique as configurações do Mercado Pago.",
+            description: data?.details || "Verifique as configurações do Mercado Pago.",
             variant: "destructive",
           });
           setShowPixQrCode(false);
@@ -251,11 +336,17 @@ const POS = () => {
 
         const qrCodeBase64 = (data as any).qrCodeBase64 as string | undefined;
         const qrCode = (data as any).qrCode as string | undefined;
+        const paymentId = (data as any).paymentId as string;
 
         if (qrCodeBase64) {
           setPixQrCodeImage(`data:image/png;base64,${qrCodeBase64}`);
         } else if (qrCode) {
           setPixQrCodeImage(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`);
+        }
+
+        // Iniciar fluxo automático com polling e countdown
+        if (paymentId) {
+          startPixAutomaticFlow(paymentId, amount);
         }
       } catch (error) {
         console.error('Erro ao gerar QR Code PIX automático', error);
@@ -274,6 +365,35 @@ const POS = () => {
       setPixQrCodeImage(null);
       setShowPixQrCode(true);
     }
+  };
+
+  // Gerar novo QR Code PIX (após expiração)
+  const regeneratePixQrCode = async () => {
+    const amount = paymentMode === "multiple" 
+      ? (parseFloat(currentPaymentAmount) || remainingToPay) 
+      : total;
+    await openPixDialog(amount);
+  };
+
+  // Limpar timers ao fechar diálogo
+  useEffect(() => {
+    if (!showPixQrCode) {
+      cleanupPixTimers();
+    }
+  }, [showPixQrCode, cleanupPixTimers]);
+
+  // Limpar timers ao desmontar componente
+  useEffect(() => {
+    return () => {
+      cleanupPixTimers();
+    };
+  }, [cleanupPixTimers]);
+
+  // Formatar tempo restante
+  const formatTimeRemaining = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handlePixPayment = () => {
@@ -1705,64 +1825,142 @@ ${paymentInfo}
           )}
 
           {/* Dialog do QR Code PIX */}
-          <Dialog open={showPixQrCode} onOpenChange={setShowPixQrCode}>
+          <Dialog open={showPixQrCode} onOpenChange={(open) => {
+            if (!open) cleanupPixTimers();
+            setShowPixQrCode(open);
+          }}>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <QrCode className="h-5 w-5 text-primary" />
                   Pagamento PIX
+                  {pixSettings?.pix_mode === 'automatic' && pixPaymentStatus === 'waiting' && (
+                    <span className="ml-auto text-sm font-normal text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {formatTimeRemaining(pixTimeRemaining)}
+                    </span>
+                  )}
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex flex-col items-center space-y-4 py-4">
-                <div className="bg-white p-4 rounded-lg">
-                  {pixSettings?.pix_mode === 'automatic' ? (
-                    pixPaymentLoading || !pixQrCodeImage ? (
-                      <div className="w-[200px] h-[200px] flex items-center justify-center">
-                        <p className="text-sm text-muted-foreground">Gerando QR Code PIX...</p>
-                      </div>
+
+              {/* Estado: Aguardando pagamento */}
+              {pixPaymentStatus === 'waiting' && (
+                <div className="flex flex-col items-center space-y-4 py-4">
+                  {/* Barra de progresso para PIX automático */}
+                  {pixSettings?.pix_mode === 'automatic' && !pixPaymentLoading && (
+                    <div className="w-full space-y-2">
+                      <Progress value={(pixTimeRemaining / 300) * 100} className="h-2" />
+                      <p className="text-xs text-center text-muted-foreground">
+                        Aguardando pagamento...
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="bg-white p-4 rounded-lg">
+                    {pixSettings?.pix_mode === 'automatic' ? (
+                      pixPaymentLoading || !pixQrCodeImage ? (
+                        <div className="w-[200px] h-[200px] flex items-center justify-center">
+                          <div className="text-center">
+                            <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin text-primary" />
+                            <p className="text-sm text-muted-foreground">Gerando QR Code PIX...</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <img 
+                          src={pixQrCodeImage}
+                          alt="QR Code PIX"
+                          width={200}
+                          height={200}
+                        />
+                      )
                     ) : (
                       <img 
-                        src={pixQrCodeImage}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixPayload(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total))}`}
                         alt="QR Code PIX"
                         width={200}
                         height={200}
                       />
-                    )
-                  ) : (
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixPayload(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total))}`}
-                      alt="QR Code PIX"
-                      width={200}
-                      height={200}
-                    />
+                    )}
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-2xl font-bold text-accent">
+                      R$ {(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Escaneie o QR Code para pagar</p>
+                    {pixSettings?.pix_mode === 'manual' && (
+                      <p className="text-xs text-muted-foreground">Recebedor: {pixSettings?.pix_receiver_name}</p>
+                    )}
+                  </div>
+
+                  {/* Botão de confirmar apenas para PIX manual */}
+                  {pixSettings?.pix_mode !== 'automatic' && (
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        if (paymentMode === "multiple") {
+                          const amount = parseFloat(currentPaymentAmount) || remainingToPay;
+                          setPayments([...payments, { method: "pix", amount }]);
+                          setCurrentPaymentAmount("");
+                        }
+                        setShowPixQrCode(false);
+                        setPaymentMethod(paymentMode === "multiple" ? "" : "pix");
+                        toast({ title: "Pagamento PIX confirmado!" });
+                      }}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Confirmar Pagamento
+                    </Button>
                   )}
                 </div>
-                <div className="text-center space-y-2">
-                  <p className="text-2xl font-bold text-accent">
-                    R$ {(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total).toFixed(2)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Escaneie o QR Code para pagar</p>
-                  {pixSettings?.pix_mode === 'manual' && (
-                    <p className="text-xs text-muted-foreground">Recebedor: {pixSettings?.pix_receiver_name}</p>
-                  )}
+              )}
+
+              {/* Estado: Pagamento confirmado */}
+              {pixPaymentStatus === 'approved' && (
+                <div className="flex flex-col items-center space-y-4 py-8">
+                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="h-12 w-12 text-green-600" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-xl font-bold text-green-600">Pagamento Confirmado!</p>
+                    <p className="text-2xl font-bold">
+                      R$ {pixPaymentAmount.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">O pagamento foi recebido com sucesso</p>
+                  </div>
                 </div>
-                <Button 
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  onClick={() => {
-                    if (paymentMode === "multiple") {
-                      const amount = parseFloat(currentPaymentAmount) || remainingToPay;
-                      setPayments([...payments, { method: "pix", amount }]);
-                      setCurrentPaymentAmount("");
-                    }
-                    setShowPixQrCode(false);
-                    setPaymentMethod(paymentMode === "multiple" ? "" : "pix");
-                    toast({ title: "Pagamento PIX confirmado!" });
-                  }}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Confirmar Pagamento
-                </Button>
-              </div>
+              )}
+
+              {/* Estado: QR Code expirado */}
+              {pixPaymentStatus === 'expired' && (
+                <div className="flex flex-col items-center space-y-4 py-8">
+                  <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+                    <XCircle className="h-12 w-12 text-red-600" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-xl font-bold text-red-600">QR Code Expirado</p>
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum pagamento foi concluído com este QR Code.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Este QR Code expirou. Por favor, gere um novo QR Code.
+                    </p>
+                  </div>
+                  <Button 
+                    className="w-full"
+                    onClick={regeneratePixQrCode}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Gerar Novo QR Code
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowPixQrCode(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
 
