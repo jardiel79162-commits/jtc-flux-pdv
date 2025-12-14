@@ -98,6 +98,7 @@ const POS = () => {
   const [pixPaymentStatus, setPixPaymentStatus] = useState<"waiting" | "approved" | "expired">("waiting");
   const [pixTimeRemaining, setPixTimeRemaining] = useState(300); // 5 minutos em segundos
   const [pixPaymentAmount, setPixPaymentAmount] = useState(0);
+  const [pixManualConfirmed, setPixManualConfirmed] = useState(false); // Novo: PIX manual confirmado
   const pixPollingRef = useRef<NodeJS.Timeout | null>(null);
   const pixCountdownRef = useRef<NodeJS.Timeout | null>(null);
   const [isProcessingSale, setIsProcessingSale] = useState(false);
@@ -114,6 +115,44 @@ const POS = () => {
   
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
+
+  // Função para tocar som de notificação
+  const playNotificationSound = useCallback(() => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Som de sucesso (2 beeps)
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      
+      oscillator.start(audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      oscillator.stop(audioContext.currentTime + 0.2);
+      
+      // Segundo beep
+      setTimeout(() => {
+        const oscillator2 = audioContext.createOscillator();
+        const gainNode2 = audioContext.createGain();
+        
+        oscillator2.connect(gainNode2);
+        gainNode2.connect(audioContext.destination);
+        
+        oscillator2.frequency.setValueAtTime(1000, audioContext.currentTime);
+        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+        
+        oscillator2.start(audioContext.currentTime);
+        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator2.stop(audioContext.currentTime + 0.3);
+      }, 200);
+    } catch (error) {
+      console.log('Erro ao tocar som:', error);
+    }
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -250,6 +289,9 @@ const POS = () => {
         setPixPaymentStatus('approved');
         cleanupPixTimers();
         
+        // Tocar som de notificação
+        playNotificationSound();
+        
         // Adicionar pagamento automaticamente
         if (paymentMode === "multiple") {
           setPayments(prev => [...prev, { method: "pix", amount: pixPaymentAmount }]);
@@ -267,7 +309,7 @@ const POS = () => {
     } catch (error) {
       console.error('Erro ao verificar status:', error);
     }
-  }, [paymentMode, pixPaymentAmount, cleanupPixTimers, toast]);
+  }, [paymentMode, pixPaymentAmount, cleanupPixTimers, toast, playNotificationSound]);
 
   // Iniciar polling e countdown para PIX automático
   const startPixAutomaticFlow = useCallback((paymentId: string, amount: number) => {
@@ -581,6 +623,7 @@ const POS = () => {
     setPayments([]);
     setCurrentPaymentAmount("");
     setPaymentMethod("");
+    setPixManualConfirmed(false); // Resetar confirmação do PIX manual
     setCurrentStep("payment");
   };
 
@@ -1904,6 +1947,7 @@ ${paymentInfo}
                         }
                         setShowPixQrCode(false);
                         setPaymentMethod(paymentMode === "multiple" ? "" : "pix");
+                        setPixManualConfirmed(true); // Marcar PIX manual como confirmado
                         toast({ title: "Pagamento PIX confirmado!" });
                       }}
                     >
@@ -2028,6 +2072,8 @@ ${paymentInfo}
                 isProcessingSale || 
                 !paymentMode ||
                 (paymentMode === "single" && !paymentMethod) ||
+                (paymentMode === "single" && paymentMethod === "pix" && pixSettings?.pix_mode === 'automatic' && pixPaymentStatus !== 'approved') ||
+                (paymentMode === "single" && paymentMethod === "pix" && pixSettings?.pix_mode !== 'automatic' && !pixManualConfirmed) ||
                 (paymentMode === "multiple" && (payments.length === 0 || totalPaid < total))
               }
             >
