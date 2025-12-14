@@ -3,19 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Calculator } from "lucide-react";
+import { Calculator, Percent, ArrowDown, ArrowUp, RotateCcw } from "lucide-react";
 
 interface PixFeeCalculatorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const PIX_FEE_RATE = 0.0049; // 0.49%
+export const PIX_FEE_RATE = 0.0049; // 0.49%
 
 export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) => {
   const [amount, setAmount] = useState("");
-  const [passToCustomer, setPassToCustomer] = useState(false);
+  const [passToCustomer, setPassToCustomer] = useState<boolean | null>(null);
 
   const numericAmount = parseFloat(amount.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
   
@@ -40,21 +39,29 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
     setAmount(value);
   };
 
+  const handleClear = () => {
+    setAmount("");
+    setPassToCustomer(null);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Calculator className="h-5 w-5 text-primary" />
+            </div>
             Calculadora de Taxa PIX
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-5 py-2">
+          {/* Valor da venda */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Valor da venda</Label>
+            <Label htmlFor="amount" className="text-sm font-medium">Valor da venda</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">R$</span>
               <Input
                 id="amount"
                 type="text"
@@ -62,69 +69,80 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
                 placeholder="0,00"
                 value={amount}
                 onChange={handleAmountChange}
-                className="pl-10 text-lg"
+                className="pl-12 text-xl h-14 font-semibold text-center"
+                autoFocus
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <Label htmlFor="pass-fee" className="cursor-pointer">
-              Repassar taxa para o cliente?
-            </Label>
-            <Switch
-              id="pass-fee"
-              checked={passToCustomer}
-              onCheckedChange={setPassToCustomer}
-            />
+          {/* Taxa info */}
+          <div className="flex items-center justify-center gap-2 py-2 px-4 bg-muted/50 rounded-lg">
+            <Percent className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Taxa PIX: <span className="font-semibold text-foreground">0,49%</span></span>
           </div>
 
-          <div className="text-sm text-muted-foreground text-center">
-            Taxa PIX: 0,49%
-          </div>
-
+          {/* Pergunta sobre repasse */}
           {numericAmount > 0 && (
-            <div className="space-y-3 p-4 bg-secondary/50 rounded-lg">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Taxa cobrada:</span>
-                <span className="font-medium text-destructive">- {formatCurrency(fee)}</span>
-              </div>
-              
-              <div className="border-t border-border pt-3 space-y-2">
-                {passToCustomer ? (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cliente paga:</span>
-                      <span className="font-bold text-lg">{formatCurrency(customerPays)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Você recebe:</span>
-                      <span className="font-bold text-lg text-green-600">{formatCurrency(youReceive)}</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cliente paga:</span>
-                      <span className="font-medium">{formatCurrency(customerPays)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cai na sua conta:</span>
-                      <span className="font-bold text-lg text-green-600">{formatCurrency(youReceive)}</span>
-                    </div>
-                  </>
-                )}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-center">Repassar taxa para o cliente?</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant={passToCustomer === true ? "default" : "outline"}
+                  className={`h-12 ${passToCustomer === true ? "bg-primary" : ""}`}
+                  onClick={() => setPassToCustomer(true)}
+                >
+                  <ArrowUp className="h-4 w-4 mr-2" />
+                  Sim
+                </Button>
+                <Button
+                  variant={passToCustomer === false ? "default" : "outline"}
+                  className={`h-12 ${passToCustomer === false ? "bg-primary" : ""}`}
+                  onClick={() => setPassToCustomer(false)}
+                >
+                  <ArrowDown className="h-4 w-4 mr-2" />
+                  Não
+                </Button>
               </div>
             </div>
           )}
 
+          {/* Resultados */}
+          {numericAmount > 0 && passToCustomer !== null && (
+            <div className="space-y-4 p-4 bg-gradient-to-br from-secondary/80 to-secondary/40 rounded-xl border">
+              {/* Taxa */}
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Taxa cobrada (0,49%):</span>
+                <span className="font-semibold text-destructive">- {formatCurrency(fee)}</span>
+              </div>
+              
+              <div className="h-px bg-border" />
+              
+              {/* Resultados principais */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Cliente paga:</span>
+                  <span className={`font-bold text-lg ${passToCustomer ? "text-amber-600" : ""}`}>
+                    {formatCurrency(customerPays)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <span className="text-muted-foreground font-medium">Você recebe:</span>
+                  <span className="font-bold text-xl text-green-600">
+                    {formatCurrency(youReceive)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Botão limpar */}
           <Button 
-            variant="outline" 
+            variant="ghost" 
             className="w-full" 
-            onClick={() => {
-              setAmount("");
-              setPassToCustomer(false);
-            }}
+            onClick={handleClear}
           >
+            <RotateCcw className="h-4 w-4 mr-2" />
             Limpar
           </Button>
         </div>
