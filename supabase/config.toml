@@ -2,3 +2,12 @@ project_id = "vvjnizvqbegijvgrszot"
 
 [functions.validate-invite-ip]
 verify_jwt = false
+
+[functions.create-pix-payment]
+verify_jwt = true
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+[functions.check-payment-status]
+verify_jwt = true
