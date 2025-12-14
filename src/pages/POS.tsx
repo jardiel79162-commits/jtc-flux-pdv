@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Minus, Trash2, DollarSign, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer, XCircle, Clock, RefreshCw, Copy } from "lucide-react";
+import { Search, Plus, Minus, Trash2, DollarSign, ShoppingCart, ArrowRight, Download, FileText, X, User, QrCode, CheckCircle, Camera, Mail, Printer, XCircle, Clock, RefreshCw, Copy, ArrowUp, ArrowDown, Percent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 // Imagens dos métodos de pagamento
@@ -113,6 +113,14 @@ const POS = () => {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [currentPaymentAmount, setCurrentPaymentAmount] = useState("");
   const [printerWidth, setPrinterWidth] = useState<"80mm" | "58mm">("80mm");
+  
+  // Estados para taxa PIX
+  const [showPixFeeDialog, setShowPixFeeDialog] = useState(false);
+  const [pixPassFeeToCustomer, setPixPassFeeToCustomer] = useState<boolean | null>(null);
+  const [pixOriginalAmount, setPixOriginalAmount] = useState(0);
+  const [pixFinalAmount, setPixFinalAmount] = useState(0);
+  const [pixFeeAmount, setPixFeeAmount] = useState(0);
+  const [pixYouReceive, setPixYouReceive] = useState(0);
   
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
@@ -337,7 +345,48 @@ const POS = () => {
     }, 1000);
   }, [checkPixPaymentStatus, cleanupPixTimers]);
 
-  const openPixDialog = async (amount: number) => {
+  const PIX_FEE_RATE = 0.0049; // 0.49%
+
+  // Função para abrir diálogo de taxa antes do PIX automático
+  const showPixFeeQuestion = (amount: number) => {
+    if (!pixSettings) {
+      toast({
+        title: "PIX não configurado",
+        description: "Configure sua chave PIX nas Configurações para aceitar pagamentos via PIX.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Para PIX automático, mostrar pergunta sobre taxa
+    if (pixSettings.pix_mode === 'automatic') {
+      const fee = amount * PIX_FEE_RATE;
+      setPixOriginalAmount(amount);
+      setPixFeeAmount(fee);
+      setPixPassFeeToCustomer(null);
+      setPixFinalAmount(amount);
+      setPixYouReceive(amount - fee);
+      setShowPixFeeDialog(true);
+    } else {
+      // PIX manual: abrir diretamente
+      openPixDialog(amount, false, amount);
+    }
+  };
+
+  // Confirmar taxa e gerar QR Code
+  const confirmPixFeeAndGenerate = () => {
+    const passToCustomer = pixPassFeeToCustomer === true;
+    const finalAmount = passToCustomer ? pixOriginalAmount + pixFeeAmount : pixOriginalAmount;
+    const youReceive = passToCustomer ? pixOriginalAmount : pixOriginalAmount - pixFeeAmount;
+    
+    setPixFinalAmount(finalAmount);
+    setPixYouReceive(youReceive);
+    setShowPixFeeDialog(false);
+    
+    openPixDialog(finalAmount, passToCustomer, pixOriginalAmount);
+  };
+
+  const openPixDialog = async (amount: number, passedFeeToCustomer: boolean = false, originalAmount: number = 0) => {
     if (!pixSettings) {
       toast({
         title: "PIX não configurado",
@@ -359,6 +408,7 @@ const POS = () => {
         setShowPixQrCode(true);
         setPixQrCodeImage(null);
         setPixCopyPaste(null);
+        setPixPaymentAmount(amount);
 
         const { data, error } = await supabase.functions.invoke('create-store-pix-payment', {
           body: {
@@ -395,7 +445,7 @@ const POS = () => {
 
         // Iniciar fluxo automático com polling e countdown
         if (paymentId) {
-          startPixAutomaticFlow(paymentId, amount);
+          startPixAutomaticFlow(paymentId, originalAmount > 0 ? originalAmount : amount);
         }
       } catch (error) {
         console.error('Erro ao gerar QR Code PIX automático', error);
@@ -421,7 +471,12 @@ const POS = () => {
     const amount = paymentMode === "multiple" 
       ? (parseFloat(currentPaymentAmount) || remainingToPay) 
       : total;
-    await openPixDialog(amount);
+    // Para regenerar, usa o mesmo valor que já foi calculado (pixFinalAmount se disponível)
+    if (pixSettings?.pix_mode === 'automatic' && pixFinalAmount > 0) {
+      await openPixDialog(pixFinalAmount, pixPassFeeToCustomer === true, pixOriginalAmount);
+    } else {
+      await openPixDialog(amount, false, amount);
+    }
   };
 
   // Limpar timers ao fechar diálogo
@@ -459,7 +514,7 @@ const POS = () => {
       return;
     }
     setPaymentMethod("pix");
-    openPixDialog(total);
+    showPixFeeQuestion(total);
   };
   const fetchProducts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1855,7 +1910,7 @@ ${paymentInfo}
                               const amountForPix = paymentMode === "multiple"
                                 ? (parseFloat(currentPaymentAmount) || remainingToPay)
                                 : total;
-                              openPixDialog(amountForPix);
+                              showPixFeeQuestion(amountForPix);
                             }
                           }}
                         >
@@ -2477,6 +2532,99 @@ ${paymentInfo}
               Me Direcionar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Taxa PIX */}
+      <Dialog open={showPixFeeDialog} onOpenChange={setShowPixFeeDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Percent className="h-5 w-5 text-primary" />
+              </div>
+              Taxa PIX (0,49%)
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {/* Valor da venda */}
+            <div className="p-4 bg-muted/50 rounded-lg text-center">
+              <p className="text-sm text-muted-foreground">Valor da venda</p>
+              <p className="text-2xl font-bold">
+                {pixOriginalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </p>
+            </div>
+
+            {/* Taxa info */}
+            <div className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <span className="text-sm">
+                Taxa: <span className="font-semibold text-amber-600">
+                  {pixFeeAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </span>
+            </div>
+
+            {/* Pergunta sobre repasse */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-center">Repassar taxa para o cliente?</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant={pixPassFeeToCustomer === true ? "default" : "outline"}
+                  className={`h-14 flex-col ${pixPassFeeToCustomer === true ? "bg-primary" : ""}`}
+                  onClick={() => {
+                    setPixPassFeeToCustomer(true);
+                    setPixFinalAmount(pixOriginalAmount + pixFeeAmount);
+                    setPixYouReceive(pixOriginalAmount);
+                  }}
+                >
+                  <ArrowUp className="h-5 w-5 mb-1" />
+                  Sim
+                </Button>
+                <Button
+                  variant={pixPassFeeToCustomer === false ? "default" : "outline"}
+                  className={`h-14 flex-col ${pixPassFeeToCustomer === false ? "bg-primary" : ""}`}
+                  onClick={() => {
+                    setPixPassFeeToCustomer(false);
+                    setPixFinalAmount(pixOriginalAmount);
+                    setPixYouReceive(pixOriginalAmount - pixFeeAmount);
+                  }}
+                >
+                  <ArrowDown className="h-5 w-5 mb-1" />
+                  Não
+                </Button>
+              </div>
+            </div>
+
+            {/* Resultados */}
+            {pixPassFeeToCustomer !== null && (
+              <div className="space-y-3 p-4 bg-gradient-to-br from-secondary/80 to-secondary/40 rounded-xl border">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Cliente paga:</span>
+                  <span className={`font-bold text-lg ${pixPassFeeToCustomer ? "text-amber-600" : ""}`}>
+                    {pixFinalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <span className="text-muted-foreground font-medium">Você recebe:</span>
+                  <span className="font-bold text-xl text-green-600">
+                    {pixYouReceive.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Botão gerar QR */}
+            <Button 
+              className="w-full h-12"
+              disabled={pixPassFeeToCustomer === null}
+              onClick={confirmPixFeeAndGenerate}
+            >
+              <QrCode className="h-5 w-5 mr-2" />
+              Gerar QR Code PIX
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
