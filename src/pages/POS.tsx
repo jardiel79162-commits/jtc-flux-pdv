@@ -447,7 +447,7 @@ const POS = () => {
 
         // Iniciar fluxo automático com polling e countdown
         if (paymentId) {
-          startPixAutomaticFlow(paymentId, originalAmount > 0 ? originalAmount : amount);
+          startPixAutomaticFlow(paymentId, amount);
         }
       } catch (error) {
         console.error('Erro ao gerar QR Code PIX automático', error);
