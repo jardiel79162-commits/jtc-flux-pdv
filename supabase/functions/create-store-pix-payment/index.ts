@@ -62,7 +62,7 @@ serve(async (req) => {
     // Verificar se o usuário tem PIX automático configurado
     const { data: storeSettings, error: settingsError } = await supabaseAdmin
       .from('store_settings')
-      .select('pix_mode, store_name, mercado_pago_cpf, mercado_pago_name')
+      .select('pix_mode, store_name')
       .eq('user_id', user.id)
       .single();
 
@@ -99,29 +99,15 @@ serve(async (req) => {
 
     const accessToken = integration.encrypted_token;
 
-    // Processar nome para first_name e last_name
-    const nameParts = (storeSettings.mercado_pago_name || 'Cliente Loja').trim().split(' ');
-    const firstName = nameParts[0] || 'Cliente';
-    const lastName = nameParts.slice(1).join(' ') || firstName;
+    console.log('Creating PIX payment with token only (no payer CPF needed)');
 
-    // Remover formatação do CPF (pontos e traços)
-    const cpfClean = (storeSettings.mercado_pago_cpf || '').replace(/\D/g, '');
-
-    console.log('Payer data:', { firstName, lastName, cpfClean: cpfClean ? 'set' : 'missing' });
-
-    // Criar pagamento no Mercado Pago
+    // Criar pagamento no Mercado Pago - apenas dados mínimos
     const paymentData = {
       transaction_amount: Number(amount),
       description: description || `Venda - ${storeSettings.store_name || 'Loja'}`,
       payment_method_id: 'pix',
       payer: {
-        email: user.email || 'cliente@loja.com',
-        first_name: firstName,
-        last_name: lastName,
-        identification: {
-          type: 'CPF',
-          number: cpfClean
-        }
+        email: user.email || 'cliente@loja.com'
       },
       // Expiração de 5 minutos
       date_of_expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
