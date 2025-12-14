@@ -625,6 +625,33 @@ export type Database = {
           },
         ]
       }
+      store_integrations: {
+        Row: {
+          created_at: string
+          encrypted_token: string | null
+          id: string
+          integration_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_token?: string | null
+          id?: string
+          integration_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_token?: string | null
+          id?: string
+          integration_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       store_settings: {
         Row: {
           category: string | null
@@ -634,9 +661,12 @@ export type Database = {
           hide_trial_message: boolean | null
           id: string
           logo_url: string | null
+          mercado_pago_cpf: string | null
+          mercado_pago_name: string | null
           operation_type: string | null
           pix_key: string | null
           pix_key_type: string | null
+          pix_mode: string | null
           pix_receiver_name: string | null
           primary_color: string | null
           quick_actions_enabled: boolean | null
@@ -653,9 +683,12 @@ export type Database = {
           hide_trial_message?: boolean | null
           id?: string
           logo_url?: string | null
+          mercado_pago_cpf?: string | null
+          mercado_pago_name?: string | null
           operation_type?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          pix_mode?: string | null
           pix_receiver_name?: string | null
           primary_color?: string | null
           quick_actions_enabled?: boolean | null
@@ -672,9 +705,12 @@ export type Database = {
           hide_trial_message?: boolean | null
           id?: string
           logo_url?: string | null
+          mercado_pago_cpf?: string | null
+          mercado_pago_name?: string | null
           operation_type?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          pix_mode?: string | null
           pix_receiver_name?: string | null
           primary_color?: string | null
           quick_actions_enabled?: boolean | null

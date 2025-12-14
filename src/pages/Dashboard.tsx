@@ -25,6 +25,8 @@ interface DashboardData {
   recentSales: number;
   subscriptionStatus: "active" | "trial" | "expired";
   trialDaysLeft?: number;
+  subscriptionDaysLeft?: number;
+  subscriptionEndDate?: Date;
   quickActionsEnabled: boolean;
   hideTrialMessage: boolean;
 }
@@ -50,6 +52,8 @@ const Dashboard = () => {
     recentSales: 0,
     subscriptionStatus: "trial",
     trialDaysLeft: 0,
+    subscriptionDaysLeft: 0,
+    subscriptionEndDate: undefined,
     quickActionsEnabled: false,
     hideTrialMessage: false,
   });
@@ -99,8 +103,10 @@ const Dashboard = () => {
         storeSettings = settingsData;
       }
 
-      // Calcular dias restantes de teste
+      // Calcular dias restantes de teste e assinatura
       let trialDaysLeft = 0;
+      let subscriptionDaysLeft = 0;
+      let subscriptionEndDate: Date | undefined = undefined;
       let subscriptionStatus: "active" | "trial" | "expired" = "expired";
 
       if (profile) {
@@ -110,8 +116,13 @@ const Dashboard = () => {
           const diffTime = new Date(profile.trial_ends_at).getTime() - now.getTime();
           trialDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           subscriptionStatus = "trial";
+          subscriptionEndDate = new Date(profile.trial_ends_at);
+          subscriptionDaysLeft = trialDaysLeft;
         } else if (profile.subscription_ends_at && new Date(profile.subscription_ends_at) > now) {
           subscriptionStatus = "active";
+          subscriptionEndDate = new Date(profile.subscription_ends_at);
+          const diffTime = subscriptionEndDate.getTime() - now.getTime();
+          subscriptionDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
       }
 
@@ -168,6 +179,8 @@ const Dashboard = () => {
         recentSales: recentSales?.length || 0,
         subscriptionStatus,
         trialDaysLeft,
+        subscriptionDaysLeft,
+        subscriptionEndDate,
         quickActionsEnabled: storeSettings?.quick_actions_enabled || false,
         hideTrialMessage: storeSettings?.hide_trial_message || false,
       });
@@ -281,16 +294,38 @@ const Dashboard = () => {
       {!permissions.isEmployee && !data.hideTrialMessage && data.subscriptionStatus === "active" && (
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500/10 via-green-500/10 to-teal-500/10 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-green-500/5" />
-          <CardHeader className="relative">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 shadow-lg">
-                <TrendingUp className="w-5 h-5 text-white" />
+          <CardHeader className="relative pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 shadow-lg">
+                  <TrendingUp className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                    Assinatura Ativa
+                  </CardTitle>
+                  {data.subscriptionEndDate && (
+                    <CardDescription className="text-muted-foreground/80">
+                      Válido até {data.subscriptionEndDate.toLocaleDateString('pt-BR')}
+                    </CardDescription>
+                  )}
+                </div>
               </div>
-              <CardTitle className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
-                Assinatura Ativa
-              </CardTitle>
+              <div className="flex flex-col items-end gap-1">
+                <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 shadow-md px-4 py-1.5 text-sm font-semibold">
+                  {data.subscriptionDaysLeft} {data.subscriptionDaysLeft === 1 ? 'dia' : 'dias'}
+                </Badge>
+                <span className="text-xs text-muted-foreground">restantes</span>
+              </div>
             </div>
           </CardHeader>
+          <CardContent className="relative pt-2">
+            <Link to="/assinatura">
+              <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10">
+                Renovar Plano
+              </Button>
+            </Link>
+          </CardContent>
         </Card>
       )}
 

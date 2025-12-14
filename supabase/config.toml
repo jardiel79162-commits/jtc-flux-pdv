@@ -11,3 +11,15 @@ verify_jwt = false
 
 [functions.check-payment-status]
 verify_jwt = true
+
+[functions.create-store-pix-payment]
+verify_jwt = true
+
+[functions.check-store-payment-status]
+verify_jwt = true
+
+[functions.create-employee]
+verify_jwt = true
+
+[functions.delete-employee]
+verify_jwt = true
