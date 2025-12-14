@@ -91,6 +91,8 @@ const POS = () => {
   const [storeName, setStoreName] = useState("Loja");
   const [pixSettings, setPixSettings] = useState<PixSettings | null>(null);
   const [showPixQrCode, setShowPixQrCode] = useState(false);
+  const [pixPaymentLoading, setPixPaymentLoading] = useState(false);
+  const [pixQrCodeImage, setPixQrCodeImage] = useState<string | null>(null);
   const [isProcessingSale, setIsProcessingSale] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -136,7 +138,7 @@ const POS = () => {
     }
     
     // Verificar se PIX está configurado (manual OU automático)
-    const isManualConfigured = data?.pix_mode === 'manual' && data?.pix_key && data?.pix_receiver_name;
+    const isManualConfigured = (!data?.pix_mode || data?.pix_mode === 'manual') && data?.pix_key && data?.pix_receiver_name;
     const isAutomaticConfigured = data?.pix_mode === 'automatic' && data?.mercado_pago_cpf && data?.mercado_pago_name;
     
     if (isManualConfigured || isAutomaticConfigured) {
@@ -144,7 +146,7 @@ const POS = () => {
         pix_key_type: data.pix_key_type,
         pix_key: data.pix_key,
         pix_receiver_name: data.pix_receiver_name,
-        pix_mode: data.pix_mode,
+        pix_mode: data.pix_mode || 'manual',
       });
     }
   };
@@ -213,9 +215,70 @@ const POS = () => {
     return crc.toString(16).toUpperCase().padStart(4, '0');
   };
 
+  const openPixDialog = async (amount: number) => {
+    if (!pixSettings) {
+      toast({
+        title: "PIX não configurado",
+        description: "Configure sua chave PIX nas Configurações para aceitar pagamentos via PIX.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (pixSettings.pix_mode === 'automatic') {
+      try {
+        setPixPaymentLoading(true);
+        setShowPixQrCode(true);
+        setPixQrCodeImage(null);
+
+        const { data, error } = await supabase.functions.invoke('create-store-pix-payment', {
+          body: {
+            amount,
+            saleId: 'pdv-sale-temp',
+          },
+        });
+
+        if (error || !data?.success) {
+          console.error('Erro ao criar pagamento PIX automático', error || data);
+          toast({
+            title: "Erro ao gerar QR Code PIX",
+            description: "Verifique as configurações do Mercado Pago.",
+            variant: "destructive",
+          });
+          setShowPixQrCode(false);
+          return;
+        }
+
+        const qrCodeBase64 = (data as any).qrCodeBase64 as string | undefined;
+        const qrCode = (data as any).qrCode as string | undefined;
+
+        if (qrCodeBase64) {
+          setPixQrCodeImage(`data:image/png;base64,${qrCodeBase64}`);
+        } else if (qrCode) {
+          setPixQrCodeImage(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`);
+        }
+      } catch (error) {
+        console.error('Erro ao gerar QR Code PIX automático', error);
+        toast({
+          title: "Erro ao gerar QR Code PIX",
+          description: "Tente novamente em alguns instantes.",
+          variant: "destructive",
+        });
+        setShowPixQrCode(false);
+      } finally {
+        setPixPaymentLoading(false);
+      }
+    } else {
+      // PIX manual: apenas abre o diálogo que usa o payload EMV atual
+      setPixPaymentLoading(false);
+      setPixQrCodeImage(null);
+      setShowPixQrCode(true);
+    }
+  };
+
   const handlePixPayment = () => {
     // Verificar se PIX está configurado (manual OU automático)
-    const isManualConfigured = pixSettings?.pix_mode === 'manual' && pixSettings?.pix_key;
+    const isManualConfigured = (!pixSettings?.pix_mode || pixSettings?.pix_mode === 'manual') && pixSettings?.pix_key && pixSettings?.pix_receiver_name;
     const isAutomaticConfigured = pixSettings?.pix_mode === 'automatic';
     
     if (!isManualConfigured && !isAutomaticConfigured) {
@@ -227,9 +290,8 @@ const POS = () => {
       return;
     }
     setPaymentMethod("pix");
-    setShowPixQrCode(true);
+    openPixDialog(total);
   };
-
   const fetchProducts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -1587,16 +1649,24 @@ ${paymentInfo}
                             }
                             // Mostrar QR code PIX automaticamente em múltiplos pagamentos
                             if (method.value === "pix") {
-                              if (!pixSettings?.pix_key) {
+                              const isManualConfigured = (!pixSettings?.pix_mode || pixSettings?.pix_mode === 'manual') && pixSettings?.pix_key && pixSettings?.pix_receiver_name;
+                              const isAutomaticConfigured = pixSettings?.pix_mode === 'automatic';
+
+                              if (!isManualConfigured && !isAutomaticConfigured) {
                                 toast({
-                                  title: "Chave PIX não cadastrada",
-                                  description: "Por favor cadastre uma chave PIX nas configurações antes de usar este método",
-                                  variant: "destructive"
+                                  title: "PIX não configurado",
+                                  description: "Configure o PIX nas configurações antes de usar este método",
+                                  variant: "destructive",
                                 });
                                 setPaymentMethod("");
                                 return;
                               }
-                              setShowPixQrCode(true);
+
+                              setPaymentMethod("pix");
+                              const amountForPix = paymentMode === "multiple"
+                                ? (parseFloat(currentPaymentAmount) || remainingToPay)
+                                : total;
+                              openPixDialog(amountForPix);
                             }
                           }}
                         >
@@ -1645,19 +1715,36 @@ ${paymentInfo}
               </DialogHeader>
               <div className="flex flex-col items-center space-y-4 py-4">
                 <div className="bg-white p-4 rounded-lg">
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixPayload(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total))}`}
-                    alt="QR Code PIX"
-                    width={200}
-                    height={200}
-                  />
+                  {pixSettings?.pix_mode === 'automatic' ? (
+                    pixPaymentLoading || !pixQrCodeImage ? (
+                      <div className="w-[200px] h-[200px] flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground">Gerando QR Code PIX...</p>
+                      </div>
+                    ) : (
+                      <img 
+                        src={pixQrCodeImage}
+                        alt="QR Code PIX"
+                        width={200}
+                        height={200}
+                      />
+                    )
+                  ) : (
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generatePixPayload(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total))}`}
+                      alt="QR Code PIX"
+                      width={200}
+                      height={200}
+                    />
+                  )}
                 </div>
                 <div className="text-center space-y-2">
                   <p className="text-2xl font-bold text-accent">
                     R$ {(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total).toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground">Escaneie o QR Code para pagar</p>
-                  <p className="text-xs text-muted-foreground">Recebedor: {pixSettings?.pix_receiver_name}</p>
+                  {pixSettings?.pix_mode === 'manual' && (
+                    <p className="text-xs text-muted-foreground">Recebedor: {pixSettings?.pix_receiver_name}</p>
+                  )}
                 </div>
                 <Button 
                   className="w-full bg-green-600 hover:bg-green-700"
