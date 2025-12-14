@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Calendar, CreditCard, Copy, Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Check, Calendar, CreditCard, Copy, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -344,37 +344,19 @@ const Subscription = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                {isCheckingStatus ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-                <span>Aguardando pagamento...</span>
+              <div className="flex flex-col items-center justify-center gap-3 py-4">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-full bg-primary/10 text-primary">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="font-medium">Verificando pagamento...</span>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  O sistema detectará automaticamente quando o pagamento for confirmado
+                </p>
               </div>
 
               <Button
-                variant="outline"
-                className="w-full"
-                onClick={checkPaymentStatus}
-                disabled={isCheckingStatus}
-              >
-                {isCheckingStatus ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verificando...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Verificar Pagamento
-                  </>
-                )}
-              </Button>
-
-              <Button
                 variant="ghost"
-                className="w-full"
+                className="w-full text-muted-foreground"
                 onClick={handleCancelPayment}
               >
                 Cancelar e escolher outro plano
