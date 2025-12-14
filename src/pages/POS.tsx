@@ -991,7 +991,7 @@ const POS = () => {
     setShowEmailDialog(true);
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!saleData || !emailToSend) {
       toast({ title: "Digite o e-mail do cliente", variant: "destructive" });
       return;
@@ -1042,13 +1042,32 @@ const POS = () => {
     body += `Obrigado pela preferência!\n`;
     body += `${storeName}`;
 
+    // Registrar na caixa de correios como enviado
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('email_logs').insert({
+          user_id: user.id,
+          sale_id: saleData.id,
+          customer_email: emailToSend,
+          sender_email: user.email || '',
+          subject: `Comprovante de Venda - ${storeName} - ${saleDate}`,
+          document_type: 'comprovante',
+          status: 'enviado',
+          sent_at: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao registrar e-mail:', error);
+    }
+
     const encodedBody = encodeURIComponent(body);
     const mailtoLink = `mailto:${emailToSend}?subject=${subject}&body=${encodedBody}`;
     
     window.location.href = mailtoLink;
     
     setShowEmailDialog(false);
-    toast({ title: "Redirecionando para o e-mail..." });
+    toast({ title: "E-mail registrado e redirecionando..." });
   };
 
   const printThermalReceipt = () => {
