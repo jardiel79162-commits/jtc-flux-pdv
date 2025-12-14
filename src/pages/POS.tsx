@@ -2010,7 +2010,10 @@ ${paymentInfo}
                   </div>
                   <div className="text-center space-y-2">
                     <p className="text-2xl font-bold text-accent">
-                      R$ {(paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total).toFixed(2)}
+                      R$ {(pixSettings?.pix_mode === 'automatic'
+                        ? pixPaymentAmount
+                        : (paymentMode === "multiple" ? parseFloat(currentPaymentAmount) || remainingToPay : total)
+                      ).toFixed(2)}
                     </p>
                     <p className="text-sm text-muted-foreground">Escaneie o QR Code para pagar</p>
                     {pixSettings?.pix_mode === 'manual' && (
