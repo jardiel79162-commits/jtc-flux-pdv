@@ -283,100 +283,122 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/8 via-background to-accent/8 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-primary/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
+      
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
         {/* Seção de branding */}
-        <div className="hidden lg:flex flex-col justify-center space-y-8 p-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-5">
-              <div className="relative">
-                <img src={logo} alt="JTC FluxPDV" className="w-24 h-24 rounded-2xl object-cover shadow-xl" />
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-accent flex items-center justify-center shadow-lg">
-                  <CheckCircle2 className="w-5 h-5 text-accent-foreground" />
+        <div className="hidden lg:flex flex-col justify-center space-y-10 p-8">
+          <div className="space-y-6">
+            <div className="flex items-center gap-6">
+              <div className="relative group">
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary to-accent rounded-3xl blur opacity-40 group-hover:opacity-60 transition duration-500" />
+                <img src={logo} alt="JTC FluxPDV" className="relative w-28 h-28 rounded-2xl object-cover shadow-2xl" />
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-accent flex items-center justify-center shadow-lg animate-pulse">
+                  <CheckCircle2 className="w-6 h-6 text-accent-foreground" />
                 </div>
               </div>
-              <div className="space-y-1">
-                <h1 className="text-5xl font-bold gradient-text">
+              <div className="space-y-2">
+                <h1 className="text-5xl lg:text-6xl font-black gradient-text tracking-tight">
                   JTC FluxPDV
                 </h1>
-                <p className="text-lg text-muted-foreground">
+                <p className="text-xl text-muted-foreground font-light">
                   Sistema profissional de gestão para sua loja
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-5 pt-6">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 transition-all hover:shadow-md hover:border-primary/30">
-              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <ShoppingCart className="w-7 h-7 text-primary" />
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center gap-5 p-5 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/50 transition-all duration-300 hover:shadow-xl hover:border-primary/40 hover:scale-[1.02] group cursor-pointer">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-primary/30 transition-all duration-300">
+                <ShoppingCart className="w-8 h-8 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">PDV Completo</h3>
-                <p className="text-sm text-muted-foreground">Sistema de vendas rápido e eficiente</p>
+                <h3 className="font-bold text-xl text-foreground">PDV Completo</h3>
+                <p className="text-muted-foreground">Sistema de vendas rápido e eficiente</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 transition-all hover:shadow-md hover:border-accent/30">
-              <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-                <Package className="w-7 h-7 text-accent" />
+            <div className="flex items-center gap-5 p-5 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/50 transition-all duration-300 hover:shadow-xl hover:border-accent/40 hover:scale-[1.02] group cursor-pointer">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-accent/30 transition-all duration-300">
+                <Package className="w-8 h-8 text-accent-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Gestão de Estoque</h3>
-                <p className="text-sm text-muted-foreground">Controle total dos seus produtos</p>
+                <h3 className="font-bold text-xl text-foreground">Gestão de Estoque</h3>
+                <p className="text-muted-foreground">Controle total dos seus produtos</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 transition-all hover:shadow-md hover:border-success/30">
-              <div className="w-14 h-14 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-7 h-7 text-success" />
+            <div className="flex items-center gap-5 p-5 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/50 transition-all duration-300 hover:shadow-xl hover:border-success/40 hover:scale-[1.02] group cursor-pointer">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success to-success/70 flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-success/30 transition-all duration-300">
+                <TrendingUp className="w-8 h-8 text-success-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Relatórios Detalhados</h3>
-                <p className="text-sm text-muted-foreground">Análises completas do seu negócio</p>
+                <h3 className="font-bold text-xl text-foreground">Relatórios Detalhados</h3>
+                <p className="text-muted-foreground">Análises completas do seu negócio</p>
               </div>
             </div>
           </div>
 
-          <div className="pt-4 flex items-center gap-3 text-sm text-muted-foreground">
-            <Gift className="w-5 h-5 text-accent" />
-            <span>Convide amigos e ganhe <strong className="text-accent">1 mês grátis</strong> para cada cadastro!</span>
+          <div className="pt-6 flex items-center gap-4 p-5 rounded-2xl bg-accent/10 border border-accent/30">
+            <Gift className="w-8 h-8 text-accent" />
+            <div>
+              <p className="font-semibold text-foreground">Convide amigos e ganhe!</p>
+              <p className="text-muted-foreground">
+                <strong className="text-accent">1 mês grátis</strong> para cada cadastro com seu código!
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Formulários */}
-        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm">
-          <CardHeader className="text-center lg:text-left pb-2">
-            <div className="flex items-center justify-center lg:justify-start gap-4 mb-4">
-              <img src={logo} alt="JTC FluxPDV" className="w-16 h-16 rounded-xl object-cover shadow-lg" />
-              <div>
-                <CardTitle className="text-3xl font-bold">JTC FluxPDV</CardTitle>
-                <CardDescription className="text-base">Sistema de Gestão Profissional</CardDescription>
+        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/10 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
+          
+          <CardHeader className="text-center pb-2 relative z-10">
+            <div className="flex flex-col items-center gap-4 mb-4">
+              <div className="relative">
+                <div className="absolute -inset-2 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-30" />
+                <img src={logo} alt="JTC FluxPDV" className="relative w-20 h-20 rounded-xl object-cover shadow-xl" />
+              </div>
+              <div className="text-center">
+                <CardTitle className="text-3xl font-black gradient-text">JTC FluxPDV</CardTitle>
+                <CardDescription className="text-base mt-1">Sistema de Gestão Profissional</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative z-10">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="register">Criar Conta</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-muted/50">
+                <TabsTrigger value="login" className="font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  Entrar
+                </TabsTrigger>
+                <TabsTrigger value="register" className="font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  Criar Conta
+                </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+              <TabsContent value="login" className="space-y-6">
+                <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="identifier">E-mail ou CPF</Label>
+                    <Label htmlFor="identifier" className="text-sm font-medium">E-mail ou CPF</Label>
                     <Input
                       id="identifier"
                       name="identifier"
                       placeholder="seu@email.com ou 12345678900"
                       required
                       disabled={isLoading}
+                      className="h-12 text-base bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
+                    <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -384,38 +406,55 @@ const Auth = () => {
                         type={showPassword ? "text" : "password"}
                         required
                         disabled={isLoading}
+                        className="h-12 text-base pr-12 bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Entrando..." : "Entrar"}
+                  <Button type="submit" className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Entrando...
+                      </>
+                    ) : (
+                      "Entrar"
+                    )}
                   </Button>
                 </form>
+
+                {/* Mobile branding */}
+                <div className="lg:hidden pt-4 border-t border-border/50">
+                  <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                    <Gift className="w-5 h-5 text-accent" />
+                    <span>Convide amigos e ganhe <strong className="text-accent">1 mês grátis</strong>!</span>
+                  </div>
+                </div>
               </TabsContent>
 
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
+              <TabsContent value="register" className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fullName">Nome Completo</Label>
+                      <Label htmlFor="fullName" className="text-sm font-medium">Nome Completo</Label>
                       <Input
                         id="fullName"
                         name="fullName"
                         required
                         disabled={isLoading}
+                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="cpf">CPF</Label>
+                      <Label htmlFor="cpf" className="text-sm font-medium">CPF</Label>
                       <Input
                         id="cpf"
                         name="cpf"
@@ -424,8 +463,8 @@ const Auth = () => {
                         disabled={isLoading}
                         inputMode="numeric"
                         maxLength={14}
+                        className={`h-11 bg-background/50 border-border/50 focus:border-primary ${cpfError ? "border-destructive" : ""}`}
                         onChange={(e) => {
-                          // Formatar CPF automaticamente: 000.000.000-00
                           let value = e.target.value.replace(/\D/g, "");
                           if (value.length > 11) value = value.slice(0, 11);
                           
@@ -451,7 +490,6 @@ const Auth = () => {
                             setCpfError(null);
                           }
                         }}
-                        className={cpfError ? "border-destructive" : ""}
                       />
                       {cpfError && (
                         <p className="text-xs text-destructive">{cpfError}</p>
@@ -459,18 +497,19 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">E-mail</Label>
+                      <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
                       <Input
                         id="email"
                         name="email"
                         type="email"
                         required
                         disabled={isLoading}
+                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
+                      <Label htmlFor="phone" className="text-sm font-medium">Telefone</Label>
                       <Input
                         id="phone"
                         name="phone"
@@ -479,8 +518,8 @@ const Auth = () => {
                         disabled={isLoading}
                         inputMode="numeric"
                         maxLength={15}
+                        className={`h-11 bg-background/50 border-border/50 focus:border-primary ${phoneError ? "border-destructive" : ""}`}
                         onChange={(e) => {
-                          // Formatar telefone automaticamente: (00) 00000-0000
                           let value = e.target.value.replace(/\D/g, "");
                           if (value.length > 11) value = value.slice(0, 11);
                           
@@ -496,14 +535,12 @@ const Auth = () => {
                           }
                           e.target.value = formatted;
                           
-                          // Validar se tem 11 dígitos
                           if (value.length > 0 && value.length < 11) {
                             setPhoneError("Telefone deve ter 11 dígitos (DDD + número)");
                           } else {
                             setPhoneError(null);
                           }
                         }}
-                        className={phoneError ? "border-destructive" : ""}
                       />
                       {phoneError && (
                         <p className="text-xs text-destructive">{phoneError}</p>
@@ -511,7 +548,7 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="cep">CEP</Label>
+                      <Label htmlFor="cep" className="text-sm font-medium">CEP</Label>
                       <div className="relative">
                         <Input
                           id="cep"
@@ -521,8 +558,8 @@ const Auth = () => {
                           required
                           disabled={isLoading || isFetchingCEP}
                           inputMode="numeric"
+                          className="h-11 bg-background/50 border-border/50 focus:border-primary"
                           onChange={(e) => {
-                            // Formatar CEP automaticamente: 00000-000
                             let value = e.target.value.replace(/\D/g, "");
                             if (value.length > 8) value = value.slice(0, 8);
                             
@@ -539,12 +576,12 @@ const Auth = () => {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Digite o CEP para preencher o endereço automaticamente
+                        Digite o CEP para preencher automaticamente
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="street">Rua</Label>
+                      <Label htmlFor="street" className="text-sm font-medium">Rua</Label>
                       <Input
                         id="street"
                         name="street"
@@ -552,21 +589,23 @@ const Auth = () => {
                         onChange={(e) => setAddressData({ ...addressData, street: e.target.value })}
                         required
                         disabled={isLoading}
+                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="number">Número</Label>
+                      <Label htmlFor="number" className="text-sm font-medium">Número</Label>
                       <Input
                         id="number"
                         name="number"
                         required
                         disabled={isLoading}
+                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="neighborhood">Bairro</Label>
+                      <Label htmlFor="neighborhood" className="text-sm font-medium">Bairro</Label>
                       <Input
                         id="neighborhood"
                         name="neighborhood"
@@ -574,18 +613,19 @@ const Auth = () => {
                         onChange={(e) => setAddressData({ ...addressData, neighborhood: e.target.value })}
                         required
                         disabled={isLoading}
+                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="state">Estado</Label>
+                      <Label htmlFor="state" className="text-sm font-medium">Estado</Label>
                       <Select
                         value={selectedEstado}
                         onValueChange={setSelectedEstado}
                         disabled={isLoading}
                         required
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-11 bg-background/50 border-border/50">
                           <SelectValue placeholder="Selecione o estado" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover z-50">
@@ -599,14 +639,14 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="city">Cidade</Label>
+                      <Label htmlFor="city" className="text-sm font-medium">Cidade</Label>
                       <Select
                         value={selectedCidade}
                         onValueChange={setSelectedCidade}
                         disabled={isLoading || !selectedEstado}
                         required
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-11 bg-background/50 border-border/50">
                           <SelectValue placeholder={selectedEstado ? "Selecione a cidade" : "Selecione o estado primeiro"} />
                         </SelectTrigger>
                         <SelectContent className="bg-popover z-50 max-h-[300px]">
@@ -620,7 +660,7 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="password">Senha</Label>
+                      <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
                       <div className="relative">
                         <Input
                           id="password"
@@ -628,19 +668,20 @@ const Auth = () => {
                           type={showPassword ? "text" : "password"}
                           required
                           disabled={isLoading}
+                          className="h-11 pr-12 bg-background/50 border-border/50 focus:border-primary"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                      <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar Senha</Label>
                       <div className="relative">
                         <Input
                           id="confirmPassword"
@@ -648,23 +689,26 @@ const Auth = () => {
                           type={showConfirmPassword ? "text" : "password"}
                           required
                           disabled={isLoading}
+                          className="h-11 pr-12 bg-background/50 border-border/50 focus:border-primary"
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Código de Convite */}
-                  <div className="space-y-4 pt-2 border-t border-border">
-                    <div className="flex items-center gap-2 text-accent">
-                      <Gift className="h-5 w-5" />
-                      <span className="font-medium">Código de Convite</span>
+                  <div className="space-y-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center gap-3 text-accent">
+                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                        <Gift className="h-4 w-4" />
+                      </div>
+                      <span className="font-semibold">Código de Convite</span>
                     </div>
                     
                     {hasInviteCode === null ? (
@@ -672,11 +716,11 @@ const Auth = () => {
                         <p className="text-sm text-muted-foreground">
                           Você tem um código de convite de um amigo?
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button
                             type="button"
                             variant="outline"
-                            className="flex-1 border-accent text-accent hover:bg-accent/10"
+                            className="flex-1 h-11 border-accent text-accent hover:bg-accent/10 font-semibold"
                             onClick={() => setHasInviteCode(true)}
                           >
                             Sim, tenho!
@@ -684,7 +728,7 @@ const Auth = () => {
                           <Button
                             type="button"
                             variant="outline"
-                            className="flex-1"
+                            className="flex-1 h-11"
                             onClick={() => setHasInviteCode(false)}
                           >
                             Não tenho
@@ -694,42 +738,42 @@ const Auth = () => {
                     ) : hasInviteCode ? (
                       <div className="space-y-3">
                         <div className="space-y-2">
-                          <Label>Digite o código de convite</Label>
+                          <Label className="text-sm font-medium">Digite o código de convite</Label>
                           <div className="relative">
                             <Input
                               value={inviteCode}
                               onChange={(e) => handleInviteCodeChange(e.target.value)}
                               placeholder="Ex: ABC123"
                               maxLength={6}
-                              className="uppercase font-mono text-lg tracking-widest"
+                              className="h-12 uppercase font-mono text-lg tracking-widest text-center bg-background/50 border-border/50"
                               disabled={isLoading}
                               autoCapitalize="characters"
                               style={{ textTransform: 'uppercase' }}
                             />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
                               {isValidatingCode && (
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                               )}
                               {!isValidatingCode && codeValidationStatus === "valid" && (
-                                <CheckCircle2 className="h-5 w-5 text-accent" />
+                                <CheckCircle2 className="h-6 w-6 text-accent" />
                               )}
                               {!isValidatingCode && (codeValidationStatus === "invalid" || codeValidationStatus === "used") && (
-                                <XCircle className="h-5 w-5 text-destructive" />
+                                <XCircle className="h-6 w-6 text-destructive" />
                               )}
                             </div>
                           </div>
                           {codeValidationStatus === "valid" && (
-                            <p className="text-sm text-accent font-medium">
+                            <p className="text-sm text-accent font-semibold bg-accent/10 p-2 rounded-lg text-center">
                               🎉 Código válido! Você ganhará 1 mês + 3 dias grátis!
                             </p>
                           )}
                           {codeValidationStatus === "invalid" && (
-                            <p className="text-sm text-destructive">
+                            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-lg text-center">
                               Código inválido. Verifique e tente novamente.
                             </p>
                           )}
                           {codeValidationStatus === "used" && (
-                            <p className="text-sm text-destructive">
+                            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-lg text-center">
                               Este código já foi utilizado por outra pessoa.
                             </p>
                           )}
@@ -738,6 +782,7 @@ const Auth = () => {
                           type="button"
                           variant="ghost"
                           size="sm"
+                          className="text-muted-foreground hover:text-foreground"
                           onClick={() => {
                             setHasInviteCode(false);
                             setInviteCode("");
@@ -748,15 +793,15 @@ const Auth = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
                         <p className="text-sm text-muted-foreground">
-                          Sem código? Sem problema! Você ainda ganha <strong>3 dias grátis</strong>.
+                          Sem código? Sem problema! Você ainda ganha <strong className="text-foreground">3 dias grátis</strong>.
                         </p>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="mt-2 text-accent"
+                          className="mt-2 text-accent hover:text-accent hover:bg-accent/10"
                           onClick={() => setHasInviteCode(true)}
                         >
                           Na verdade, tenho um código!
@@ -765,8 +810,15 @@ const Auth = () => {
                     )}
                   </div>
 
-                  <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
-                    {isLoading ? "Criando..." : "Criar Conta"}
+                  <Button type="submit" className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Criando sua conta...
+                      </>
+                    ) : (
+                      "Criar Conta"
+                    )}
                   </Button>
 
                   <p className="text-sm text-center text-muted-foreground">
@@ -779,7 +831,7 @@ const Auth = () => {
                   {/* Manual de Como Criar Conta */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full mt-2" type="button">
+                      <Button variant="outline" className="w-full h-11 border-border/50 hover:bg-muted/50" type="button">
                         <HelpCircle className="mr-2 h-4 w-4" />
                         Manual: Como Criar Minha Conta
                       </Button>
