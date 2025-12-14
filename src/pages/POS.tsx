@@ -1127,16 +1127,17 @@ const POS = () => {
     const encodedBody = encodeURIComponent(body);
     const mailtoLink = `mailto:${emailToSend}?subject=${subject}&body=${encodedBody}`;
     
-    window.location.href = mailtoLink;
-    
     setShowEmailDialog(false);
     setEmailToSend("");
     toast({ title: "E-mail registrado! Redirecionando para Caixa de Correios..." });
     
-    // Redirecionar para a página de Caixa de Correios após abrir o cliente de e-mail
+    // Primeiro redirecionar para a página de Caixa de Correios
+    navigate("/caixa-correios");
+    
+    // Depois abrir o cliente de e-mail em uma nova aba/janela
     setTimeout(() => {
-      navigate("/caixa-correios");
-    }, 1500);
+      window.open(mailtoLink, '_blank');
+    }, 500);
   };
 
   const printThermalReceipt = () => {
