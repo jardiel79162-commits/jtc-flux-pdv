@@ -14,14 +14,11 @@ import {
   Menu,
   X,
   History,
-  UserCog,
   Truck,
   Inbox,
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
-import { useUserPermissions } from "@/hooks/useUserPermissions";
-import { SubscriptionBlocker } from "@/components/SubscriptionBlocker";
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -29,13 +26,13 @@ const DashboardLayout = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hasEmployees, setHasEmployees] = useState(false);
-  const { permissions, loading, canAccessRoute, subscriptionActive } = useUserPermissions();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
       
       if (!session) {
         navigate("/auth");
@@ -45,6 +42,7 @@ const DashboardLayout = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
       
       if (!session) {
         navigate("/auth");
@@ -54,63 +52,23 @@ const DashboardLayout = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const fetchStoreSettings = async () => {
-    if (!user) return;
-
-    const { data: settings } = await supabase
-      .from("store_settings")
-      .select("has_employees")
-      .eq("user_id", user.id)
-      .single();
-    
-    if (settings) {
-      setHasEmployees(settings.has_employees || false);
-    }
-  };
-
-  useEffect(() => {
-    if (!loading && user) {
-      fetchStoreSettings();
-    }
-  }, [loading, user]);
-
-  // Escutar evento de atualização das configurações
-  useEffect(() => {
-    const handleSettingsUpdate = () => {
-      fetchStoreSettings();
-    };
-
-    window.addEventListener('store-settings-updated', handleSettingsUpdate);
-    return () => {
-      window.removeEventListener('store-settings-updated', handleSettingsUpdate);
-    };
-  }, [user]);
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
-  const allMenuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: true },
-    { icon: Package, label: "Produtos", path: "/produtos", permission: canAccessRoute("/produtos") },
-    { icon: ShoppingCart, label: "Venda", path: "/pdv", permission: canAccessRoute("/pdv") },
-    { icon: Users, label: "Clientes", path: "/clientes", permission: canAccessRoute("/clientes") },
-    { icon: Truck, label: "Fornecedores", path: "/fornecedores", permission: canAccessRoute("/fornecedores") },
-    { icon: History, label: "Histórico", path: "/historico", permission: canAccessRoute("/historico") },
-    { icon: Inbox, label: "Caixa de Correios", path: "/caixa-correios", permission: canAccessRoute("/caixa-correios") },
-    { icon: BarChart3, label: "Relatórios", path: "/relatorios", permission: canAccessRoute("/relatorios") },
-    { icon: UserCog, label: "Caixas", path: "/funcionarios", permission: permissions.isAdmin && hasEmployees },
-    { icon: Settings, label: "Configurações", path: "/configuracoes", permission: canAccessRoute("/configuracoes") },
-    { icon: CreditCard, label: "Assinatura", path: "/assinatura", permission: canAccessRoute("/assinatura") },
+  const menuItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: Package, label: "Produtos", path: "/produtos" },
+    { icon: ShoppingCart, label: "Venda", path: "/pdv" },
+    { icon: Users, label: "Clientes", path: "/clientes" },
+    { icon: Truck, label: "Fornecedores", path: "/fornecedores" },
+    { icon: History, label: "Histórico", path: "/historico" },
+    { icon: Inbox, label: "Caixa de Correios", path: "/caixa-correios" },
+    { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+    { icon: Settings, label: "Configurações", path: "/configuracoes" },
+    { icon: CreditCard, label: "Assinatura", path: "/assinatura" },
   ];
-
-  const menuItems = allMenuItems.filter(item => item.permission);
-
-  // Mostrar bloqueador se for funcionário e assinatura inativa
-  if (permissions.isEmployee && !subscriptionActive) {
-    return <SubscriptionBlocker isEmployee={true} />;
-  }
 
   if (loading || !user || !session) {
     return (
