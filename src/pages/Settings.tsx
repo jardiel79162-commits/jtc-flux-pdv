@@ -915,10 +915,25 @@ const Settings = () => {
                         <ul className="list-disc list-inside space-y-1 ml-2">
                           <li><strong>Cartão de Crédito:</strong> Cliente paga na maquininha de cartão</li>
                           <li><strong>Cartão de Débito:</strong> Cliente paga na maquininha de cartão</li>
-                          <li><strong>PIX:</strong> Sistema gera QR Code para o cliente pagar (precisa configurar PIX nas Configurações)</li>
+                          <li><strong>PIX Manual:</strong> Sistema gera QR Code estático para o cliente pagar (precisa configurar chave PIX nas Configurações)</li>
+                          <li><strong>PIX Automático:</strong> Sistema gera QR Code dinâmico com valor exato e confirma pagamento automaticamente (precisa configurar Access Token do Mercado Pago)</li>
                           <li><strong>Dinheiro:</strong> Cliente paga em espécie</li>
                           <li><strong>Fiado:</strong> Venda a prazo - o valor fica como dívida do cliente (precisa selecionar um cliente)</li>
                         </ul>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Como Usar o PIX Automático</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Configure o Access Token do Mercado Pago nas Configurações</li>
+                          <li>Ao selecionar PIX, escolha se deseja repassar a taxa (0.49%) ao cliente</li>
+                          <li>O QR Code é gerado automaticamente com o valor da venda</li>
+                          <li>Cliente escaneia e paga no app do banco</li>
+                          <li>Sistema confirma o pagamento em até 15 segundos (com som de notificação)</li>
+                          <li>Venda é finalizada automaticamente após confirmação</li>
+                        </ol>
+                        <div className="bg-accent/10 p-2 rounded text-xs border border-accent/20 mt-2">
+                          💡 <strong>Dica:</strong> O QR Code expira em 15 minutos. Se expirar, clique em "Gerar Novo QR Code".
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">Passo 7: Finalizar Venda</h4>
@@ -1213,27 +1228,74 @@ const Settings = () => {
                           <li>Clique em "Salvar Configurações"</li>
                         </ol>
                       </div>
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Como Configurar o PIX (Passo a Passo)</h4>
+                      
+                      <div className="space-y-2 border-t pt-4">
+                        <h4 className="font-semibold text-foreground">Configurar PIX - Modo Manual</h4>
+                        <p>O modo manual exibe sua chave PIX para o cliente copiar ou escanear:</p>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
-                          <li>Acesse "Configurações" no menu</li>
-                          <li>Clique em "Configuração PIX" para expandir</li>
-                          <li>Em <strong>Tipo de Chave PIX</strong>, selecione uma opção:
+                          <li>Acesse "Configurações" → "Configuração PIX"</li>
+                          <li>Selecione <strong>"PIX Manual"</strong></li>
+                          <li>Em <strong>Tipo de Chave PIX</strong>, escolha:
                             <ul className="list-disc list-inside ml-4 mt-1">
-                              <li><strong>CPF:</strong> Use seu CPF (ex: 123.456.789-00)</li>
-                              <li><strong>CNPJ:</strong> Use o CNPJ da empresa (ex: 12.345.678/0001-00)</li>
-                              <li><strong>E-mail:</strong> Use um e-mail (ex: loja@email.com)</li>
-                              <li><strong>Telefone:</strong> Use seu número (ex: +5598981091476)</li>
-                              <li><strong>Chave Aleatória:</strong> Use a chave gerada pelo banco (32 caracteres)</li>
+                              <li><strong>CPF:</strong> ex: 123.456.789-00</li>
+                              <li><strong>CNPJ:</strong> ex: 12.345.678/0001-00</li>
+                              <li><strong>E-mail:</strong> ex: loja@email.com</li>
+                              <li><strong>Telefone:</strong> ex: +5598981091476</li>
+                              <li><strong>Chave Aleatória:</strong> 32 caracteres do banco</li>
                             </ul>
                           </li>
-                          <li>Digite sua <strong>Chave PIX</strong> no campo</li>
-                          <li>Digite o <strong>Nome do Recebedor</strong> (nome que aparece quando alguém paga)</li>
+                          <li>Digite sua <strong>Chave PIX</strong></li>
+                          <li>Digite o <strong>Nome do Recebedor</strong></li>
                           <li>Clique em "Salvar Configurações"</li>
                         </ol>
-                        <p className="mt-2 text-xs"><strong>Pronto!</strong> Agora quando você fizer uma venda com PIX, o sistema gera o QR Code automaticamente para o cliente pagar.</p>
                       </div>
-                      <div className="space-y-2">
+
+                      <div className="space-y-2 border-t pt-4">
+                        <h4 className="font-semibold text-foreground text-accent">🚀 Configurar PIX Automático (Mercado Pago)</h4>
+                        <p>O modo automático gera QR Codes dinâmicos e confirma pagamentos automaticamente:</p>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Acesse "Configurações" → "Configuração PIX"</li>
+                          <li>Selecione <strong>"PIX Automático"</strong></li>
+                          <li>Obtenha seu <strong>Access Token</strong> no Mercado Pago:
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li>Acesse <strong>mercadopago.com.br/developers</strong></li>
+                              <li>Faça login na sua conta</li>
+                              <li>Vá em "Suas integrações" → "Criar aplicação"</li>
+                              <li>Escolha "Pagamentos online" → "Checkout Pro"</li>
+                              <li>Copie o <strong>Access Token de Produção</strong> (começa com APP_USR-)</li>
+                            </ul>
+                          </li>
+                          <li>Cole o Access Token no campo indicado</li>
+                          <li>Clique em "Salvar Configurações"</li>
+                        </ol>
+                        <div className="bg-accent/10 p-2 rounded text-xs border border-accent/20 mt-2">
+                          <strong>✅ Vantagens do PIX Automático:</strong>
+                          <ul className="list-disc list-inside ml-2 mt-1">
+                            <li>QR Code gerado com valor exato da venda</li>
+                            <li>Confirmação automática do pagamento</li>
+                            <li>Venda finalizada automaticamente após aprovação</li>
+                            <li>Som de notificação quando pagamento é confirmado</li>
+                            <li>Opção de repassar taxa ao cliente (0.49%)</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 border-t pt-4">
+                        <h4 className="font-semibold text-foreground">Como Funciona o PIX Automático na Venda</h4>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Selecione "PIX" como forma de pagamento</li>
+                          <li>O sistema pergunta se deseja repassar a taxa (0.49%) ao cliente</li>
+                          <li>QR Code é gerado automaticamente com o valor</li>
+                          <li>Cliente escaneia e paga no app do banco</li>
+                          <li>Sistema confirma pagamento automaticamente (em até 15 segundos)</li>
+                          <li>Venda é finalizada e recibo fica disponível</li>
+                        </ol>
+                        <div className="bg-yellow-500/10 p-2 rounded text-xs border border-yellow-500/20 mt-2">
+                          ⚠️ <strong>Importante:</strong> O QR Code expira em 15 minutos. Se expirar, você pode regenerar clicando no botão.
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 border-t pt-4">
                         <h4 className="font-semibold text-foreground">Ativar Ações Rápidas</h4>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
                           <li>Clique em "Ações Rápidas" para expandir</li>
@@ -1355,18 +1417,24 @@ const Settings = () => {
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">Como Assinar (Passo a Passo)</h4>
+                        <h4 className="font-semibold text-foreground">Como Assinar via PIX Automático</h4>
                         <ol className="list-decimal list-inside space-y-1 ml-2">
                           <li>Acesse "Assinatura" no menu</li>
                           <li>Escolha o plano que deseja (3 meses ou 1 ano)</li>
-                          <li>Clique em "Comprar"</li>
-                          <li>Você será redirecionado para o WhatsApp</li>
-                          <li>Envie a mensagem e siga as instruções de pagamento</li>
-                          <li>Após pagar, volte ao sistema</li>
-                          <li>Clique em "Já Paguei"</li>
-                          <li>Digite o <strong>código de 6 dígitos</strong> que você recebeu</li>
-                          <li>Clique em "Validar" - seu plano será ativado na hora!</li>
+                          <li>Clique em "Comprar com PIX"</li>
+                          <li>Um <strong>QR Code PIX</strong> será gerado automaticamente</li>
+                          <li>Escaneie o QR Code no app do seu banco</li>
+                          <li>Faça o pagamento</li>
+                          <li>O sistema <strong>confirma automaticamente</strong> em até 15 segundos</li>
+                          <li>Seu plano será ativado na hora com animação de confete! 🎉</li>
                         </ol>
+                        <div className="bg-accent/10 p-2 rounded text-xs border border-accent/20 mt-2">
+                          💡 <strong>Dica:</strong> Você também pode copiar o código "Copia e Cola" se preferir pagar sem escanear o QR Code.
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-foreground">Tempo de Expiração</h4>
+                        <p>O QR Code da assinatura expira em <strong>15 minutos</strong>. Se expirar antes de você pagar, basta gerar um novo clicando no botão.</p>
                       </div>
                       <div className="space-y-2">
                         <h4 className="font-semibold text-foreground">O que Acontece Quando Expira?</h4>
