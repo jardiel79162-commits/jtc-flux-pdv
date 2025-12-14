@@ -17,6 +17,7 @@ import paymentCash from "@/assets/payment-cash.png";
 import paymentFiado from "@/assets/payment-fiado.png";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
@@ -121,6 +122,9 @@ const POS = () => {
   const [pixFinalAmount, setPixFinalAmount] = useState(0);
   const [pixFeeAmount, setPixFeeAmount] = useState(0);
   const [pixYouReceive, setPixYouReceive] = useState(0);
+  
+  // Estado para alerta de voltar após PIX aprovado
+  const [showBackWarningDialog, setShowBackWarningDialog] = useState(false);
   
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
@@ -2197,7 +2201,14 @@ ${paymentInfo}
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => setCurrentStep("cart")}
+              onClick={() => {
+                // Se PIX automático foi aprovado, mostrar alerta de confirmação
+                if (pixPaymentStatus === 'approved' && pixSettings?.pix_mode === 'automatic') {
+                  setShowBackWarningDialog(true);
+                  return;
+                }
+                setCurrentStep("cart");
+              }}
             >
               Voltar
             </Button>
@@ -2217,6 +2228,41 @@ ${paymentInfo}
               {isProcessingSale ? "Processando..." : "Finalizar Venda"}
             </Button>
           </div>
+
+          {/* AlertDialog de aviso ao voltar após PIX aprovado */}
+          <AlertDialog open={showBackWarningDialog} onOpenChange={setShowBackWarningDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Pagamento já realizado</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O pagamento PIX já foi confirmado. Se você voltar, precisará realizar um novo pagamento para concluir a venda.
+                  <br /><br />
+                  Deseja realmente voltar?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    // Limpar estados do PIX
+                    setPixPaymentStatus("waiting");
+                    setPixQrCodeImage(null);
+                    setPixCopyPaste(null);
+                    setPixPaymentId(null);
+                    setPixPaymentAmount(0);
+                    setPixTimeRemaining(300);
+                    setPixManualConfirmed(false);
+                    cleanupPixTimers();
+                    // Voltar para o carrinho
+                    setCurrentStep("cart");
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Sim, voltar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 
