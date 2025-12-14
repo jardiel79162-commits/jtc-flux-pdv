@@ -1954,6 +1954,14 @@ ${paymentInfo}
 
           {/* Dialog do QR Code PIX */}
           <Dialog open={showPixQrCode} onOpenChange={(open) => {
+            // Se tentar fechar após pagamento aprovado, mostrar confirmação
+            if (!open && pixPaymentStatus === 'approved') {
+              // Permitir fechar normalmente após aprovação
+              cleanupPixTimers();
+              setShowPixQrCode(false);
+              return;
+            }
+            // Se tentar fechar durante aguardando, permitir (cancelar)
             if (!open) cleanupPixTimers();
             setShowPixQrCode(open);
           }}>
@@ -2090,6 +2098,15 @@ ${paymentInfo}
                     </p>
                     <p className="text-sm text-muted-foreground">O pagamento foi recebido com sucesso</p>
                   </div>
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      setShowPixQrCode(false);
+                    }}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Continuar
+                  </Button>
                 </div>
               )}
 
