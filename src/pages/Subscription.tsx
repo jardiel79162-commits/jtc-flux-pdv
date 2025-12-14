@@ -6,7 +6,7 @@ import { Check, Calendar, CreditCard, Copy, Loader2, CheckCircle2 } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-
+import confetti from "canvas-confetti";
 const Subscription = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -132,13 +132,40 @@ const Subscription = () => {
         if (checkIntervalRef.current) {
           clearInterval(checkIntervalRef.current);
         }
+        
+        // Animação de confete celebrando a ativação
+        const duration = 3000;
+        const end = Date.now() + duration;
+        
+        const frame = () => {
+          confetti({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.8 },
+            colors: ['#4C6FFF', '#00E0A4', '#FFD700']
+          });
+          confetti({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1, y: 0.8 },
+            colors: ['#4C6FFF', '#00E0A4', '#FFD700']
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+        
         toast({
-          title: "Pagamento confirmado!",
+          title: "🎉 Pagamento confirmado!",
           description: "Sua assinatura foi ativada com sucesso!",
         });
         setTimeout(() => {
           navigate('/dashboard');
-        }, 2000);
+        }, 3000);
       }
     } catch (error) {
       console.error('Error checking status:', error);
