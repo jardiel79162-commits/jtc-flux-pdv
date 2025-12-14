@@ -109,27 +109,33 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
           {/* Resultados */}
           {numericAmount > 0 && passToCustomer !== null && (
             <div className="space-y-4 p-4 bg-white dark:bg-card rounded-xl border">
-              {/* Taxa */}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-foreground font-medium">Taxa cobrada (0,49%):</span>
-                <span className="font-semibold text-destructive">- {formatCurrency(fee)}</span>
-              </div>
-              
-              <div className="h-px bg-border" />
+              {/* Detalhamento */}
+              {passToCustomer && (
+                <div className="text-sm text-foreground bg-amber-50 dark:bg-amber-900/20 p-2 rounded border border-amber-200 dark:border-amber-800">
+                  <p>Valor original: R$ {numericAmount.toFixed(2)}</p>
+                  <p>+ Taxa (0,49%): R$ {fee.toFixed(4)}</p>
+                </div>
+              )}
+              {!passToCustomer && (
+                <div className="text-sm text-foreground bg-blue-50 dark:bg-blue-900/20 p-2 rounded border border-blue-200 dark:border-blue-800">
+                  <p>Valor original: R$ {numericAmount.toFixed(2)}</p>
+                  <p>- Taxa (0,49%): R$ {fee.toFixed(4)}</p>
+                </div>
+              )}
               
               {/* Resultados principais */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-foreground font-medium">Cliente paga:</span>
                   <span className={`font-bold text-lg ${passToCustomer ? "text-amber-600" : "text-foreground"}`}>
-                    {formatCurrency(customerPays)}
+                    R$ {customerPays.toFixed(2)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
                   <span className="text-foreground font-medium">Você recebe:</span>
                   <span className="font-bold text-xl text-green-600">
-                    {formatCurrency(youReceive)}
+                    R$ {youReceive.toFixed(2)}
                   </span>
                 </div>
               </div>

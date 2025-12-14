@@ -2599,17 +2599,31 @@ ${paymentInfo}
             {/* Resultados */}
             {pixPassFeeToCustomer !== null && (
               <div className="space-y-3 p-4 bg-white dark:bg-card rounded-xl border">
+                {/* Detalhamento */}
+                {pixPassFeeToCustomer && (
+                  <div className="text-sm text-foreground bg-amber-50 dark:bg-amber-900/20 p-2 rounded border border-amber-200 dark:border-amber-800">
+                    <p>Valor original: R$ {pixOriginalAmount.toFixed(2)}</p>
+                    <p>+ Taxa (0,49%): R$ {pixFeeAmount.toFixed(4)}</p>
+                  </div>
+                )}
+                {!pixPassFeeToCustomer && (
+                  <div className="text-sm text-foreground bg-blue-50 dark:bg-blue-900/20 p-2 rounded border border-blue-200 dark:border-blue-800">
+                    <p>Valor original: R$ {pixOriginalAmount.toFixed(2)}</p>
+                    <p>- Taxa (0,49%): R$ {pixFeeAmount.toFixed(4)}</p>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center">
                   <span className="text-foreground font-medium">Cliente paga:</span>
                   <span className={`font-bold text-lg ${pixPassFeeToCustomer ? "text-amber-600" : "text-foreground"}`}>
-                    {pixFinalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    R$ {pixFinalAmount.toFixed(2)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
                   <span className="text-foreground font-medium">Você recebe:</span>
                   <span className="font-bold text-xl text-green-600">
-                    {pixYouReceive.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    R$ {pixYouReceive.toFixed(2)}
                   </span>
                 </div>
               </div>
