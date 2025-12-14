@@ -1775,7 +1775,9 @@ ${paymentInfo}
                           ? "bg-accent hover:bg-accent-hover border-2 border-accent"
                           : ""
                       }`}
+                      disabled={pixPaymentStatus === 'approved'}
                       onClick={() => {
+                        if (pixPaymentStatus === 'approved') return;
                         if (method.value === "pix") {
                           handlePixPayment();
                         } else {
