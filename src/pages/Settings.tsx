@@ -30,7 +30,14 @@ const Settings = () => {
     pix_key_type: "",
     pix_key: "",
     pix_receiver_name: "",
+    pix_mode: "manual" as "manual" | "automatic",
+    mercado_pago_cpf: "",
+    mercado_pago_name: "",
   });
+
+  const [mercadoPagoToken, setMercadoPagoToken] = useState("");
+  const [showTokenHelp, setShowTokenHelp] = useState(false);
+  const [savingToken, setSavingToken] = useState(false);
 
   const [customCategory, setCustomCategory] = useState("");
   
@@ -179,7 +186,22 @@ const Settings = () => {
         pix_key_type: data.pix_key_type || "",
         pix_key: data.pix_key || "",
         pix_receiver_name: data.pix_receiver_name || "",
+        pix_mode: (data.pix_mode === "automatic" ? "automatic" : "manual") as "manual" | "automatic",
+        mercado_pago_cpf: data.mercado_pago_cpf || "",
+        mercado_pago_name: data.mercado_pago_name || "",
       });
+
+      // Buscar token do Mercado Pago se houver
+      const { data: integrationData } = await supabase
+        .from("store_integrations")
+        .select("encrypted_token")
+        .eq("user_id", user.id)
+        .eq("integration_type", "mercado_pago")
+        .maybeSingle();
+      
+      if (integrationData?.encrypted_token) {
+        setMercadoPagoToken("••••••••••••••••••••");
+      }
       
       // Se a categoria não está na lista padrão, é uma categoria personalizada
       const predefinedCategories = ["mercado", "padaria", "mercearia", "bazar", "papelaria", "restaurante", "lanchonete", "farmacia", "pet_shop"];
@@ -193,7 +215,10 @@ const Settings = () => {
   const handleSave = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     // Se a categoria for "outros", usar a categoria personalizada
     const finalSettings = {
@@ -219,6 +244,33 @@ const Settings = () => {
         .from("store_settings")
         .insert([{ ...finalSettings, user_id: user.id }]);
       error = result.error;
+    }
+
+    // Salvar token do Mercado Pago se foi alterado
+    if (settings.pix_mode === "automatic" && mercadoPagoToken && !mercadoPagoToken.includes("•")) {
+      const { data: existingIntegration } = await supabase
+        .from("store_integrations")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("integration_type", "mercado_pago")
+        .maybeSingle();
+
+      if (existingIntegration) {
+        await supabase
+          .from("store_integrations")
+          .update({ encrypted_token: mercadoPagoToken })
+          .eq("id", existingIntegration.id);
+      } else {
+        await supabase
+          .from("store_integrations")
+          .insert({
+            user_id: user.id,
+            integration_type: "mercado_pago",
+            encrypted_token: mercadoPagoToken,
+          });
+      }
+      // Mostrar máscara após salvar
+      setMercadoPagoToken("••••••••••••••••••••");
     }
 
     setLoading(false);
@@ -396,55 +448,206 @@ const Settings = () => {
               </CollapsibleTrigger>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className="space-y-4 overflow-hidden">
+              <CardContent className="space-y-6 overflow-hidden">
                 <p className="text-sm text-muted-foreground">
-                  Configure sua chave PIX para receber pagamentos. A loja só poderá aceitar pagamentos via PIX se uma chave estiver cadastrada.
+                  Escolha a forma de pagamento PIX para sua loja:
                 </p>
 
-                <div className="space-y-2">
-                  <Label>Tipo de Chave PIX</Label>
-                  <Select
-                    value={settings.pix_key_type}
-                    onValueChange={(value) => setSettings({ ...settings, pix_key_type: value, pix_key: "" })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo de chave" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cpf">CPF</SelectItem>
-                      <SelectItem value="cnpj">CNPJ</SelectItem>
-                      <SelectItem value="email">E-mail</SelectItem>
-                      <SelectItem value="phone">Telefone</SelectItem>
-                      <SelectItem value="random">Chave Aleatória</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Seleção de Modo PIX */}
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Modo de Pagamento</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, pix_mode: "manual" })}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        settings.pix_mode === "manual"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          settings.pix_mode === "manual" ? "border-primary bg-primary" : "border-muted-foreground"
+                        }`}>
+                          {settings.pix_mode === "manual" && (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium">PIX Manual</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        QR Code estático com sua chave PIX
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, pix_mode: "automatic" })}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        settings.pix_mode === "automatic"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          settings.pix_mode === "automatic" ? "border-primary bg-primary" : "border-muted-foreground"
+                        }`}>
+                          {settings.pix_mode === "automatic" && (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium">PIX Automático</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        Via Mercado Pago (confirma automaticamente)
+                      </p>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Chave PIX</Label>
-                  <Input
-                    value={settings.pix_key}
-                    onChange={(e) => setSettings({ ...settings, pix_key: e.target.value })}
-                    placeholder={getPixKeyPlaceholder()}
-                    disabled={!settings.pix_key_type}
-                  />
-                </div>
+                {/* PIX Manual */}
+                {settings.pix_mode === "manual" && (
+                  <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                    <h4 className="font-medium">Configuração PIX Manual</h4>
+                    
+                    <div className="space-y-2">
+                      <Label>Tipo de Chave PIX</Label>
+                      <Select
+                        value={settings.pix_key_type}
+                        onValueChange={(value) => setSettings({ ...settings, pix_key_type: value, pix_key: "" })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo de chave" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cpf">CPF</SelectItem>
+                          <SelectItem value="cnpj">CNPJ</SelectItem>
+                          <SelectItem value="email">E-mail</SelectItem>
+                          <SelectItem value="phone">Telefone</SelectItem>
+                          <SelectItem value="random">Chave Aleatória</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Nome do Recebedor</Label>
-                  <Input
-                    value={settings.pix_receiver_name}
-                    onChange={(e) => setSettings({ ...settings, pix_receiver_name: e.target.value })}
-                    placeholder="Nome que aparecerá no PIX"
-                    disabled={!settings.pix_key_type}
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label>Chave PIX</Label>
+                      <Input
+                        value={settings.pix_key}
+                        onChange={(e) => setSettings({ ...settings, pix_key: e.target.value })}
+                        placeholder={getPixKeyPlaceholder()}
+                        disabled={!settings.pix_key_type}
+                      />
+                    </div>
 
-                {settings.pix_key && settings.pix_receiver_name && (
-                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <p className="text-sm text-green-600 font-medium">
-                      ✓ PIX configurado! A loja pode receber pagamentos via PIX.
-                    </p>
+                    <div className="space-y-2">
+                      <Label>Nome do Recebedor</Label>
+                      <Input
+                        value={settings.pix_receiver_name}
+                        onChange={(e) => setSettings({ ...settings, pix_receiver_name: e.target.value })}
+                        placeholder="Nome que aparecerá no PIX"
+                        disabled={!settings.pix_key_type}
+                      />
+                    </div>
+
+                    {settings.pix_key && settings.pix_receiver_name && (
+                      <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <p className="text-sm text-green-600 font-medium">
+                          ✓ PIX Manual configurado!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* PIX Automático (Mercado Pago) */}
+                {settings.pix_mode === "automatic" && (
+                  <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                    <h4 className="font-medium">Configuração PIX Automático (Mercado Pago)</h4>
+                    
+                    <div className="space-y-2">
+                      <Label>Access Token (Token Key)</Label>
+                      <Input
+                        type="password"
+                        value={mercadoPagoToken}
+                        onChange={(e) => setMercadoPagoToken(e.target.value)}
+                        placeholder="APP_USR-xxxxx..."
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        O token será armazenado de forma segura e nunca será exposto.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>CPF do Titular da Conta</Label>
+                      <Input
+                        value={settings.mercado_pago_cpf}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, '');
+                          if (value.length > 11) value = value.slice(0, 11);
+                          if (value.length > 9) {
+                            value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+                          } else if (value.length > 6) {
+                            value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+                          } else if (value.length > 3) {
+                            value = value.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+                          }
+                          setSettings({ ...settings, mercado_pago_cpf: value });
+                        }}
+                        placeholder="000.000.000-00"
+                        maxLength={14}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Nome do Titular da Conta</Label>
+                      <Input
+                        value={settings.mercado_pago_name}
+                        onChange={(e) => setSettings({ ...settings, mercado_pago_name: e.target.value })}
+                        placeholder="Nome completo do titular"
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowTokenHelp(!showTokenHelp)}
+                      >
+                        {showTokenHelp ? "Fechar" : "Como conseguir meu Token Key?"}
+                      </Button>
+                    </div>
+
+                    {showTokenHelp && (
+                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-2">
+                        <h5 className="font-medium text-blue-700">Como obter o Access Token:</h5>
+                        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                          <li>Acesse <a href="https://www.mercadopago.com.br/developers" target="_blank" rel="noopener noreferrer" className="text-primary underline">mercadopago.com.br/developers</a></li>
+                          <li>Faça login com sua conta Mercado Pago</li>
+                          <li>Vá em "Suas integrações" → "Criar aplicação"</li>
+                          <li>Após criar, clique na aplicação</li>
+                          <li>Em "Credenciais de produção", copie o "Access Token"</li>
+                          <li>Cole o token no campo acima</li>
+                        </ol>
+                        <p className="text-xs text-amber-600 mt-2">
+                          ⚠️ Use as credenciais de PRODUÇÃO, não de teste.
+                        </p>
+                      </div>
+                    )}
+
+                    {mercadoPagoToken && settings.mercado_pago_cpf && settings.mercado_pago_name && (
+                      <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <p className="text-sm text-green-600 font-medium">
+                          ✓ PIX Automático configurado! Pagamentos serão confirmados automaticamente.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
