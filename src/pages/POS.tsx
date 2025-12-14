@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,7 @@ interface PixSettings {
 }
 
 const POS = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -1128,7 +1130,13 @@ const POS = () => {
     window.location.href = mailtoLink;
     
     setShowEmailDialog(false);
-    toast({ title: "E-mail registrado e redirecionando..." });
+    setEmailToSend("");
+    toast({ title: "E-mail registrado! Redirecionando para Caixa de Correios..." });
+    
+    // Redirecionar para a página de Caixa de Correios após abrir o cliente de e-mail
+    setTimeout(() => {
+      navigate("/caixa-correios");
+    }, 1500);
   };
 
   const printThermalReceipt = () => {
