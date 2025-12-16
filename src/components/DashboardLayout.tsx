@@ -146,8 +146,8 @@ const DashboardLayout = () => {
         </div>
       </main>
 
-      {/* Auri Chat Bot */}
-      <AuriChat />
+      {/* Auri Chat Bot - esconde na página /auri */}
+      {location.pathname !== "/auri" && <AuriChat />}
     </div>
   );
 };
