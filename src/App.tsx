@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import SalesHistory from "./pages/SalesHistory";
 import Suppliers from "./pages/Suppliers";
+import WeeklyRedemption from "./pages/WeeklyRedemption";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/relatorios" element={<Reports />} />
             <Route path="/configuracoes" element={<Settings />} />
             <Route path="/fornecedores" element={<Suppliers />} />
+            <Route path="/resgate-semanal" element={<WeeklyRedemption />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

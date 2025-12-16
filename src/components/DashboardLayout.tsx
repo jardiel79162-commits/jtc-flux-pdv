@@ -15,6 +15,7 @@ import {
   X,
   History,
   Truck,
+  Gift,
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
@@ -66,6 +67,7 @@ const DashboardLayout = () => {
     { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
     { icon: Settings, label: "Configurações", path: "/configuracoes" },
     { icon: CreditCard, label: "Assinatura", path: "/assinatura" },
+    { icon: Gift, label: "Resgate Semanal", path: "/resgate-semanal" },
   ];
 
   if (loading || !user || !session) {

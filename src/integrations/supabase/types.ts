@@ -859,12 +859,56 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_redemption_codes: {
+        Row: {
+          benefit_type: string | null
+          code: string
+          created_at: string
+          days_added: number | null
+          id: string
+          is_used: boolean
+          used_at: string | null
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          benefit_type?: string | null
+          code: string
+          created_at?: string
+          days_added?: number | null
+          id?: string
+          is_used?: boolean
+          used_at?: string | null
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          benefit_type?: string | null
+          code?: string
+          created_at?: string
+          days_added?: number | null
+          id?: string
+          is_used?: boolean
+          used_at?: string | null
+          user_id?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      create_weekly_code_for_user: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       generate_invite_code: { Args: never; Returns: string }
+      generate_weekly_redemption_code: { Args: never; Returns: string }
       get_admin_store_settings: {
         Args: { admin_user_id: string }
         Returns: {
@@ -892,6 +936,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      redeem_weekly_code: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: Json
       }
       validate_invite_code: {
         Args: { code: string }
