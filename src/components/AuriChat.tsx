@@ -1,66 +1,50 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
+import { 
+  MessageCircle, X, Send, Loader2, Sparkles, Menu, Plus, Trash2, 
+  Maximize2, Minimize2, MessageSquare 
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
+  id?: string;
   role: "user" | "assistant";
   content: string;
 }
 
-interface CustomerData {
-  name: string;
-  cpf: string;
-  balance: number;
-  phone?: string;
-}
-
-interface SaleHistoryItem {
+interface Conversation {
   id: string;
-  date: string;
-  total: number;
-  payment_method: string;
-  customer_name?: string;
-  items: Array<{ product_name: string; quantity: number; unit_price: number }>;
-}
-
-interface ProductData {
-  name: string;
-  price: number;
-  stock: number;
-  category?: string;
-}
-
-interface SupplierData {
-  name: string;
-  cnpj?: string;
-  phone?: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuriContext {
   storeName?: string;
-  // Clientes
-  customersOwing: CustomerData[];
-  customersWithCredit: CustomerData[];
+  customersOwing: Array<{ name: string; cpf: string; balance: number; phone?: string }>;
+  customersWithCredit: Array<{ name: string; cpf: string; balance: number }>;
   totalCustomers: number;
-  // Vendas
   salesToday: number;
   salesCountToday: number;
   salesMonth: number;
   salesCountMonth: number;
-  salesHistory: SaleHistoryItem[];
-  firstSaleEver?: SaleHistoryItem;
-  // Produtos
+  salesHistory: Array<{
+    id: string;
+    date: string;
+    total: number;
+    payment_method: string;
+    customer_name?: string;
+    items: Array<{ product_name: string; quantity: number; unit_price: number }>;
+  }>;
+  firstSaleEver?: any;
   totalProducts: number;
-  lowStockProducts: ProductData[];
+  lowStockProducts: Array<{ name: string; price: number; stock: number; category?: string }>;
   topProducts: Array<{ name: string; quantity: number }>;
-  // Fornecedores
   totalSuppliers: number;
-  suppliers: SupplierData[];
-  // Assinatura
+  suppliers: Array<{ name: string; cnpj?: string; phone?: string }>;
   subscriptionStatus?: string;
   subscriptionDaysLeft?: number;
 }
@@ -69,6 +53,10 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auri-chat`;
 
 export const AuriChat = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -76,15 +64,132 @@ export const AuriChat = () => {
   const [contextLoading, setContextLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  // Carregar contexto COMPLETO do sistema
+  // Carregar conversas
+  const loadConversations = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("auri_conversations")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar conversas:", error);
+    }
+  }, []);
+
+  // Carregar mensagens de uma conversa
+  const loadMessages = useCallback(async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("auri_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setMessages(data?.map(m => ({ id: m.id, role: m.role as "user" | "assistant", content: m.content })) || []);
+    } catch (error) {
+      console.error("Erro ao carregar mensagens:", error);
+    }
+  }, []);
+
+  // Criar nova conversa
+  const createConversation = useCallback(async (firstMessage: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const title = firstMessage.length > 40 ? firstMessage.substring(0, 40) + "..." : firstMessage;
+
+      const { data, error } = await supabase
+        .from("auri_conversations")
+        .insert({ user_id: user.id, title })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setConversations(prev => [data, ...prev]);
+      setCurrentConversationId(data.id);
+      return data.id;
+    } catch (error) {
+      console.error("Erro ao criar conversa:", error);
+      return null;
+    }
+  }, []);
+
+  // Salvar mensagem
+  const saveMessage = useCallback(async (conversationId: string, role: "user" | "assistant", content: string) => {
+    try {
+      const { error } = await supabase
+        .from("auri_messages")
+        .insert({ conversation_id: conversationId, role, content });
+
+      if (error) throw error;
+
+      // Atualizar updated_at da conversa
+      await supabase
+        .from("auri_conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+    } catch (error) {
+      console.error("Erro ao salvar mensagem:", error);
+    }
+  }, []);
+
+  // Deletar conversa
+  const deleteConversation = useCallback(async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("auri_conversations")
+        .delete()
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+
+      toast({ title: "Conversa excluída" });
+    } catch (error) {
+      console.error("Erro ao excluir conversa:", error);
+      toast({ title: "Erro ao excluir", variant: "destructive" });
+    }
+  }, [currentConversationId, toast]);
+
+  // Selecionar conversa
+  const selectConversation = useCallback((conversation: Conversation) => {
+    setCurrentConversationId(conversation.id);
+    loadMessages(conversation.id);
+    setShowSidebar(false);
+  }, [loadMessages]);
+
+  // Nova conversa
+  const startNewConversation = useCallback(() => {
+    setCurrentConversationId(null);
+    setMessages([]);
+    setShowSidebar(false);
+  }, []);
+
+  // Carregar contexto completo do sistema
   const loadContext = useCallback(async () => {
     setContextLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Buscar TODOS os dados em paralelo
       const [
         customersResult,
         salesResult,
@@ -111,16 +216,14 @@ export const AuriChat = () => {
       const profile = profileResult.data;
       const store = storeResult.data;
 
-      // Processar clientes
       const customersOwing = customers
         .filter(c => c.current_balance < 0)
         .map(c => ({ name: c.name, cpf: c.cpf, balance: c.current_balance, phone: c.phone }));
       
       const customersWithCredit = customers
         .filter(c => c.current_balance > 0)
-        .map(c => ({ name: c.name, cpf: c.cpf, balance: c.current_balance, phone: c.phone }));
+        .map(c => ({ name: c.name, cpf: c.cpf, balance: c.current_balance }));
 
-      // Processar vendas
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -128,8 +231,7 @@ export const AuriChat = () => {
       const salesTodayData = sales.filter(s => new Date(s.created_at) >= today);
       const salesMonthData = sales.filter(s => new Date(s.created_at) >= firstDayOfMonth);
 
-      // Mapear itens de venda para cada venda
-      const salesWithItems: SaleHistoryItem[] = sales.slice(0, 50).map(sale => {
+      const salesWithItems = sales.slice(0, 50).map(sale => {
         const items = saleItems
           .filter(item => item.sale_id === sale.id)
           .map(item => ({
@@ -137,9 +239,7 @@ export const AuriChat = () => {
             quantity: item.quantity,
             unit_price: Number(item.unit_price),
           }));
-        
         const customer = customers.find(c => c.id === sale.customer_id);
-        
         return {
           id: sale.id,
           date: sale.created_at,
@@ -150,9 +250,8 @@ export const AuriChat = () => {
         };
       });
 
-      // Primeira venda do sistema
       const firstSale = sales.length > 0 ? sales[sales.length - 1] : null;
-      let firstSaleEver: SaleHistoryItem | undefined;
+      let firstSaleEver = undefined;
       if (firstSale) {
         const firstSaleItems = saleItems
           .filter(item => item.sale_id === firstSale.id)
@@ -172,7 +271,6 @@ export const AuriChat = () => {
         };
       }
 
-      // Produtos mais vendidos
       const productSales: Record<string, number> = {};
       saleItems.forEach(item => {
         const name = item.product_name || "Produto";
@@ -183,7 +281,6 @@ export const AuriChat = () => {
         .slice(0, 10)
         .map(([name, quantity]) => ({ name, quantity }));
 
-      // Produtos com estoque baixo
       const lowStockProducts = products
         .filter(p => p.stock_quantity <= (p.min_stock_quantity ?? 5))
         .map(p => ({
@@ -193,7 +290,6 @@ export const AuriChat = () => {
           category: (p.categories as any)?.name,
         }));
 
-      // Calcular status da assinatura
       let subscriptionStatus = "expirado";
       let subscriptionDaysLeft = 0;
       const now = new Date();
@@ -235,9 +331,10 @@ export const AuriChat = () => {
   useEffect(() => {
     if (isOpen) {
       loadContext();
+      loadConversations();
       inputRef.current?.focus();
     }
-  }, [isOpen, loadContext]);
+  }, [isOpen, loadContext, loadConversations]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -252,7 +349,7 @@ export const AuriChat = () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages: userMessages, context }),
+      body: JSON.stringify({ messages: userMessages.map(m => ({ role: m.role, content: m.content })), context }),
     });
 
     if (!response.ok || !response.body) {
@@ -271,6 +368,21 @@ export const AuriChat = () => {
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
+
+    let conversationId = currentConversationId;
+    
+    // Criar nova conversa se não existir
+    if (!conversationId) {
+      conversationId = await createConversation(userMessage.content);
+      if (!conversationId) {
+        setIsLoading(false);
+        toast({ title: "Erro ao criar conversa", variant: "destructive" });
+        return;
+      }
+    }
+
+    // Salvar mensagem do usuário
+    await saveMessage(conversationId, "user", userMessage.content);
 
     let assistantContent = "";
 
@@ -318,6 +430,11 @@ export const AuriChat = () => {
           }
         }
       }
+
+      // Salvar resposta da Auri
+      if (assistantContent && conversationId) {
+        await saveMessage(conversationId, "assistant", assistantContent);
+      }
     } catch (error) {
       console.error("Erro no chat:", error);
       setMessages(prev => [
@@ -336,6 +453,27 @@ export const AuriChat = () => {
     }
   };
 
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) return "Hoje";
+    if (days === 1) return "Ontem";
+    if (days < 7) return `${days} dias atrás`;
+    return date.toLocaleDateString("pt-BR");
+  };
+
+  // Classes para modo normal e tela cheia
+  const containerClasses = isFullscreen
+    ? "fixed inset-0 z-50 flex"
+    : "fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6";
+
+  const chatClasses = isFullscreen
+    ? "relative w-full h-full flex bg-background"
+    : "relative w-full max-w-md h-[70vh] max-h-[600px] flex flex-col shadow-2xl animate-in slide-in-from-bottom-4 duration-300 rounded-lg overflow-hidden bg-background border";
+
   return (
     <>
       {/* Botão Flutuante */}
@@ -349,31 +487,126 @@ export const AuriChat = () => {
 
       {/* Chat Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setIsOpen(false)} />
+        <div className={containerClasses}>
+          {!isFullscreen && <div className="fixed inset-0 bg-black/50" onClick={() => setIsOpen(false)} />}
           
-          <Card className="relative w-full max-w-md h-[70vh] max-h-[600px] flex flex-col shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-t-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-bold">Auri Suporte</CardTitle>
-                  <p className="text-xs text-white/80">Assistente JTC FluxPDV</p>
+          <div className={chatClasses}>
+            {/* Sidebar */}
+            <div className={`${showSidebar || isFullscreen ? "flex" : "hidden"} ${isFullscreen ? "w-72" : "absolute inset-0 z-10"} flex-col bg-card border-r`}>
+              <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-violet-500 to-purple-600">
+                <h3 className="font-bold text-white">Histórico</h3>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={startNewConversation}
+                    className="text-white hover:bg-white/20 h-8 w-8"
+                    title="Nova conversa"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  {!isFullscreen && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowSidebar(false)}
+                      className="text-white hover:bg-white/20 h-8 w-8"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="text-white hover:bg-white/20"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </CardHeader>
+              
+              <ScrollArea className="flex-1">
+                <div className="p-2 space-y-1">
+                  {conversations.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhuma conversa ainda
+                    </p>
+                  ) : (
+                    conversations.map((conv) => (
+                      <div
+                        key={conv.id}
+                        className={`group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
+                          currentConversationId === conv.id 
+                            ? "bg-violet-500/10 border border-violet-500/30" 
+                            : "hover:bg-muted"
+                        }`}
+                        onClick={() => selectConversation(conv)}
+                      >
+                        <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{conv.title}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(conv.updated_at)}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteConversation(conv.id);
+                          }}
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
 
-            <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col min-w-0">
+              {/* Header */}
+              <div className="flex items-center justify-between p-3 border-b bg-gradient-to-r from-violet-500 to-purple-600 text-white">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSidebar(!showSidebar)}
+                    className="text-white hover:bg-white/20 h-8 w-8"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">Auri Suporte</p>
+                      <p className="text-xs text-white/70">Assistente JTC FluxPDV</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className="text-white hover:bg-white/20 h-8 w-8"
+                    title={isFullscreen ? "Minimizar" : "Tela cheia"}
+                  >
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setIsOpen(false);
+                      setIsFullscreen(false);
+                      setShowSidebar(false);
+                    }}
+                    className="text-white hover:bg-white/20 h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Messages Area */}
               <ScrollArea className="flex-1 p-4" ref={scrollRef}>
                 {contextLoading ? (
                   <div className="text-center py-8">
@@ -381,59 +614,49 @@ export const AuriChat = () => {
                     <p className="text-sm text-muted-foreground mt-2">Carregando dados do sistema...</p>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Sparkles className="h-12 w-12 mx-auto mb-4 text-violet-400" />
-                    <p className="font-medium">Olá! Sou a Auri 👋</p>
-                    <p className="text-sm mt-2">Tenho acesso a todo o histórico do sistema!</p>
-                    <div className="mt-4 space-y-2 text-xs">
-                      <p className="text-muted-foreground">Experimente perguntar:</p>
-                      <button 
-                        onClick={() => setInput("Quem está devendo?")}
-                        className="block w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                      >
-                        💰 "Quem está devendo?"
-                      </button>
-                      <button 
-                        onClick={() => setInput("Qual foi a primeira venda do sistema?")}
-                        className="block w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                      >
-                        📊 "Qual foi a primeira venda?"
-                      </button>
-                      <button 
-                        onClick={() => setInput("Quais são os produtos mais vendidos?")}
-                        className="block w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                      >
-                        🏆 "Produtos mais vendidos"
-                      </button>
-                      <button 
-                        onClick={() => setInput("Quem te criou?")}
-                        className="block w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                      >
-                        🤖 "Quem te criou?"
-                      </button>
+                  <div className="text-center text-muted-foreground py-8 max-w-md mx-auto">
+                    <Sparkles className="h-16 w-16 mx-auto mb-4 text-violet-400" />
+                    <p className="font-medium text-lg">Olá! Sou a Auri 👋</p>
+                    <p className="text-sm mt-2 mb-6">Tenho acesso a todo o histórico do sistema!</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {[
+                        { icon: "💰", text: "Quem está devendo?" },
+                        { icon: "📊", text: "Qual foi a primeira venda?" },
+                        { icon: "🏆", text: "Produtos mais vendidos" },
+                        { icon: "🤖", text: "Quem te criou?" },
+                      ].map((item, i) => (
+                        <button 
+                          key={i}
+                          onClick={() => setInput(item.text)}
+                          className="flex items-center gap-2 p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-left"
+                        >
+                          <span>{item.icon}</span>
+                          <span>{item.text}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-w-3xl mx-auto">
                     {messages.map((msg, idx) => (
                       <div
                         key={idx}
                         className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-2 ${
+                          className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                             msg.role === "user"
                               ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white"
                               : "bg-muted"
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{msg.content || "..."}</p>
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content || "..."}</p>
                         </div>
                       </div>
                     ))}
                     {isLoading && messages[messages.length - 1]?.role === "user" && (
                       <div className="flex justify-start">
-                        <div className="bg-muted rounded-2xl px-4 py-2">
+                        <div className="bg-muted rounded-2xl px-4 py-3">
                           <Loader2 className="h-4 w-4 animate-spin" />
                         </div>
                       </div>
@@ -442,8 +665,9 @@ export const AuriChat = () => {
                 )}
               </ScrollArea>
 
-              <div className="p-4 border-t">
-                <div className="flex gap-2">
+              {/* Input Area */}
+              <div className="p-4 border-t bg-background">
+                <div className="flex gap-2 max-w-3xl mx-auto">
                   <Input
                     ref={inputRef}
                     value={input}
@@ -467,8 +691,8 @@ export const AuriChat = () => {
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
     </>
