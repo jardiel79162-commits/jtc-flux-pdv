@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.delete-employee]
 verify_jwt = true
+
+[functions.auri-chat]
+verify_jwt = true

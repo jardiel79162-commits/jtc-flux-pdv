@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import logo from "@/assets/logo.jpg";
+import AuriChat from "@/components/AuriChat";
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -144,6 +145,9 @@ const DashboardLayout = () => {
           <Outlet />
         </div>
       </main>
+
+      {/* Auri Chat Bot */}
+      <AuriChat />
     </div>
   );
 };
