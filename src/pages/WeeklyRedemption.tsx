@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gift, Lock, Clock, AlertCircle, PartyPopper, RefreshCw } from "lucide-react";
+import { Gift, Lock, Clock, CheckCircle2, AlertCircle, PartyPopper } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import confetti from "canvas-confetti";
 import giftBoxImage from "@/assets/gift-box.jpg";
@@ -20,12 +20,14 @@ const WeeklyRedemption = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [isEventActive, setIsEventActive] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [nextEventTime, setNextEventTime] = useState<string>("");
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [code, setCode] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [redemptionResult, setRedemptionResult] = useState<RedemptionResult | null>(null);
+  const [alreadyRedeemed, setAlreadyRedeemed] = useState(false);
 
   // Verifica se o usuário é admin
   const checkAdminStatus = useCallback(async () => {
@@ -52,57 +54,148 @@ const WeeklyRedemption = () => {
     }
   }, []);
 
-  // Gera um novo código
-  const generateCode = async () => {
-    setIsGenerating(true);
+  // Verifica se já resgatou nesta semana
+  const checkAlreadyRedeemed = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!user) return false;
+
+      // Calcula início da semana (segunda-feira)
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - diff);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from("weekly_redemption_codes")
+        .select("is_used")
+        .eq("user_id", user.id)
+        .gte("week_start", weekStart.toISOString().split("T")[0])
+        .maybeSingle();
+
+      if (error) {
+        console.error("Erro ao verificar resgate:", error);
+        return false;
+      }
+
+      return data?.is_used || false;
+    } catch (error) {
+      console.error("Erro ao verificar resgate:", error);
+      return false;
+    }
+  }, []);
+
+  // Gera código para a semana atual
+  const generateWeeklyCode = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
       const { data, error } = await supabase.rpc("create_weekly_code_for_user", {
         p_user_id: user.id,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao gerar código:", error);
+        return;
+      }
 
       setGeneratedCode(data as string);
-      setTimeRemaining(2); // Inicia timer de 2 segundos
-      
-      toast({
-        title: "Código gerado!",
-        description: `Seu código: ${data}`,
-      });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao gerar código:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível gerar o código.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
     }
-  };
+  }, []);
 
-  // Timer countdown
-  useEffect(() => {
-    if (timeRemaining > 0) {
-      const timer = setTimeout(() => {
-        setTimeRemaining(timeRemaining - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
+  // Verifica horário do evento (segunda 16:00-17:00 horário de Brasília)
+  const checkEventStatus = useCallback(() => {
+    const now = new Date();
+    
+    // Ajusta para o horário de Brasília (UTC-3)
+    const brazilOffset = -3 * 60;
+    const localOffset = now.getTimezoneOffset();
+    const diffMinutes = brazilOffset - (-localOffset);
+    
+    const brazilTime = new Date(now.getTime() + diffMinutes * 60 * 1000);
+    
+    const dayOfWeek = brazilTime.getDay();
+    const hours = brazilTime.getHours();
+    const minutes = brazilTime.getMinutes();
+    const seconds = brazilTime.getSeconds();
+    
+    // Segunda-feira = 1, horário 16:00-17:00
+    const isMonday = dayOfWeek === 1;
+    const isInTimeWindow = hours === 16;
+    
+    if (isMonday && isInTimeWindow) {
+      // Calcula tempo restante até 17:00
+      const remainingMinutes = 59 - minutes;
+      const remainingSeconds = 59 - seconds;
+      setTimeRemaining(`${String(remainingMinutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`);
+      return true;
     }
-  }, [timeRemaining]);
+    
+    // Calcula próxima segunda às 16:00
+    const nextMonday = new Date(brazilTime);
+    let daysUntilMonday;
+    
+    if (dayOfWeek === 0) {
+      daysUntilMonday = 1;
+    } else if (dayOfWeek === 1) {
+      if (hours < 16) {
+        daysUntilMonday = 0;
+      } else {
+        daysUntilMonday = 7;
+      }
+    } else {
+      daysUntilMonday = 8 - dayOfWeek;
+    }
+    
+    nextMonday.setDate(brazilTime.getDate() + daysUntilMonday);
+    nextMonday.setHours(16, 0, 0, 0);
+    
+    const nextEventDate = nextMonday.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+    });
+    
+    setNextEventTime(`${nextEventDate} às 16:00`);
+    return false;
+  }, []);
 
   useEffect(() => {
     const init = async () => {
       const adminStatus = await checkAdminStatus();
       setIsAdmin(adminStatus);
+      
+      if (adminStatus) {
+        const redeemed = await checkAlreadyRedeemed();
+        setAlreadyRedeemed(redeemed);
+        
+        const eventActive = checkEventStatus();
+        setIsEventActive(eventActive);
+        
+        // Se evento ativo e não resgatou, gera o código
+        if (eventActive && !redeemed) {
+          await generateWeeklyCode();
+        }
+      }
+      
       setIsLoading(false);
     };
 
     init();
-  }, [checkAdminStatus]);
+
+    // Atualiza status a cada segundo
+    const interval = setInterval(() => {
+      const eventActive = checkEventStatus();
+      setIsEventActive(eventActive);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [checkAdminStatus, checkAlreadyRedeemed, checkEventStatus, generateWeeklyCode]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
@@ -148,12 +241,7 @@ const WeeklyRedemption = () => {
           description: `Você ganhou ${result.benefit_type} de assinatura!`,
         });
 
-        // Reseta após 3 segundos para permitir novo resgate
-        setTimeout(() => {
-          setRedemptionResult(null);
-          setCode("");
-          setGeneratedCode("");
-        }, 3000);
+        setAlreadyRedeemed(true);
       } else {
         toast({
           title: "Erro no resgate",
@@ -227,7 +315,60 @@ const WeeklyRedemption = () => {
       );
     }
 
-    // Interface de resgate
+    // Já resgatou nesta semana
+    if (alreadyRedeemed) {
+      return (
+        <div className="min-h-[60vh] flex items-center justify-center p-4">
+          <Card className="w-full max-w-md text-center">
+            <CardContent className="pt-8 pb-8">
+              <CheckCircle2 className="w-16 h-16 text-accent mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-foreground mb-2">Já Resgatado!</h2>
+              <p className="text-muted-foreground mb-4">
+                Você já resgatou seu benefício desta semana.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Próximo resgate disponível: <br />
+                <span className="font-semibold text-primary">Segunda-feira às 16:00</span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // Evento não está ativo
+    if (!isEventActive) {
+      return (
+        <div className="min-h-[60vh] flex items-center justify-center p-4">
+          <Card className="w-full max-w-md overflow-hidden">
+            <div className="bg-gradient-to-br from-muted to-muted/50 p-8">
+              <img 
+                src={giftBoxImage} 
+                alt="Caixa de presente" 
+                className="w-32 h-32 mx-auto object-contain opacity-50 grayscale"
+              />
+            </div>
+            <CardContent className="pt-6 pb-8 text-center">
+              <Lock className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-foreground mb-2">
+                Evento Indisponível
+              </h2>
+              <p className="text-muted-foreground mb-4">
+                O resgate semanal só está disponível durante o horário do evento.
+              </p>
+              <div className="bg-muted rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Próximo resgate:</p>
+                <p className="text-lg font-bold text-primary capitalize">
+                  {nextEventTime}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // Evento ativo - mostrar interface de resgate
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-4">
         <Card className="w-full max-w-md overflow-hidden">
@@ -246,49 +387,31 @@ const WeeklyRedemption = () => {
               <CardTitle className="text-2xl">Flux Resgate Semanal</CardTitle>
             </div>
             <CardDescription>
-              Gere seu código e resgate seu benefício!
+              Use seu código exclusivo para resgatar seu benefício!
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Botão Regenerar e Código Gerado */}
-            <div className="space-y-3">
-              <Button
-                onClick={generateCode}
-                disabled={isGenerating}
-                variant="outline"
-                className="w-full h-12 text-base font-semibold"
-              >
-                {isGenerating ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                    Gerando...
-                  </div>
-                ) : (
-                  <>
-                    <RefreshCw className="w-5 h-5 mr-2" />
-                    {generatedCode ? "Regenerar Código" : "Gerar Código"}
-                  </>
-                )}
-              </Button>
-
-              {generatedCode && (
-                <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Seu código:</p>
-                  <p className="text-3xl font-mono font-bold text-primary tracking-[0.3em]">
-                    {generatedCode}
-                  </p>
-                  {timeRemaining > 0 && (
-                    <div className="flex items-center justify-center gap-1 mt-2">
-                      <Clock className="w-4 h-4 text-destructive" />
-                      <span className="text-sm text-destructive font-medium">
-                        {timeRemaining}s
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Timer */}
+            <div className="bg-gradient-to-r from-destructive/10 to-orange-500/10 rounded-xl p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Clock className="w-5 h-5 text-destructive animate-pulse" />
+                <span className="text-sm font-medium text-muted-foreground">Tempo restante</span>
+              </div>
+              <p className="text-4xl font-mono font-bold text-destructive tracking-wider">
+                {timeRemaining}
+              </p>
             </div>
+
+            {/* Código gerado */}
+            {generatedCode && (
+              <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Seu código desta semana:</p>
+                <p className="text-3xl font-mono font-bold text-primary tracking-[0.3em]">
+                  {generatedCode}
+                </p>
+              </div>
+            )}
 
             {/* Input de código */}
             <div className="space-y-2">
@@ -306,7 +429,7 @@ const WeeklyRedemption = () => {
                 disabled={isRedeeming}
               />
               <p className="text-xs text-muted-foreground text-center">
-                Digite os 6 dígitos do código gerado
+                Digite os 6 dígitos do seu código exclusivo
               </p>
             </div>
 
@@ -333,7 +456,8 @@ const WeeklyRedemption = () => {
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p>
-                Clique em "Gerar Código" para obter seu código exclusivo. Cada código só pode ser utilizado uma vez.
+                Seu código é único e só pode ser utilizado uma vez. Se o tempo acabar sem resgatar, 
+                o benefício será perdido.
               </p>
             </div>
           </CardContent>
