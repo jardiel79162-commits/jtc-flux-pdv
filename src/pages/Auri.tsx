@@ -3,11 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Send, Loader2, Sparkles, Menu, Plus, Trash2, MessageSquare, X, ArrowLeft
+  Send, Loader2, Sparkles, Plus, Trash2, MessageSquare, Home, History, X, ChevronDown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface Message {
   id?: string;
@@ -52,7 +59,6 @@ interface AuriContext {
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auri-chat`;
 
 const Auri = () => {
-  const [showSidebar, setShowSidebar] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -165,13 +171,11 @@ const Auri = () => {
   const selectConversation = useCallback((conversation: Conversation) => {
     setCurrentConversationId(conversation.id);
     loadMessages(conversation.id);
-    setShowSidebar(false);
   }, [loadMessages]);
 
   const startNewConversation = useCallback(() => {
     setCurrentConversationId(null);
     setMessages([]);
-    setShowSidebar(false);
   }, []);
 
   const loadContext = useCallback(async () => {
@@ -450,219 +454,191 @@ const Auri = () => {
   };
 
   return (
-    <div className="fixed inset-0 top-16 z-30 bg-background flex">
-      {/* Sidebar Overlay */}
-      {showSidebar && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40" 
-          onClick={() => setShowSidebar(false)} 
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`
-        fixed top-0 left-0 h-full z-50 w-80 bg-card border-r shadow-xl
-        transform transition-transform duration-300 ease-in-out
-        ${showSidebar ? "translate-x-0" : "-translate-x-full"}
-      `}>
-        {/* Sidebar Header */}
-        <div className="h-16 px-4 flex items-center justify-between bg-gradient-to-r from-violet-600 to-purple-700">
-          <h3 className="font-bold text-white text-lg">Histórico</h3>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={startNewConversation}
-              className="text-white hover:bg-white/20 h-9 w-9"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSidebar(false)}
-              className="text-white hover:bg-white/20 h-9 w-9"
-            >
-              <X className="h-5 w-5" />
-            </Button>
+    <div className="fixed inset-0 top-16 z-30 bg-background flex flex-col">
+      {/* Chat Header */}
+      <div className="h-14 px-4 flex items-center gap-3 border-b bg-gradient-to-r from-violet-600 to-purple-700 shrink-0">
+        {/* Home Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-white/20 h-9 w-9"
+          onClick={() => navigate("/dashboard")}
+          title="Ir para Dashboard"
+        >
+          <Home className="h-5 w-5" />
+        </Button>
+        
+        <div className="flex items-center gap-3 flex-1">
+          <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-white text-sm">Auri</h2>
+            <p className="text-xs text-white/70">
+              {contextLoading ? "Carregando..." : "Assistente IA"}
+            </p>
           </div>
         </div>
-        
-        {/* Sidebar Content */}
-        <ScrollArea className="h-[calc(100%-64px)]">
-          <div className="p-3 space-y-2">
+
+        {/* History Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20 h-9 w-9"
+              title="Histórico"
+            >
+              <History className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72 max-h-80 overflow-y-auto">
+            <div className="px-2 py-1.5 text-sm font-semibold flex items-center justify-between">
+              <span>Histórico de Conversas</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={startNewConversation}
+                className="h-7 px-2"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Nova
+              </Button>
+            </div>
+            <DropdownMenuSeparator />
             {conversations.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma conversa ainda
-                </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  Comece uma nova conversa!
-                </p>
+              <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                Nenhuma conversa ainda
               </div>
             ) : (
               conversations.map(conv => (
-                <div
+                <DropdownMenuItem
                   key={conv.id}
-                  className={`group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                    currentConversationId === conv.id 
-                      ? "bg-violet-100 dark:bg-violet-900/40 border border-violet-200 dark:border-violet-800" 
-                      : "hover:bg-muted/60 border border-transparent"
+                  className={`flex items-center gap-2 cursor-pointer ${
+                    currentConversationId === conv.id ? "bg-violet-100 dark:bg-violet-900/40" : ""
                   }`}
                   onClick={() => selectConversation(conv)}
                 >
-                  <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
-                    currentConversationId === conv.id 
-                      ? "bg-violet-500 text-white" 
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    <MessageSquare className="h-4 w-4" />
-                  </div>
+                  <MessageSquare className="h-4 w-4 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{conv.title}</p>
+                    <p className="text-sm truncate">{conv.title}</p>
                     <p className="text-xs text-muted-foreground">{formatDate(conv.updated_at)}</p>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    className="h-7 w-7 shrink-0 hover:bg-destructive/10"
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteConversation(conv.id);
                     }}
                   >
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
-                </div>
+                </DropdownMenuItem>
               ))
             )}
-          </div>
-        </ScrollArea>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* New Conversation Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-white/20 h-9 w-9"
+          onClick={startNewConversation}
+          title="Nova Conversa"
+        >
+          <Plus className="h-5 w-5" />
+        </Button>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-full">
-        {/* Chat Header */}
-        <div className="h-14 px-4 flex items-center gap-3 border-b bg-gradient-to-r from-violet-600 to-purple-700 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20 h-9 w-9"
-            onClick={() => setShowSidebar(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          
-          <div className="flex items-center gap-3 flex-1">
-            <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-white text-sm">Auri</h2>
-              <p className="text-xs text-white/70">
-                {contextLoading ? "Carregando..." : "Assistente IA"}
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+        <div className="max-w-2xl mx-auto p-4 space-y-4">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg">
+                <Sparkles className="h-10 w-10 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2 text-center">Olá! Eu sou a Auri</h3>
+              <p className="text-muted-foreground text-center max-w-sm">
+                Sua assistente inteligente do JTC FluxPDV. Pergunte sobre vendas, clientes, produtos ou qualquer coisa sobre seu negócio!
               </p>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20 h-9 w-9"
-            onClick={startNewConversation}
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-          <div className="max-w-2xl mx-auto p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 px-4">
-                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg">
-                  <Sparkles className="h-10 w-10 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-2 text-center">Olá! Eu sou a Auri</h3>
-                <p className="text-muted-foreground text-center max-w-sm">
-                  Sua assistente inteligente do JTC FluxPDV. Pergunte sobre vendas, clientes, produtos ou qualquer coisa sobre seu negócio!
-                </p>
-                
-                <div className="grid grid-cols-2 gap-3 mt-8 w-full max-w-md">
-                  {[
-                    "Qual foi minha venda de hoje?",
-                    "Quem está me devendo?",
-                    "Quais produtos estão em baixa?",
-                    "Como está meu negócio?"
-                  ].map((suggestion, i) => (
-                    <Button
-                      key={i}
-                      variant="outline"
-                      className="h-auto py-3 px-4 text-left text-sm whitespace-normal"
-                      onClick={() => {
-                        setInput(suggestion);
-                        inputRef.current?.focus();
-                      }}
-                    >
-                      {suggestion}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] p-4 rounded-2xl ${
-                      message.role === "user"
-                        ? "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-br-md"
-                        : "bg-muted rounded-bl-md"
-                    }`}
+              
+              <div className="grid grid-cols-2 gap-3 mt-8 w-full max-w-md">
+                {[
+                  "Qual foi minha venda de hoje?",
+                  "Quem está me devendo?",
+                  "Quais produtos estão em baixa?",
+                  "Como está meu negócio?"
+                ].map((suggestion, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    className="h-auto py-3 px-4 text-left text-sm whitespace-normal"
+                    onClick={() => {
+                      setInput(suggestion);
+                      inputRef.current?.focus();
+                    }}
                   >
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                  </div>
-                </div>
-              ))
-            )}
-            
-            {isLoading && messages[messages.length - 1]?.role === "user" && (
-              <div className="flex justify-start">
-                <div className="bg-muted p-4 rounded-2xl rounded-bl-md">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
-                    <span className="text-sm text-muted-foreground">Pensando...</span>
-                  </div>
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[85%] p-4 rounded-2xl ${
+                    message.role === "user"
+                      ? "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-br-md"
+                      : "bg-muted rounded-bl-md"
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                 </div>
               </div>
-            )}
-          </div>
+            ))
+          )}
+          
+          {isLoading && messages[messages.length - 1]?.role === "user" && (
+            <div className="flex justify-start">
+              <div className="bg-muted p-4 rounded-2xl rounded-bl-md">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+                  <span className="text-sm text-muted-foreground">Pensando...</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t bg-background shrink-0">
-          <div className="max-w-2xl mx-auto flex gap-3">
-            <Input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Digite sua mensagem..."
-              disabled={isLoading || contextLoading}
-              className="flex-1 h-12 rounded-full px-5 border-2 focus-visible:ring-violet-500"
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading || contextLoading}
-              className="h-12 w-12 rounded-full bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 shrink-0"
-              size="icon"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </div>
+      {/* Input Area */}
+      <div className="p-4 border-t bg-background shrink-0">
+        <div className="max-w-2xl mx-auto flex gap-3">
+          <Input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Digite sua mensagem..."
+            disabled={isLoading || contextLoading}
+            className="flex-1 h-12 rounded-full px-5 border-2 focus-visible:ring-violet-500"
+          />
+          <Button
+            onClick={sendMessage}
+            disabled={!input.trim() || isLoading || contextLoading}
+            className="h-12 w-12 rounded-full bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 shrink-0"
+            size="icon"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </div>
