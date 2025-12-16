@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Send, Loader2, Sparkles, Menu, Plus, Trash2, MessageSquare 
+  Send, Loader2, Sparkles, Menu, Plus, Trash2, MessageSquare, X, ArrowLeft
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface Message {
   id?: string;
@@ -62,6 +63,7 @@ const Auri = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const loadConversations = useCallback(async () => {
     try {
@@ -319,7 +321,6 @@ const Auri = () => {
   useEffect(() => {
     loadContext();
     loadConversations();
-    inputRef.current?.focus();
   }, [loadContext, loadConversations]);
 
   useEffect(() => {
@@ -449,51 +450,75 @@ const Auri = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] flex bg-background">
-      {/* Sidebar - Mobile Overlay */}
+    <div className="fixed inset-0 top-16 z-30 bg-background flex">
+      {/* Sidebar Overlay */}
       {showSidebar && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          className="fixed inset-0 bg-black/50 z-40" 
           onClick={() => setShowSidebar(false)} 
         />
       )}
 
       {/* Sidebar */}
       <div className={`
-        ${showSidebar ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
-        fixed md:relative z-50 md:z-0
-        w-72 h-full flex flex-col bg-card border-r transition-transform duration-200
+        fixed top-0 left-0 h-full z-50 w-80 bg-card border-r shadow-xl
+        transform transition-transform duration-300 ease-in-out
+        ${showSidebar ? "translate-x-0" : "-translate-x-full"}
       `}>
-        <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-violet-500 to-purple-600">
-          <h3 className="font-bold text-white">Histórico</h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={startNewConversation}
-            className="text-white hover:bg-white/20"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
+        {/* Sidebar Header */}
+        <div className="h-16 px-4 flex items-center justify-between bg-gradient-to-r from-violet-600 to-purple-700">
+          <h3 className="font-bold text-white text-lg">Histórico</h3>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={startNewConversation}
+              className="text-white hover:bg-white/20 h-9 w-9"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSidebar(false)}
+              className="text-white hover:bg-white/20 h-9 w-9"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
         
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
+        {/* Sidebar Content */}
+        <ScrollArea className="h-[calc(100%-64px)]">
+          <div className="p-3 space-y-2">
             {conversations.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma conversa ainda
-              </p>
+              <div className="text-center py-8">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma conversa ainda
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Comece uma nova conversa!
+                </p>
+              </div>
             ) : (
               conversations.map(conv => (
                 <div
                   key={conv.id}
-                  className={`group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
+                  className={`group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                     currentConversationId === conv.id 
-                      ? "bg-violet-100 dark:bg-violet-900/30" 
-                      : "hover:bg-muted"
+                      ? "bg-violet-100 dark:bg-violet-900/40 border border-violet-200 dark:border-violet-800" 
+                      : "hover:bg-muted/60 border border-transparent"
                   }`}
                   onClick={() => selectConversation(conv)}
                 >
-                  <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
+                    currentConversationId === conv.id 
+                      ? "bg-violet-500 text-white" 
+                      : "bg-muted text-muted-foreground"
+                  }`}>
+                    <MessageSquare className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{conv.title}</p>
                     <p className="text-xs text-muted-foreground">{formatDate(conv.updated_at)}</p>
@@ -501,7 +526,7 @@ const Auri = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteConversation(conv.id);
@@ -516,41 +541,74 @@ const Auri = () => {
         </ScrollArea>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b bg-gradient-to-r from-violet-500 to-purple-600">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full">
+        {/* Chat Header */}
+        <div className="h-14 px-4 flex items-center gap-3 border-b bg-gradient-to-r from-violet-600 to-purple-700 shrink-0">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-white hover:bg-white/20"
-            onClick={() => setShowSidebar(!showSidebar)}
+            className="text-white hover:bg-white/20 h-9 w-9"
+            onClick={() => setShowSidebar(true)}
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
+          
+          <div className="flex items-center gap-3 flex-1">
+            <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-white">Auri</h2>
-              <p className="text-xs text-white/80">
-                {contextLoading ? "Carregando dados..." : "Assistente Inteligente"}
+              <h2 className="font-semibold text-white text-sm">Auri</h2>
+              <p className="text-xs text-white/70">
+                {contextLoading ? "Carregando..." : "Assistente IA"}
               </p>
             </div>
           </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/20 h-9 w-9"
+            onClick={startNewConversation}
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
         </div>
 
-        {/* Messages */}
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="max-w-3xl mx-auto space-y-4">
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+          <div className="max-w-2xl mx-auto p-4 space-y-4">
             {messages.length === 0 ? (
-              <div className="text-center py-12">
-                <Sparkles className="h-16 w-16 mx-auto mb-4 text-violet-400" />
-                <h3 className="text-xl font-semibold mb-2">Olá! Eu sou a Auri</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Sua assistente inteligente do JTC FluxPDV. Pergunte sobre vendas, clientes, produtos, fornecedores ou qualquer coisa sobre seu negócio!
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg">
+                  <Sparkles className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-center">Olá! Eu sou a Auri</h3>
+                <p className="text-muted-foreground text-center max-w-sm">
+                  Sua assistente inteligente do JTC FluxPDV. Pergunte sobre vendas, clientes, produtos ou qualquer coisa sobre seu negócio!
                 </p>
+                
+                <div className="grid grid-cols-2 gap-3 mt-8 w-full max-w-md">
+                  {[
+                    "Qual foi minha venda de hoje?",
+                    "Quem está me devendo?",
+                    "Quais produtos estão em baixa?",
+                    "Como está meu negócio?"
+                  ].map((suggestion, i) => (
+                    <Button
+                      key={i}
+                      variant="outline"
+                      className="h-auto py-3 px-4 text-left text-sm whitespace-normal"
+                      onClick={() => {
+                        setInput(suggestion);
+                        inputRef.current?.focus();
+                      }}
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
               </div>
             ) : (
               messages.map((message, index) => (
@@ -559,30 +617,34 @@ const Auri = () => {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] p-4 rounded-2xl ${
+                    className={`max-w-[85%] p-4 rounded-2xl ${
                       message.role === "user"
-                        ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white"
-                        : "bg-muted"
+                        ? "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-br-md"
+                        : "bg-muted rounded-bl-md"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   </div>
                 </div>
               ))
             )}
+            
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex justify-start">
-                <div className="bg-muted p-4 rounded-2xl">
-                  <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
+                <div className="bg-muted p-4 rounded-2xl rounded-bl-md">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+                    <span className="text-sm text-muted-foreground">Pensando...</span>
+                  </div>
                 </div>
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        {/* Input */}
-        <div className="p-4 border-t bg-background">
-          <div className="max-w-3xl mx-auto flex gap-2">
+        {/* Input Area */}
+        <div className="p-4 border-t bg-background shrink-0">
+          <div className="max-w-2xl mx-auto flex gap-3">
             <Input
               ref={inputRef}
               value={input}
@@ -590,14 +652,15 @@ const Auri = () => {
               onKeyDown={handleKeyPress}
               placeholder="Digite sua mensagem..."
               disabled={isLoading || contextLoading}
-              className="flex-1"
+              className="flex-1 h-12 rounded-full px-5 border-2 focus-visible:ring-violet-500"
             />
             <Button
               onClick={sendMessage}
               disabled={!input.trim() || isLoading || contextLoading}
-              className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700"
+              className="h-12 w-12 rounded-full bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 shrink-0"
+              size="icon"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             </Button>
           </div>
         </div>
