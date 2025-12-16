@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import OfflineDetector from "./components/OfflineDetector";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Auri from "./pages/Auri";
 import Subscription from "./pages/Subscription";
 import Products from "./pages/Products";
 import POS from "./pages/POS";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/configuracoes" element={<Settings />} />
             <Route path="/fornecedores" element={<Suppliers />} />
             <Route path="/resgate-semanal" element={<WeeklyRedemption />} />
+            <Route path="/auri" element={<Auri />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
