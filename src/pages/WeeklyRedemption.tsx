@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gift, Lock, Clock, CheckCircle2, AlertCircle, PartyPopper } from "lucide-react";
+import { Gift, Lock, Clock, AlertCircle, PartyPopper, RefreshCw } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import confetti from "canvas-confetti";
 import giftBoxImage from "@/assets/gift-box.jpg";
@@ -20,13 +20,12 @@ const WeeklyRedemption = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isEventActive, setIsEventActive] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<string>("");
-  const [nextEventTime, setNextEventTime] = useState<string>("");
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [generatedCode, setGeneratedCode] = useState<string>("");
   const [code, setCode] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [redemptionResult, setRedemptionResult] = useState<RedemptionResult | null>(null);
-  const [alreadyRedeemed, setAlreadyRedeemed] = useState(false);
 
   // Verifica se o usuário é admin
   const checkAdminStatus = useCallback(async () => {
@@ -53,75 +52,57 @@ const WeeklyRedemption = () => {
     }
   }, []);
 
-  // Verifica se já resgatou nesta semana
-  const checkAlreadyRedeemed = useCallback(async () => {
+  // Gera um novo código
+  const generateCode = async () => {
+    setIsGenerating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+      if (!user) throw new Error("Usuário não autenticado");
 
-      // Calcula início da semana (segunda-feira)
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - diff);
-      weekStart.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase.rpc("create_weekly_code_for_user", {
+        p_user_id: user.id,
+      });
 
-      const { data, error } = await supabase
-        .from("weekly_redemption_codes")
-        .select("is_used")
-        .eq("user_id", user.id)
-        .gte("week_start", weekStart.toISOString().split("T")[0])
-        .maybeSingle();
+      if (error) throw error;
 
-      if (error) {
-        console.error("Erro ao verificar resgate:", error);
-        return false;
-      }
-
-      return data?.is_used || false;
-    } catch (error) {
-      console.error("Erro ao verificar resgate:", error);
-      return false;
+      setGeneratedCode(data as string);
+      setTimeRemaining(2); // Inicia timer de 2 segundos
+      
+      toast({
+        title: "Código gerado!",
+        description: `Seu código: ${data}`,
+      });
+    } catch (error: any) {
+      console.error("Erro ao gerar código:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar o código.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
     }
-  }, []);
+  };
 
-  // MODO TESTE: Evento sempre ativo
-  const checkEventStatus = useCallback(() => {
-    // Simula tempo restante de 59 minutos
-    const now = new Date();
-    const remainingMinutes = 59 - now.getMinutes();
-    const remainingSeconds = 59 - now.getSeconds();
-    setTimeRemaining(`${String(remainingMinutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`);
-    return true; // Sempre ativo em modo teste
-  }, []);
+  // Timer countdown
+  useEffect(() => {
+    if (timeRemaining > 0) {
+      const timer = setTimeout(() => {
+        setTimeRemaining(timeRemaining - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [timeRemaining]);
 
   useEffect(() => {
     const init = async () => {
       const adminStatus = await checkAdminStatus();
       setIsAdmin(adminStatus);
-      
-      if (adminStatus) {
-        // MODO TESTE: Não verifica se já resgatou
-        setAlreadyRedeemed(false);
-        
-        const eventActive = checkEventStatus();
-        setIsEventActive(eventActive);
-      }
-      
       setIsLoading(false);
     };
 
     init();
-
-    // Atualiza status a cada segundo
-    const interval = setInterval(() => {
-      const eventActive = checkEventStatus();
-      setIsEventActive(eventActive);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [checkAdminStatus, checkEventStatus]);
+  }, [checkAdminStatus]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
@@ -155,7 +136,6 @@ const WeeklyRedemption = () => {
       setRedemptionResult(result);
 
       if (result.success) {
-        // Dispara confetti
         confetti({
           particleCount: 200,
           spread: 100,
@@ -168,10 +148,11 @@ const WeeklyRedemption = () => {
           description: `Você ganhou ${result.benefit_type} de assinatura!`,
         });
 
-        // MODO TESTE: Reseta após 3 segundos para permitir novo resgate
+        // Reseta após 3 segundos para permitir novo resgate
         setTimeout(() => {
           setRedemptionResult(null);
           setCode("");
+          setGeneratedCode("");
         }, 3000);
       } else {
         toast({
@@ -246,60 +227,7 @@ const WeeklyRedemption = () => {
       );
     }
 
-    // Já resgatou nesta semana
-    if (alreadyRedeemed) {
-      return (
-        <div className="min-h-[60vh] flex items-center justify-center p-4">
-          <Card className="w-full max-w-md text-center">
-            <CardContent className="pt-8 pb-8">
-              <CheckCircle2 className="w-16 h-16 text-accent mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-foreground mb-2">Já Resgatado!</h2>
-              <p className="text-muted-foreground mb-4">
-                Você já resgatou seu benefício desta semana.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Próximo resgate disponível: <br />
-                <span className="font-semibold text-primary">Segunda-feira às 16:00</span>
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    // Evento não está ativo
-    if (!isEventActive) {
-      return (
-        <div className="min-h-[60vh] flex items-center justify-center p-4">
-          <Card className="w-full max-w-md overflow-hidden">
-            <div className="bg-gradient-to-br from-muted to-muted/50 p-8">
-              <img 
-                src={giftBoxImage} 
-                alt="Caixa de presente" 
-                className="w-32 h-32 mx-auto object-contain opacity-50 grayscale"
-              />
-            </div>
-            <CardContent className="pt-6 pb-8 text-center">
-              <Lock className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                Evento Indisponível
-              </h2>
-              <p className="text-muted-foreground mb-4">
-                O resgate semanal só está disponível durante o horário do evento.
-              </p>
-              <div className="bg-muted rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">Próximo resgate:</p>
-                <p className="text-lg font-bold text-primary capitalize">
-                  {nextEventTime}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    // Evento ativo - mostrar interface de resgate
+    // Interface de resgate
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-4">
         <Card className="w-full max-w-md overflow-hidden">
@@ -318,20 +246,48 @@ const WeeklyRedemption = () => {
               <CardTitle className="text-2xl">Flux Resgate Semanal</CardTitle>
             </div>
             <CardDescription>
-              Cole seu código de 6 dígitos para resgatar seu benefício!
+              Gere seu código e resgate seu benefício!
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Timer */}
-            <div className="bg-gradient-to-r from-destructive/10 to-orange-500/10 rounded-xl p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Clock className="w-5 h-5 text-destructive animate-pulse" />
-                <span className="text-sm font-medium text-muted-foreground">Tempo restante</span>
-              </div>
-              <p className="text-4xl font-mono font-bold text-destructive tracking-wider">
-                {timeRemaining}
-              </p>
+            {/* Botão Regenerar e Código Gerado */}
+            <div className="space-y-3">
+              <Button
+                onClick={generateCode}
+                disabled={isGenerating}
+                variant="outline"
+                className="w-full h-12 text-base font-semibold"
+              >
+                {isGenerating ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                    Gerando...
+                  </div>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5 mr-2" />
+                    {generatedCode ? "Regenerar Código" : "Gerar Código"}
+                  </>
+                )}
+              </Button>
+
+              {generatedCode && (
+                <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Seu código:</p>
+                  <p className="text-3xl font-mono font-bold text-primary tracking-[0.3em]">
+                    {generatedCode}
+                  </p>
+                  {timeRemaining > 0 && (
+                    <div className="flex items-center justify-center gap-1 mt-2">
+                      <Clock className="w-4 h-4 text-destructive" />
+                      <span className="text-sm text-destructive font-medium">
+                        {timeRemaining}s
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Input de código */}
@@ -350,7 +306,7 @@ const WeeklyRedemption = () => {
                 disabled={isRedeeming}
               />
               <p className="text-xs text-muted-foreground text-center">
-                Digite os 6 dígitos do seu código exclusivo
+                Digite os 6 dígitos do código gerado
               </p>
             </div>
 
@@ -377,8 +333,7 @@ const WeeklyRedemption = () => {
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <p>
-                Cada código é único e só pode ser utilizado uma vez. Após o horário do evento, 
-                códigos não resgatados serão perdidos.
+                Clique em "Gerar Código" para obter seu código exclusivo. Cada código só pode ser utilizado uma vez.
               </p>
             </div>
           </CardContent>
