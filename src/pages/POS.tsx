@@ -24,6 +24,7 @@ import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import PageLoader from "@/components/PageLoader";
+import { ScaleReader } from "@/components/ScaleReader";
 
 interface Product {
   id: string;
@@ -1547,6 +1548,14 @@ ${paymentInfo}
               >
                 Ver Produtos
               </Button>
+              <ScaleReader 
+                onWeightRead={(weight) => {
+                  toast({ 
+                    title: `Peso lido: ${weight.toFixed(3)} kg`,
+                    description: "Selecione um produto para aplicar o peso",
+                  });
+                }}
+              />
             </div>
 
             {searchTerm && (
