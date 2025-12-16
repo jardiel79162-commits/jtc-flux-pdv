@@ -86,57 +86,14 @@ const WeeklyRedemption = () => {
     }
   }, []);
 
-  // Verifica horário do evento (segunda 16:00-17:00 horário de Brasília)
+  // MODO TESTE: Evento sempre ativo
   const checkEventStatus = useCallback(() => {
+    // Simula tempo restante de 59 minutos
     const now = new Date();
-    
-    // Ajusta para o horário de Brasília (UTC-3)
-    const brazilOffset = -3 * 60;
-    const localOffset = now.getTimezoneOffset();
-    const diffMinutes = brazilOffset - (-localOffset);
-    
-    const brazilTime = new Date(now.getTime() + diffMinutes * 60 * 1000);
-    
-    const dayOfWeek = brazilTime.getDay();
-    const hours = brazilTime.getHours();
-    
-    // Segunda-feira = 1, horário 16:00-17:00
-    const isMonday = dayOfWeek === 1;
-    const isInTimeWindow = hours === 16;
-    
-    if (isMonday && isInTimeWindow) {
-      // Calcula tempo restante até 17:00
-      const endTime = new Date(brazilTime);
-      endTime.setHours(17, 0, 0, 0);
-      const remainingMs = endTime.getTime() - brazilTime.getTime();
-      
-      if (remainingMs > 0) {
-        const remainingMinutes = Math.floor(remainingMs / 60000);
-        const remainingSeconds = Math.floor((remainingMs % 60000) / 1000);
-        setTimeRemaining(`${String(remainingMinutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`);
-        return true;
-      }
-    }
-    
-    // Calcula próxima segunda às 16:00
-    const nextMonday = new Date(brazilTime);
-    const daysUntilMonday = dayOfWeek === 0 ? 1 : (dayOfWeek === 1 && hours < 17 ? 0 : 8 - dayOfWeek);
-    
-    if (dayOfWeek === 1 && hours >= 17) {
-      nextMonday.setDate(nextMonday.getDate() + 7);
-    } else {
-      nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
-    }
-    nextMonday.setHours(16, 0, 0, 0);
-    
-    const nextEventDate = nextMonday.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "2-digit",
-    });
-    
-    setNextEventTime(`${nextEventDate} às 16:00`);
-    return false;
+    const remainingMinutes = 59 - now.getMinutes();
+    const remainingSeconds = 59 - now.getSeconds();
+    setTimeRemaining(`${String(remainingMinutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`);
+    return true; // Sempre ativo em modo teste
   }, []);
 
   useEffect(() => {
@@ -145,8 +102,8 @@ const WeeklyRedemption = () => {
       setIsAdmin(adminStatus);
       
       if (adminStatus) {
-        const redeemed = await checkAlreadyRedeemed();
-        setAlreadyRedeemed(redeemed);
+        // MODO TESTE: Não verifica se já resgatou
+        setAlreadyRedeemed(false);
         
         const eventActive = checkEventStatus();
         setIsEventActive(eventActive);
@@ -164,7 +121,7 @@ const WeeklyRedemption = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [checkAdminStatus, checkAlreadyRedeemed, checkEventStatus]);
+  }, [checkAdminStatus, checkEventStatus]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
@@ -211,7 +168,11 @@ const WeeklyRedemption = () => {
           description: `Você ganhou ${result.benefit_type} de assinatura!`,
         });
 
-        setAlreadyRedeemed(true);
+        // MODO TESTE: Reseta após 3 segundos para permitir novo resgate
+        setTimeout(() => {
+          setRedemptionResult(null);
+          setCode("");
+        }, 3000);
       } else {
         toast({
           title: "Erro no resgate",
