@@ -82,6 +82,13 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
             <span className="text-sm text-foreground">Taxa PIX: <span className="font-semibold">0,49%</span></span>
           </div>
 
+          {/* Indicação de sem taxa para valores abaixo de R$ 1 */}
+          {numericAmount > 0 && numericAmount < 1 && (
+            <div className="flex items-center justify-center gap-2 py-3 px-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <span className="text-sm font-medium text-green-600">🎉 Sem taxa! Valores abaixo de R$ 1,00 não têm cobrança</span>
+            </div>
+          )}
+
           {/* Pergunta sobre repasse */}
           {numericAmount > 0 && (
             <div className="space-y-3">
