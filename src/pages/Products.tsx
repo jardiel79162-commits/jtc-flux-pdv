@@ -18,6 +18,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ProductsSkeleton } from "@/components/skeletons";
 
 interface Category {
   id: string;
@@ -58,6 +59,7 @@ const Products = () => {
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
@@ -84,14 +86,26 @@ const Products = () => {
   });
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchSuppliers();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchProducts(), fetchCategories(), fetchSuppliers()]);
+    setIsLoading(false);
+  };
 
   // Bloquear se assinatura expirada
   if (!loading && isExpired) {
     return <SubscriptionBlocker isTrial={isTrial} />;
+  }
+
+  if (isLoading) {
+    return (
+      <PageLoader pageName="Produtos">
+        <ProductsSkeleton />
+      </PageLoader>
+    );
   }
 
   const fetchProducts = async () => {

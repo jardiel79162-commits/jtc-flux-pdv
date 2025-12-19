@@ -14,6 +14,7 @@ import { Calendar, TrendingUp, Package, DollarSign, Download, Eye, Percent } fro
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
+import { ReportsSkeleton } from "@/components/skeletons";
 
 interface SaleItem {
   product_id: string;
@@ -50,11 +51,18 @@ const Reports = () => {
   const [showAllSales, setShowAllSales] = useState(true);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchSalesData();
+    loadData();
   }, [startDate, endDate, showAllSales]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    await fetchSalesData();
+    setIsLoading(false);
+  };
 
   const formatDateInput = (value: string) => {
     const numbers = value.replace(/\D/g, "").slice(0, 8);
@@ -225,6 +233,14 @@ const Reports = () => {
     setSelectedSale(sale);
     setShowDetails(true);
   };
+
+  if (isLoading) {
+    return (
+      <PageLoader pageName="Relatórios">
+        <ReportsSkeleton />
+      </PageLoader>
+    );
+  }
 
   return (
     <PageLoader pageName="Relatórios">

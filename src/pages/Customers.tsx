@@ -11,6 +11,7 @@ import { UserPlus, Users, DollarSign, CreditCard, Eye, Pencil } from "lucide-rea
 import { formatCurrency } from "@/lib/utils";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionBlocker from "@/components/SubscriptionBlocker";
+import { CustomersSkeleton } from "@/components/skeletons";
 
 interface Customer {
   id: string;
@@ -44,6 +45,7 @@ const Customers = () => {
   const [creditAmount, setCreditAmount] = useState("");
   const [creditFromChange, setCreditFromChange] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [paymentData, setPaymentData] = useState<{
     debt: number;
     paid: number;
@@ -60,8 +62,14 @@ const Customers = () => {
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
   useEffect(() => {
-    fetchCustomers();
+    loadCustomers();
   }, []);
+
+  const loadCustomers = async () => {
+    setIsLoading(true);
+    await fetchCustomers();
+    setIsLoading(false);
+  };
 
   useEffect(() => {
     if (selectedCustomer) {
@@ -72,6 +80,14 @@ const Customers = () => {
   // Bloquear se assinatura expirada
   if (!loading && isExpired) {
     return <SubscriptionBlocker isTrial={isTrial} />;
+  }
+
+  if (isLoading) {
+    return (
+      <PageLoader pageName="Clientes">
+        <CustomersSkeleton />
+      </PageLoader>
+    );
   }
 
   const fetchCustomers = async () => {
