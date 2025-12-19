@@ -213,15 +213,17 @@ const Suppliers = () => {
 
   return (
     <PageLoader pageName="Fornecedores">
-    <div className="p-6 space-y-6 overflow-hidden">
-      <div className="flex justify-between items-center">
+    <div className="p-6 space-y-6 overflow-hidden animate-fade-in">
+      <div className="page-header flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Fornecedores</h1>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            Fornecedores
+          </h1>
           <p className="text-muted-foreground">Gerencie seus fornecedores</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingSupplier(null); resetForm(); setIsDialogOpen(true); }}>
+            <Button onClick={() => { setEditingSupplier(null); resetForm(); setIsDialogOpen(true); }} className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:scale-[1.02]">
               <Plus className="mr-2 h-4 w-4" />
               Novo Fornecedor
             </Button>
@@ -341,13 +343,13 @@ const Suppliers = () => {
       </div>
 
       {filteredSuppliers.length === 0 ? (
-        <div className="text-center py-12">
-          <Truck className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-semibold">Nenhum fornecedor encontrado</h3>
-          <p className="text-muted-foreground">Comece cadastrando seu primeiro fornecedor.</p>
+        <div className="empty-state">
+          <Truck className="empty-state-icon" />
+          <h3 className="text-lg font-semibold">Nenhum fornecedor encontrado</h3>
+          <p className="text-muted-foreground mt-1">Comece cadastrando seu primeiro fornecedor.</p>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
+        <div className="table-modern">
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow>
@@ -359,15 +361,15 @@ const Suppliers = () => {
             </TableHeader>
             <TableBody>
               {filteredSuppliers.map((supplier) => (
-                <TableRow key={supplier.id}>
+                <TableRow key={supplier.id} className="group">
                   <TableCell className="font-medium truncate">{supplier.name}</TableCell>
                   <TableCell className="truncate">{supplier.phone || "-"}</TableCell>
                   <TableCell className="truncate">{supplier.contact_person || "-"}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => startEdit(supplier)}>
+                    <Button variant="ghost" size="icon" onClick={() => startEdit(supplier)} className="opacity-70 group-hover:opacity-100 transition-opacity">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(supplier.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(supplier.id)} className="opacity-70 group-hover:opacity-100 transition-opacity">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>

@@ -228,13 +228,15 @@ const Reports = () => {
 
   return (
     <PageLoader pageName="Relatórios">
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-hidden">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-hidden animate-fade-in">
+      <div className="page-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Relatórios</h1>
+          <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            Relatórios
+          </h1>
           <p className="text-muted-foreground text-sm">Análise de vendas e desempenho</p>
         </div>
-        <Button onClick={exportToCSV} size="sm">
+        <Button onClick={exportToCSV} size="sm" className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:scale-[1.02]">
           <Download className="mr-2 h-4 w-4" />
           Exportar CSV
         </Button>
@@ -281,41 +283,51 @@ const Reports = () => {
         )}
       </div>
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card className="metric-card animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Faturamento</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Faturamento</CardTitle>
+            <div className="icon-gradient-primary p-2">
+              <DollarSign className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold">R$ {totalRevenue.toFixed(2)}</div>
+            <div className="text-lg md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              R$ {totalRevenue.toFixed(2)}
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card animate-fade-in delay-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Lucro</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Lucro</CardTitle>
+            <div className="icon-gradient-accent p-2">
+              <TrendingUp className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold text-green-600">R$ {totalProfit.toFixed(2)}</div>
+            <div className="text-lg md:text-2xl font-bold text-accent">R$ {totalProfit.toFixed(2)}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card animate-fade-in delay-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Margem</CardTitle>
-            <Percent className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Margem</CardTitle>
+            <div className="icon-gradient-info p-2">
+              <Percent className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
             <div className="text-lg md:text-2xl font-bold">{totalMargin.toFixed(1)}%</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card animate-fade-in delay-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Vendas</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">Vendas</CardTitle>
+            <div className="icon-gradient-warning p-2">
+              <Package className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
             <div className="text-lg md:text-2xl font-bold">{totalTransactions}</div>
@@ -324,10 +336,10 @@ const Reports = () => {
       </div>
 
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="sales" className="text-xs md:text-sm">Vendas</TabsTrigger>
-          <TabsTrigger value="products" className="text-xs md:text-sm">Produtos</TabsTrigger>
-          <TabsTrigger value="payment" className="text-xs md:text-sm">Pagamento</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-3 bg-muted/50 p-1">
+          <TabsTrigger value="sales" className="text-xs md:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Vendas</TabsTrigger>
+          <TabsTrigger value="products" className="text-xs md:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Produtos</TabsTrigger>
+          <TabsTrigger value="payment" className="text-xs md:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Pagamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales" className="space-y-4 mt-4">
