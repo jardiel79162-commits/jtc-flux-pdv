@@ -18,9 +18,9 @@ export const PixFeeCalculator = ({ open, onOpenChange }: PixFeeCalculatorProps) 
 
   const numericAmount = parseFloat(amount.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
   
-  // Calculate fee - round UP to match Mercado Pago behavior (minimum 1 centavo)
+  // Calculate fee - Mercado Pago only charges from R$ 1.00 onwards (minimum 1 centavo)
   const rawFee = numericAmount * PIX_FEE_RATE;
-  const fee = numericAmount > 0 ? Math.max(0.01, Math.ceil(rawFee * 100) / 100) : 0;
+  const fee = numericAmount >= 1 ? Math.max(0.01, Math.ceil(rawFee * 100) / 100) : 0;
   
   // If passing to customer: customer pays original + fee, you receive original
   // If not passing: customer pays original, you receive original - fee
