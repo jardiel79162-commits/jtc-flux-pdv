@@ -205,6 +205,83 @@
   .dark .glass {
     @apply bg-black/40 backdrop-blur-md border border-white/10;
   }
+
+  /* Page header with gradient */
+  .page-header {
+    @apply relative pb-6 mb-6;
+  }
+
+  .page-header::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+
+  .page-title {
+    @apply text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text;
+  }
+
+  /* Metric card with gradient border */
+  .metric-card {
+    @apply relative overflow-hidden rounded-xl border-0 bg-card shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .metric-card::before {
+    content: '';
+    @apply absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.1));
+  }
+
+  .metric-card:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Icon container with gradient */
+  .icon-gradient {
+    @apply p-2.5 rounded-xl bg-gradient-to-br shadow-lg;
+  }
+
+  .icon-gradient-primary {
+    @apply icon-gradient from-primary to-primary/80;
+  }
+
+  .icon-gradient-accent {
+    @apply icon-gradient from-accent to-accent/80;
+  }
+
+  .icon-gradient-warning {
+    @apply icon-gradient from-warning to-warning/80;
+  }
+
+  .icon-gradient-info {
+    @apply icon-gradient from-info to-info/80;
+  }
+
+  /* Table improvements */
+  .table-modern {
+    @apply rounded-xl border overflow-hidden shadow-sm;
+  }
+
+  .table-modern th {
+    @apply bg-muted/50 font-semibold text-muted-foreground uppercase text-xs tracking-wider;
+  }
+
+  .table-modern tr {
+    @apply transition-colors hover:bg-muted/30;
+  }
+
+  /* Empty state styling */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-16 h-16 mx-auto text-muted-foreground/40 mb-4;
+  }
+
+  /* Section divider */
+  .section-divider {
+    @apply my-8 h-px bg-gradient-to-r from-transparent via-border to-transparent;
+  }
 }
 
 @layer utilities {
@@ -239,6 +316,21 @@
     }
   }
 
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   /* Pulse effect for notifications */
   .pulse-accent {
     animation: pulseAccent 2s infinite;
@@ -252,6 +344,12 @@
       box-shadow: 0 0 0 10px hsl(163 100% 44% / 0);
     }
   }
+
+  /* Staggered animation delays */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
 }
 
 /* Hide Lovable badge */

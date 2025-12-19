@@ -498,6 +498,7 @@ const Products = () => {
         title: `Importação concluída`, 
         description: `${imported} produtos importados${errors > 0 ? `, ${errors} erros` : ""}` 
       });
+    
     } catch (error) {
       console.error("Erro ao importar:", error);
       toast({ title: "Erro ao importar produtos", variant: "destructive" });
@@ -511,18 +512,20 @@ const Products = () => {
 
   return (
     <PageLoader pageName="Produtos">
-    <div className="p-6 space-y-6 overflow-hidden">
-      <div className="flex justify-between items-center">
+    <div className="p-6 space-y-6 overflow-hidden animate-fade-in">
+      <div className="page-header flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Produtos</h1>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            Produtos
+          </h1>
           <p className="text-muted-foreground">Gerencie seus produtos e categorias</p>
         </div>
       </div>
 
       <Tabs defaultValue="products" className="w-full">
-        <TabsList>
-          <TabsTrigger value="products">Produtos</TabsTrigger>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="products" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Produtos</TabsTrigger>
+          <TabsTrigger value="categories" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Categorias</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products" className="space-y-4">
@@ -569,7 +572,7 @@ const Products = () => {
               setIsProductDialogOpen(open);
             }}>
               <DialogTrigger asChild>
-                <Button onClick={() => { resetProductForm(); setIsProductDialogOpen(true); }}>
+                <Button onClick={() => { resetProductForm(); setIsProductDialogOpen(true); }} className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:scale-[1.02]">
                   <Plus className="mr-2 h-4 w-4" />
                   Novo Produto
                 </Button>

@@ -258,19 +258,24 @@ const Customers = () => {
 
   return (
     <PageLoader pageName="Clientes">
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Clientes</h1>
+    <div className="space-y-6 animate-fade-in">
+      <div className="page-header flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            Clientes
+          </h1>
+          <p className="text-muted-foreground">Gerencie seus clientes e saldos</p>
+        </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:scale-[1.02]">
               <UserPlus className="w-4 h-4" />
               Cadastrar Cliente
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
+              <DialogTitle className="text-xl font-bold">Novo Cliente</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -280,6 +285,7 @@ const Customers = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  className="transition-all focus:shadow-md"
                 />
               </div>
               <div>
@@ -289,6 +295,7 @@ const Customers = () => {
                   value={formData.cpf}
                   onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
                   required
+                  className="transition-all focus:shadow-md"
                 />
               </div>
               <div>
@@ -298,6 +305,7 @@ const Customers = () => {
                   type="date"
                   value={formData.birth_date}
                   onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                  className="transition-all focus:shadow-md"
                 />
               </div>
               <div>
@@ -307,6 +315,7 @@ const Customers = () => {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   required
+                  className="transition-all focus:shadow-md"
                 />
               </div>
               <div>
@@ -315,9 +324,12 @@ const Customers = () => {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="transition-all focus:shadow-md"
                 />
               </div>
-              <Button type="submit" className="w-full">Cadastrar</Button>
+              <Button type="submit" className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                Cadastrar
+              </Button>
             </form>
           </DialogContent>
         </Dialog>

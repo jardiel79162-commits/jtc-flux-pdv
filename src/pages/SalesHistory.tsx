@@ -481,9 +481,11 @@ const SalesHistory = () => {
 
   return (
     <PageLoader pageName="Histórico">
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-hidden">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Histórico de Vendas</h1>
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-hidden animate-fade-in">
+      <div className="page-header">
+        <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+          Histórico de Vendas
+        </h1>
         <p className="text-muted-foreground text-sm">Visualize e gerencie suas vendas</p>
       </div>
 
@@ -493,7 +495,7 @@ const SalesHistory = () => {
           placeholder="Buscar por cliente, pagamento ou data..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 transition-all focus:shadow-md"
         />
       </div>
 

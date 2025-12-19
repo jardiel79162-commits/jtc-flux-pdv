@@ -179,21 +179,24 @@ const Dashboard = () => {
 
   return (
     <PageLoader pageName="Dashboard">
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Visão geral do seu negócio</p>
+      <div className="page-header">
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
+          Dashboard
+        </h1>
+        <p className="text-muted-foreground text-lg">Visão geral do seu negócio</p>
       </div>
 
       {/* Status da Assinatura */}
       {!data.hideTrialMessage && data.subscriptionStatus === "trial" && (
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-yellow-500/10 shadow-lg">
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-yellow-500/10 shadow-lg animate-scale-in">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-2xl" />
           <CardHeader className="relative pb-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -205,14 +208,14 @@ const Dashboard = () => {
                   </CardDescription>
                 </div>
               </div>
-              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-md px-4 py-1.5 text-sm font-semibold">
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-md px-4 py-1.5 text-sm font-semibold animate-pulse">
                 {data.trialDaysLeft} {data.trialDaysLeft === 1 ? 'dia' : 'dias'}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="relative pt-2">
             <Link to="/assinatura">
-              <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]">
+              <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 transition-all hover:shadow-xl hover:scale-[1.02]">
                 Assinar Agora
               </Button>
             </Link>
@@ -330,51 +333,59 @@ const Dashboard = () => {
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="metric-card animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Hoje</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Vendas Hoje</CardTitle>
+            <div className="icon-gradient-primary">
+              <TrendingUp className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               R$ {data.salesToday.toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground">Faturamento do dia</p>
+            <p className="text-xs text-muted-foreground mt-1">Faturamento do dia</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card animate-fade-in delay-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas do Mês</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-accent" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Vendas do Mês</CardTitle>
+            <div className="icon-gradient-accent">
+              <ShoppingCart className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold bg-gradient-to-r from-accent to-accent/70 bg-clip-text text-transparent">
               R$ {data.salesMonth.toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground">Faturamento mensal</p>
+            <p className="text-xs text-muted-foreground mt-1">Faturamento mensal</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card animate-fade-in delay-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Estoque Baixo</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-warning" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Estoque Baixo</CardTitle>
+            <div className="icon-gradient-warning">
+              <AlertTriangle className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.lowStockProducts}</div>
-            <p className="text-xs text-muted-foreground">Produtos com baixo estoque</p>
+            <div className="text-3xl font-bold">{data.lowStockProducts}</div>
+            <p className="text-xs text-muted-foreground mt-1">Produtos precisam reposição</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card animate-fade-in delay-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Últimas Vendas</CardTitle>
-            <Package className="h-4 w-4 text-info" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Últimas Vendas</CardTitle>
+            <div className="icon-gradient-info">
+              <Package className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.recentSales}</div>
-            <p className="text-xs text-muted-foreground">Transações recentes</p>
+            <div className="text-3xl font-bold">{data.recentSales}</div>
+            <p className="text-xs text-muted-foreground mt-1">Transações recentes</p>
           </CardContent>
         </Card>
       </div>

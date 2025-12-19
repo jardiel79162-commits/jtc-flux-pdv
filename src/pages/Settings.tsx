@@ -301,10 +301,12 @@ const Settings = () => {
 
   return (
     <PageLoader pageName="Configurações">
-    <div className="p-4 md:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <div className="p-4 md:p-6 space-y-6 w-full max-w-full overflow-x-hidden animate-fade-in">
+      <div className="page-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Configurações da Loja</h1>
+          <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            Configurações da Loja
+          </h1>
           <p className="text-sm md:text-base text-muted-foreground">Personalize as informações da sua loja</p>
         </div>
       </div>
