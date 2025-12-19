@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, Package, ShoppingCart, AlertTriangle, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PixFeeCalculator } from "@/components/PixFeeCalculator";
+import { DashboardSkeleton } from "@/components/skeletons";
 
 // Importar imagens de ações rápidas
 import quickActionProdutos from "@/assets/quick-action-produtos.png";
@@ -171,9 +172,9 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <PageLoader pageName="Dashboard">
+        <DashboardSkeleton />
+      </PageLoader>
     );
   }
 

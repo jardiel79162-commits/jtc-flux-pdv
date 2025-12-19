@@ -24,6 +24,7 @@ import SubscriptionBlocker from "@/components/SubscriptionBlocker";
 import jsPDF from "jspdf";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import PageLoader from "@/components/PageLoader";
+import { POSSkeleton } from "@/components/skeletons";
 
 interface Product {
   id: string;
@@ -179,6 +180,15 @@ const POS = () => {
   // Bloquear se assinatura expirada
   if (!loading && isExpired) {
     return <SubscriptionBlocker isTrial={isTrial} />;
+  }
+
+  // Mostrar skeleton enquanto carrega
+  if (productsLoading) {
+    return (
+      <PageLoader pageName="PDV">
+        <POSSkeleton />
+      </PageLoader>
+    );
   }
 
   const fetchStoreName = async () => {
