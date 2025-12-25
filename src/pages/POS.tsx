@@ -133,6 +133,45 @@ const POS = () => {
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
+  const fetchProducts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setProductsLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .gt("stock_quantity", 0);
+
+    if (error) {
+      toast({ title: "Erro ao carregar produtos", variant: "destructive" });
+    } else {
+      setProducts(data || []);
+    }
+    setProductsLoading(false);
+  };
+
+  const fetchCustomers = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("name");
+
+    if (error) {
+      toast({ title: "Erro ao carregar clientes", variant: "destructive" });
+    } else {
+      setCustomers(data || []);
+    }
+  };
+
   // Função para tocar som de notificação
   const playNotificationSound = useCallback(() => {
     try {
@@ -534,44 +573,6 @@ const POS = () => {
     }
     setPaymentMethod("pix");
     showPixFeeQuestion(total);
-  };
-  const fetchProducts = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setProductsLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .gt("stock_quantity", 0);
-
-    if (error) {
-      toast({ title: "Erro ao carregar produtos", variant: "destructive" });
-    } else {
-      setProducts(data || []);
-    }
-    setProductsLoading(false);
-  };
-
-  const fetchCustomers = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("customers")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("name");
-
-    if (error) {
-      toast({ title: "Erro ao carregar clientes", variant: "destructive" });
-    } else {
-      setCustomers(data || []);
-    }
   };
 
   const filteredProducts = products.filter(p =>
