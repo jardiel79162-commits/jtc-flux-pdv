@@ -18,6 +18,7 @@ import Suppliers from "./pages/Suppliers";
 import WeeklyRedemption from "./pages/WeeklyRedemption";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +32,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
-          
+          <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/assinatura" element={<Subscription />} />
