@@ -6,16 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff, Gift, Copy, Check, Share2, Download, CheckCircle, Loader2 } from "lucide-react";
+import { Store, Save, Zap, BookOpen, ShoppingCart, Package, Users, FileText, Settings as SettingsIcon, CreditCard, History, Smartphone, Eye, EyeOff, Gift, Copy, Check, Share2, Download, CheckCircle, Loader2, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [settings, setSettings] = useState({
     store_name: "",
@@ -1448,6 +1450,29 @@ const Settings = () => {
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
+        </Card>
+
+        {/* Zona de Perigo - Excluir Conta */}
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive text-sm md:text-base">
+              <Trash2 className="h-5 w-5 shrink-0" />
+              Zona de Perigo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Ações irreversíveis relacionadas à sua conta. Prossiga com cuidado.
+            </p>
+            <Button 
+              variant="destructive" 
+              className="w-full sm:w-auto"
+              onClick={() => navigate("/excluir-minha-conta")}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir Minha Conta
+            </Button>
+          </CardContent>
         </Card>
       </div>
     </div>

@@ -193,6 +193,27 @@ const Auth = () => {
       return;
     }
 
+    // Verificar se o CPF está bloqueado
+    try {
+      const { data: isBlocked, error: blockError } = await supabase.rpc('is_cpf_blocked', {
+        check_cpf: cpfValue
+      });
+      
+      if (blockError) {
+        console.error('Erro ao verificar CPF:', blockError);
+      } else if (isBlocked) {
+        toast({
+          variant: "destructive",
+          title: "CPF bloqueado",
+          description: "Este CPF não pode ser utilizado para criar uma nova conta. Entre em contato com o suporte se precisar de ajuda.",
+        });
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Erro ao verificar CPF bloqueado:', error);
+    }
+
     // Validar telefone (11 dígitos com DDD)
     const phoneValue = (formData.get("phone") as string).replace(/\D/g, "");
     if (phoneValue.length !== 11) {
