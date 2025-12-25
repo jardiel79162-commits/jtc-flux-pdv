@@ -172,6 +172,38 @@ const POS = () => {
     }
   };
 
+  const fetchStoreName = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("store_settings")
+      .select("store_name, pix_key_type, pix_key, pix_receiver_name, logo_url, pix_mode, mercado_pago_cpf, mercado_pago_name")
+      .eq("user_id", user.id)
+      .single();
+
+    if (data?.store_name) {
+      setStoreName(data.store_name);
+    }
+    
+    if (data?.logo_url) {
+      setLogoUrl(data.logo_url);
+    }
+    
+    // Verificar se PIX está configurado (manual OU automático)
+    const isManualConfigured = (!data?.pix_mode || data?.pix_mode === 'manual') && data?.pix_key && data?.pix_receiver_name;
+    const isAutomaticConfigured = data?.pix_mode === 'automatic' && data?.mercado_pago_cpf && data?.mercado_pago_name;
+    
+    if (isManualConfigured || isAutomaticConfigured) {
+      setPixSettings({
+        pix_key_type: data.pix_key_type,
+        pix_key: data.pix_key,
+        pix_receiver_name: data.pix_receiver_name,
+        pix_mode: data.pix_mode || 'manual',
+      });
+    }
+  };
+
   // Função para tocar som de notificação
   const playNotificationSound = useCallback(() => {
     try {
@@ -230,37 +262,6 @@ const POS = () => {
     );
   }
 
-  const fetchStoreName = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data } = await supabase
-      .from("store_settings")
-      .select("store_name, pix_key_type, pix_key, pix_receiver_name, logo_url, pix_mode, mercado_pago_cpf, mercado_pago_name")
-      .eq("user_id", user.id)
-      .single();
-
-    if (data?.store_name) {
-      setStoreName(data.store_name);
-    }
-    
-    if (data?.logo_url) {
-      setLogoUrl(data.logo_url);
-    }
-    
-    // Verificar se PIX está configurado (manual OU automático)
-    const isManualConfigured = (!data?.pix_mode || data?.pix_mode === 'manual') && data?.pix_key && data?.pix_receiver_name;
-    const isAutomaticConfigured = data?.pix_mode === 'automatic' && data?.mercado_pago_cpf && data?.mercado_pago_name;
-    
-    if (isManualConfigured || isAutomaticConfigured) {
-      setPixSettings({
-        pix_key_type: data.pix_key_type,
-        pix_key: data.pix_key,
-        pix_receiver_name: data.pix_receiver_name,
-        pix_mode: data.pix_mode || 'manual',
-      });
-    }
-  };
 
   // Gerar payload PIX (formato EMV)
   const generatePixPayload = (amount: number): string => {
