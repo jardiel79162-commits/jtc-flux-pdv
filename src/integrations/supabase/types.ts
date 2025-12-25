@@ -70,6 +70,33 @@ export type Database = {
           },
         ]
       }
+      blocked_cpfs: {
+        Row: {
+          blocked_at: string
+          cpf: string
+          id: string
+          notes: string | null
+          original_user_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          blocked_at?: string
+          cpf: string
+          id?: string
+          notes?: string | null
+          original_user_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          blocked_at?: string
+          cpf?: string
+          id?: string
+          notes?: string | null
+          original_user_id?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -993,6 +1020,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_cpf_blocked: { Args: { check_cpf: string }; Returns: boolean }
       redeem_weekly_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: Json

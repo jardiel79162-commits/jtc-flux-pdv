@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import SalesHistory from "./pages/SalesHistory";
 import Suppliers from "./pages/Suppliers";
 import WeeklyRedemption from "./pages/WeeklyRedemption";
+import DeleteAccount from "./pages/DeleteAccount";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/fornecedores" element={<Suppliers />} />
             <Route path="/resgate-semanal" element={<WeeklyRedemption />} />
             <Route path="/auri" element={<Auri />} />
+            <Route path="/excluir-minha-conta" element={<DeleteAccount />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
