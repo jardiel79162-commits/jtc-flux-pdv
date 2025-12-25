@@ -248,19 +248,6 @@ const POS = () => {
     fetchCustomers();
   }, []);
 
-  // Bloquear se assinatura expirada
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
-  // Mostrar skeleton enquanto carrega
-  if (productsLoading) {
-    return (
-      <PageLoader pageName="PDV">
-        <POSSkeleton />
-      </PageLoader>
-    );
-  }
 
 
   // Gerar payload PIX (formato EMV)
@@ -1522,10 +1509,17 @@ ${paymentInfo}
     { value: "fiado", label: "Fiado", image: paymentFiado },
   ];
 
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
+
   return (
     <PageLoader pageName="Venda">
-    <div className="p-6 overflow-hidden">
-      <div className="mb-6">
+      {productsLoading ? (
+        <POSSkeleton />
+      ) : (
+        <div className="p-6 overflow-hidden">
+          <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">PDV - Ponto de Venda</h1>
         <p className="text-muted-foreground">Sistema de vendas</p>
       </div>
@@ -2729,7 +2723,8 @@ ${paymentInfo}
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+        </div>
+      )}
     </PageLoader>
   );
 };
