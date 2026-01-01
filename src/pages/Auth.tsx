@@ -10,10 +10,20 @@ import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, validateInviteCode, type SignUpData } from "@/lib/auth";
 import { isValidCPF } from "@/lib/cpfValidator";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, AlertTriangle, MessageCircle } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 import logo from "@/assets/logo.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -41,6 +51,9 @@ const Auth = () => {
   const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid" | "used">("idle");
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  // Estado para conta bloqueada
+  const [showBlockedAccountDialog, setShowBlockedAccountDialog] = useState(false);
 
   useEffect(() => {
     // Verificar se já está logado
@@ -147,6 +160,22 @@ const Auth = () => {
     const password = formData.get("password") as string;
 
     try {
+      // Verificar se é CPF e se está bloqueado
+      const cleanIdentifier = identifier.replace(/\D/g, "");
+      const isCPF = /^\d{11}$/.test(cleanIdentifier);
+      
+      if (isCPF) {
+        const { data: isBlocked } = await supabase.rpc('is_cpf_blocked', {
+          check_cpf: cleanIdentifier
+        });
+        
+        if (isBlocked) {
+          setShowBlockedAccountDialog(true);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       await signIn(identifier, password);
       toast({
         title: "Bem-vindo!",
@@ -161,6 +190,12 @@ const Auth = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleReactivateAccount = () => {
+    const message = encodeURIComponent("Olá 👋 gostaria de solicitar a reativação da minha conta do JTC FLUX PDV 🔄💻. Desde já, agradeço 🙏");
+    window.open(`https://wa.me/5598981091476?text=${message}`, "_blank");
+    setShowBlockedAccountDialog(false);
   };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1053,6 +1088,40 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog de Conta Bloqueada */}
+      <AlertDialog open={showBlockedAccountDialog} onOpenChange={setShowBlockedAccountDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-4 bg-destructive/10 rounded-full">
+                <AlertTriangle className="h-12 w-12 text-destructive" />
+              </div>
+            </div>
+            <AlertDialogTitle className="text-center text-xl">
+              Esta conta foi excluída
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center space-y-3">
+              <p>
+                A conta associada a este CPF foi excluída anteriormente. 
+                Para reativar sua conta, entre em contato conosco pelo WhatsApp.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction 
+              onClick={handleReactivateAccount}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Reativar minha conta
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full">
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
