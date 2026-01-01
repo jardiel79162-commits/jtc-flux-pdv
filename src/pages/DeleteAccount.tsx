@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowLeft, Trash2, XCircle, Phone, Mail, CheckCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Trash2, XCircle, Phone, Mail, CheckCircle, Database, Clock, Shield } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -103,16 +103,109 @@ const DeleteAccount = () => {
               <Trash2 className="h-6 w-6" />
               Excluir Minha Conta
             </h1>
-            <p className="text-muted-foreground">Esta ação é irreversível</p>
+            <p className="text-muted-foreground">JTC FluxPDV - Exclusão de Conta</p>
           </div>
         </div>
+
+        {/* App Info Card - Google Play Requirement */}
+        <Card className="border-muted bg-muted/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Sobre Esta Página
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>
+              Esta página permite que você, usuário do <strong>JTC FluxPDV</strong>, desenvolvido por <strong>Jardiel De Sousa Lopes</strong>, 
+              solicite a exclusão permanente da sua conta e dados associados.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Steps Card - Google Play Requirement */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Como Solicitar a Exclusão da Conta
+            </CardTitle>
+            <CardDescription>
+              Siga os passos abaixo para excluir sua conta
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ol className="list-decimal list-inside space-y-3 text-sm">
+              <li className="pl-2">
+                <strong>Leia atentamente</strong> as informações sobre o que acontece quando você exclui sua conta (seção abaixo).
+              </li>
+              <li className="pl-2">
+                <strong>Marque as 3 caixas de confirmação</strong> indicando que você entende as consequências.
+              </li>
+              <li className="pl-2">
+                <strong>Digite "EXCLUIR MINHA CONTA"</strong> no campo de confirmação.
+              </li>
+              <li className="pl-2">
+                <strong>Clique no botão "Excluir Minha Conta"</strong> e confirme na janela de diálogo.
+              </li>
+              <li className="pl-2">
+                Sua conta será excluída <strong>imediatamente</strong> e você será desconectado do sistema.
+              </li>
+            </ol>
+          </CardContent>
+        </Card>
+
+        {/* Data Handling Card - Google Play Requirement */}
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-600">
+              <Clock className="h-5 w-5" />
+              Dados Excluídos e Mantidos
+            </CardTitle>
+            <CardDescription>
+              Informações sobre o tratamento dos seus dados
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div>
+              <p className="font-semibold text-foreground mb-2">Dados que serão EXCLUÍDOS imediatamente:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                <li>Todos os produtos cadastrados</li>
+                <li>Histórico completo de vendas e itens de venda</li>
+                <li>Cadastro de clientes e transações</li>
+                <li>Fornecedores e compras</li>
+                <li>Categorias personalizadas</li>
+                <li>Configurações da loja (logo, cores, PIX)</li>
+                <li>Funcionários e permissões</li>
+                <li>Conversas com a assistente Auri</li>
+                <li>Códigos de resgate semanais</li>
+                <li>Logs de e-mails enviados</li>
+                <li>Dados do perfil (nome, endereço, telefone)</li>
+              </ul>
+            </div>
+            
+            <div>
+              <p className="font-semibold text-foreground mb-2">Dados que serão MANTIDOS:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                <li><strong>CPF bloqueado:</strong> Seu CPF será adicionado à lista de bloqueio para evitar criação de novas contas. Este dado é mantido por tempo indeterminado para segurança do sistema.</li>
+                <li><strong>Registros de pagamento:</strong> Por exigências fiscais e legais, mantemos registros de pagamentos de assinatura por 5 anos.</li>
+              </ul>
+            </div>
+
+            <div className="mt-4 p-3 bg-background rounded-lg border">
+              <p className="text-xs text-muted-foreground">
+                <strong>Nota:</strong> A exclusão é processada imediatamente. Não há período de carência ou possibilidade de cancelamento após a confirmação.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Warning Card */}
         <Card className="border-destructive/50 bg-destructive/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Atenção: Leia com cuidado
+              Atenção: Consequências da Exclusão
             </CardTitle>
             <CardDescription>
               Antes de excluir sua conta, entenda o que vai acontecer
@@ -163,16 +256,17 @@ const DeleteAccount = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Se um dia você quiser voltar a usar o sistema com o mesmo CPF, será necessário entrar em contato com nosso suporte para solicitar a reativação.
+              Se um dia você quiser voltar a usar o sistema com o mesmo CPF, será necessário entrar em contato com nosso suporte para solicitar a reativação. 
+              O desbloqueio do CPF está sujeito à análise.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-primary" />
-                <span>(63) 99267-5628</span>
+                <span>(98) 98109-1476</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>jtcempresarial.solucoesti@gmail.com</span>
+                <span>jtc.flux.pdv@gmail.com</span>
               </div>
             </div>
           </CardContent>
