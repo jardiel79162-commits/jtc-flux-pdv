@@ -12,10 +12,8 @@ import {
   Unlock, 
   Search, 
   LogOut, 
-  UserX, 
   UserCheck,
   CreditCard,
-  AlertTriangle,
   RefreshCw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -74,11 +72,6 @@ const AdminPanel = () => {
   const [selectedCpf, setSelectedCpf] = useState<BlockedCpf | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Block user states
-  const [blockCpfInput, setBlockCpfInput] = useState("");
-  const [blockReason, setBlockReason] = useState("");
-  const [blocking, setBlocking] = useState(false);
-
   useEffect(() => {
     checkAdminAccess();
   }, []);
@@ -109,10 +102,6 @@ const AdminPanel = () => {
 
     if (error) {
       console.error("Error fetching blocked CPFs:", error);
-      toast({
-        title: "Erro ao carregar CPFs bloqueados",
-        variant: "destructive",
-      });
     } else {
       setBlockedCpfs(data || []);
     }
@@ -126,10 +115,6 @@ const AdminPanel = () => {
 
     if (error) {
       console.error("Error fetching users:", error);
-      toast({
-        title: "Erro ao carregar usuários",
-        variant: "destructive",
-      });
     } else {
       setPaidUsers(data || []);
     }
@@ -153,16 +138,15 @@ const AdminPanel = () => {
       .eq("id", selectedCpf.id);
 
     if (error) {
-      console.error("Error unblocking CPF:", error);
       toast({
-        title: "Erro ao desbloquear CPF",
+        title: "Erro ao reativar conta",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "CPF Desbloqueado",
-        description: `O CPF ${formatCpf(selectedCpf.cpf)} foi desbloqueado com sucesso.`,
+        title: "Conta Reativada",
+        description: `O CPF ${formatCpf(selectedCpf.cpf)} foi reativado com sucesso.`,
       });
       await fetchBlockedCpfs();
     }
@@ -170,56 +154,6 @@ const AdminPanel = () => {
     setUnblockingCpf(null);
     setShowUnblockDialog(false);
     setSelectedCpf(null);
-  };
-
-  const handleBlockCpf = async () => {
-    if (!blockCpfInput.trim()) {
-      toast({
-        title: "CPF obrigatório",
-        description: "Digite o CPF que deseja bloquear",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const cleanCpf = blockCpfInput.replace(/\D/g, "");
-    if (cleanCpf.length !== 11) {
-      toast({
-        title: "CPF inválido",
-        description: "O CPF deve ter 11 dígitos",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setBlocking(true);
-
-    const { error } = await supabase
-      .from("blocked_cpfs")
-      .insert({
-        cpf: cleanCpf,
-        reason: blockReason || "blocked_by_admin",
-        notes: `Bloqueado manualmente pelo administrador em ${new Date().toLocaleString("pt-BR")}`,
-      });
-
-    if (error) {
-      console.error("Error blocking CPF:", error);
-      toast({
-        title: "Erro ao bloquear CPF",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "CPF Bloqueado",
-        description: `O CPF ${formatCpf(cleanCpf)} foi bloqueado com sucesso.`,
-      });
-      setBlockCpfInput("");
-      setBlockReason("");
-      await fetchBlockedCpfs();
-    }
-
-    setBlocking(false);
   };
 
   const handleLogout = async () => {
@@ -360,7 +294,7 @@ const AdminPanel = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{blockedCpfs.length}</p>
-                  <p className="text-sm text-muted-foreground">CPFs Bloqueados</p>
+                  <p className="text-sm text-muted-foreground">Contas Canceladas</p>
                 </div>
               </div>
             </CardContent>
@@ -368,100 +302,17 @@ const AdminPanel = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="blocked" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="blocked" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              CPFs Bloqueados
-            </TabsTrigger>
+        <Tabs defaultValue="users" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Usuários
             </TabsTrigger>
-            <TabsTrigger value="block" className="flex items-center gap-2">
-              <UserX className="h-4 w-4" />
-              Bloquear CPF
+            <TabsTrigger value="blocked" className="flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              Contas Canceladas
             </TabsTrigger>
           </TabsList>
-
-          {/* Blocked CPFs Tab */}
-          <TabsContent value="blocked">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  CPFs Bloqueados
-                </CardTitle>
-                <CardDescription>
-                  Gerencie os CPFs bloqueados do sistema. Você pode desbloquear para permitir que o usuário crie uma nova conta.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por CPF..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                {filteredBlockedCpfs.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Lock className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p>Nenhum CPF bloqueado encontrado</p>
-                  </div>
-                ) : (
-                  <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>CPF</TableHead>
-                          <TableHead>Motivo</TableHead>
-                          <TableHead>Data do Bloqueio</TableHead>
-                          <TableHead>Observações</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredBlockedCpfs.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-mono">{formatCpf(item.cpf)}</TableCell>
-                            <TableCell>
-                              <Badge variant="destructive">
-                                {item.reason === "account_deleted" ? "Conta Excluída" : 
-                                 item.reason === "blocked_by_admin" ? "Bloqueio Manual" : 
-                                 item.reason || "N/A"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{formatDate(item.blocked_at)}</TableCell>
-                            <TableCell className="max-w-xs truncate">{item.notes || "-"}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedCpf(item);
-                                  setShowUnblockDialog(true);
-                                }}
-                                disabled={unblockingCpf === item.id}
-                              >
-                                <Unlock className="h-4 w-4 mr-1" />
-                                Desbloquear
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users">
@@ -533,84 +384,100 @@ const AdminPanel = () => {
             </Card>
           </TabsContent>
 
-          {/* Block CPF Tab */}
-          <TabsContent value="block">
+          {/* Blocked CPFs Tab */}
+          <TabsContent value="blocked">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <UserX className="h-5 w-5" />
-                  Bloquear CPF
+                  <Lock className="h-5 w-5" />
+                  Contas Canceladas
                 </CardTitle>
                 <CardDescription>
-                  Bloqueie um CPF para impedir que o usuário crie novas contas no sistema.
+                  Visualize as contas que foram canceladas pelos usuários. Você pode reativar a conta removendo o CPF da lista.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-medium text-amber-600">Atenção</p>
-                    <p className="text-muted-foreground">
-                      Ao bloquear um CPF, o usuário não poderá criar novas contas com esse documento. 
-                      Esta ação NÃO exclui a conta existente do usuário.
-                    </p>
+              <CardContent>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por CPF..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">CPF a ser bloqueado</label>
-                  <Input
-                    placeholder="000.000.000-00"
-                    value={blockCpfInput}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      if (value.length <= 11) {
-                        setBlockCpfInput(value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"));
-                      }
-                    }}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Motivo (opcional)</label>
-                  <Input
-                    placeholder="Ex: Fraude, comportamento abusivo, etc."
-                    value={blockReason}
-                    onChange={(e) => setBlockReason(e.target.value)}
-                  />
-                </div>
-
-                <Button 
-                  className="w-full" 
-                  variant="destructive"
-                  onClick={handleBlockCpf}
-                  disabled={blocking}
-                >
-                  <Lock className="h-4 w-4 mr-2" />
-                  {blocking ? "Bloqueando..." : "Bloquear CPF"}
-                </Button>
+                {filteredBlockedCpfs.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Lock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                    <p>Nenhuma conta cancelada encontrada</p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>CPF</TableHead>
+                          <TableHead>Motivo</TableHead>
+                          <TableHead>Data do Cancelamento</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredBlockedCpfs.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-mono">{formatCpf(item.cpf)}</TableCell>
+                            <TableCell>
+                              <Badge variant="destructive">
+                                {item.reason === "account_deleted" ? "Conta Excluída" : 
+                                 item.reason || "Cancelamento"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{formatDate(item.blocked_at)}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedCpf(item);
+                                  setShowUnblockDialog(true);
+                                }}
+                                disabled={unblockingCpf === item.id}
+                              >
+                                <Unlock className="h-4 w-4 mr-1" />
+                                Reativar
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Unblock Confirmation Dialog */}
+      {/* Reactivate Confirmation Dialog */}
       <AlertDialog open={showUnblockDialog} onOpenChange={setShowUnblockDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desbloquear CPF?</AlertDialogTitle>
+            <AlertDialogTitle>Reativar Conta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja desbloquear o CPF <strong className="font-mono">{selectedCpf && formatCpf(selectedCpf.cpf)}</strong>?
+              Tem certeza que deseja reativar a conta do CPF <strong className="font-mono">{selectedCpf && formatCpf(selectedCpf.cpf)}</strong>?
               <br /><br />
-              O usuário poderá criar uma nova conta com este CPF após o desbloqueio.
+              O usuário poderá criar uma nova conta com este CPF após a reativação.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleUnblockCpf}>
               <Unlock className="h-4 w-4 mr-2" />
-              Sim, Desbloquear
+              Sim, Reativar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
