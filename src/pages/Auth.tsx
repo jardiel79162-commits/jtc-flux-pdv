@@ -30,6 +30,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isFetchingCEP, setIsFetchingCEP] = useState(false);
@@ -69,22 +70,57 @@ const Auth = () => {
 
   // Estado para conta bloqueada
   const [showBlockedAccountDialog, setShowBlockedAccountDialog] = useState(false);
-  
+
   // Estado para conta criada (email enviado)
   const [accountCreated, setAccountCreated] = useState(false);
 
+  const handleResendConfirmationEmail = async () => {
+    if (!formData.email) return;
+
+    setIsResendingConfirmation(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: formData.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "E-mail reenviado",
+        description: "Enviamos um novo link de confirmação. Verifique também o spam.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível reenviar",
+        description: error?.message || "Tente novamente em instantes.",
+      });
+    } finally {
+      setIsResendingConfirmation(false);
+    }
+  };
+
   useEffect(() => {
-    // Verificar se já está logado
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    const redirectIfConfirmed = (session: any) => {
+      const confirmedAt = session?.user?.email_confirmed_at ?? session?.user?.confirmed_at;
+      if (session && confirmedAt) {
         navigate("/dashboard");
       }
+    };
+
+    // Verificar se já está logado (somente se e-mail já estiver confirmado)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      redirectIfConfirmed(session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      redirectIfConfirmed(session);
     });
 
     // Carregar estados
@@ -1141,6 +1177,23 @@ const Auth = () => {
                     >
                       <ExternalLink className="mr-2 h-5 w-5" />
                       {getEmailProvider(formData.email) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleResendConfirmationEmail}
+                      className="w-full h-12"
+                      disabled={isResendingConfirmation}
+                    >
+                      {isResendingConfirmation ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Reenviando...
+                        </>
+                      ) : (
+                        "Reenviar e-mail de confirmação"
+                      )}
                     </Button>
 
                     <Button 
