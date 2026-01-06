@@ -77,12 +77,20 @@ export const signIn = async (identifier: string, password: string) => {
     identifier = emailFromCpf;
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: identifier,
     password,
   });
 
   if (error) throw error;
+
+  // Garante que o usuário só consiga entrar após confirmar o e-mail.
+  // (Em alguns cenários/configurações o backend pode retornar sessão mesmo sem confirmação.)
+  const confirmedAt = (data.user as any)?.email_confirmed_at ?? (data.user as any)?.confirmed_at;
+  if (!confirmedAt) {
+    await supabase.auth.signOut();
+    throw new Error("email_not_confirmed");
+  }
 };
 
 export const signOut = async () => {
