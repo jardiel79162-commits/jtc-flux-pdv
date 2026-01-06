@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, validateInviteCode, type SignUpData } from "@/lib/auth";
 import { isValidCPF } from "@/lib/cpfValidator";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, ChevronRight, ChevronLeft, Check, User, MapPin, Ticket } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, ChevronRight, ChevronLeft, Check, User, MapPin, Ticket, Mail, ExternalLink } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 import logo from "@/assets/logo.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -257,6 +257,28 @@ const Auth = () => {
     setShowBlockedAccountDialog(false);
   };
 
+  // Detectar tipo de email
+  const getEmailProvider = (email: string): "gmail" | "outlook" | "unknown" => {
+    const lowerEmail = email.toLowerCase();
+    if (lowerEmail.includes("@gmail.com")) return "gmail";
+    if (lowerEmail.includes("@outlook.com") || lowerEmail.includes("@hotmail.com") || lowerEmail.includes("@live.com")) return "outlook";
+    return "unknown";
+  };
+
+  const isValidEmailProvider = (email: string): boolean => {
+    const provider = getEmailProvider(email);
+    return provider === "gmail" || provider === "outlook";
+  };
+
+  const openEmailApp = () => {
+    const provider = getEmailProvider(formData.email);
+    if (provider === "gmail") {
+      window.open("https://mail.google.com", "_blank");
+    } else if (provider === "outlook") {
+      window.open("https://outlook.live.com", "_blank");
+    }
+  };
+
   // Validação do passo 1 (Dados Pessoais)
   const validateStep1 = () => {
     if (!formData.fullName.trim()) {
@@ -272,6 +294,12 @@ const Auth = () => {
 
     if (!formData.email.includes("@")) {
       toast({ variant: "destructive", title: "Erro", description: "Email inválido" });
+      return false;
+    }
+
+    // Validar se o email é Gmail ou Outlook
+    if (!isValidEmailProvider(formData.email)) {
+      toast({ variant: "destructive", title: "Erro", description: "Só aceitamos emails @gmail.com ou @outlook.com" });
       return false;
     }
 
@@ -336,6 +364,19 @@ const Auth = () => {
     } else if (registerStep === 2 && validateStep2()) {
       setRegisterStep(3);
     }
+  };
+
+  const handleGoToEmailVerification = () => {
+    // Validar código de convite se fornecido
+    if (hasInviteCode && inviteCode && codeValidationStatus !== "valid") {
+      toast({
+        variant: "destructive",
+        title: "Código inválido",
+        description: "Por favor, verifique o código de convite.",
+      });
+      return;
+    }
+    setRegisterStep(4);
   };
 
   const handlePreviousStep = () => {
@@ -641,12 +682,14 @@ const Auth = () => {
 
               <TabsContent value="register" className="space-y-4">
                 {/* Indicadores de passos */}
-                <div className="flex justify-center items-center gap-4 mb-6">
+                <div className="flex justify-center items-center gap-2 mb-6">
                   <StepIndicator step={1} label="Dados" icon={User} />
-                  <div className={`flex-1 h-1 rounded-full max-w-16 transition-colors duration-300 ${registerStep > 1 ? 'bg-accent' : 'bg-muted'}`} />
+                  <div className={`flex-1 h-1 rounded-full max-w-8 transition-colors duration-300 ${registerStep > 1 ? 'bg-accent' : 'bg-muted'}`} />
                   <StepIndicator step={2} label="Endereço" icon={MapPin} />
-                  <div className={`flex-1 h-1 rounded-full max-w-16 transition-colors duration-300 ${registerStep > 2 ? 'bg-accent' : 'bg-muted'}`} />
+                  <div className={`flex-1 h-1 rounded-full max-w-8 transition-colors duration-300 ${registerStep > 2 ? 'bg-accent' : 'bg-muted'}`} />
                   <StepIndicator step={3} label="Código" icon={Ticket} />
+                  <div className={`flex-1 h-1 rounded-full max-w-8 transition-colors duration-300 ${registerStep > 3 ? 'bg-accent' : 'bg-muted'}`} />
+                  <StepIndicator step={4} label="E-mail" icon={Mail} />
                 </div>
 
                 {/* Passo 1: Dados Pessoais */}
@@ -1037,9 +1080,71 @@ const Auth = () => {
                       </Button>
                       <Button 
                         type="button" 
-                        onClick={handleRegister}
-                        className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80"
+                        onClick={handleGoToEmailVerification}
+                        className="flex-1 h-12"
                         disabled={isLoading || hasInviteCode === null || (hasInviteCode && codeValidationStatus !== "valid" && inviteCode.length > 0)}
+                      >
+                        Próximo
+                        <ChevronRight className="ml-2 h-5 w-5" />
+                      </Button>
+                    </div>
+
+                    <p className="text-xs text-center text-muted-foreground">
+                      {hasInviteCode && codeValidationStatus === "valid" 
+                        ? "Você ganhará 1 mês + 3 dias de teste grátis! 🎉"
+                        : "Você ganhará 3 dias de teste grátis"
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {/* Passo 4: Verificação de E-mail */}
+                {registerStep === 4 && (
+                  <div className="space-y-6">
+                    <div className="text-center mb-4">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <Mail className="w-8 h-8 text-primary" />
+                      </div>
+                      <h3 className="font-semibold text-lg">Verifique seu E-mail</h3>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Foi enviado um link de confirmação para:
+                      </p>
+                      <p className="font-medium text-primary mt-1 break-all">
+                        {formData.email}
+                      </p>
+                    </div>
+
+                    <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
+                      <p className="text-sm text-muted-foreground text-center">
+                        <strong>Lembrete:</strong> Só aceitamos e-mails <span className="text-primary font-medium">@gmail.com</span> ou <span className="text-primary font-medium">@outlook.com</span>
+                      </p>
+                    </div>
+
+                    <Button 
+                      type="button" 
+                      onClick={openEmailApp}
+                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary to-primary/80"
+                    >
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      {getEmailProvider(formData.email) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
+                    </Button>
+
+                    <div className="flex gap-3">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handlePreviousStep}
+                        className="flex-1 h-12"
+                        disabled={isLoading}
+                      >
+                        <ChevronLeft className="mr-2 h-5 w-5" />
+                        Voltar
+                      </Button>
+                      <Button 
+                        type="button" 
+                        onClick={handleRegister}
+                        className="flex-1 h-12 bg-gradient-to-r from-accent to-accent/80"
+                        disabled={isLoading}
                       >
                         {isLoading ? (
                           <>
@@ -1053,10 +1158,7 @@ const Auth = () => {
                     </div>
 
                     <p className="text-xs text-center text-muted-foreground">
-                      {hasInviteCode && codeValidationStatus === "valid" 
-                        ? "Ao criar sua conta, você ganha 1 mês + 3 dias de teste grátis! 🎉"
-                        : "Ao criar sua conta, você ganha 3 dias de teste grátis"
-                      }
+                      Clique em "Criar Conta" após confirmar seu e-mail
                     </p>
                   </div>
                 )}
@@ -1079,7 +1181,7 @@ const Auth = () => {
                     <div className="space-y-6 text-sm">
                       <div className="bg-primary/5 p-4 rounded-lg">
                         <p className="text-muted-foreground">
-                          O cadastro é dividido em <strong>3 etapas simples</strong>. Siga as instruções abaixo:
+                          O cadastro é dividido em <strong>4 etapas simples</strong>. Siga as instruções abaixo:
                         </p>
                       </div>
 
@@ -1091,7 +1193,7 @@ const Auth = () => {
                         <div className="ml-8 space-y-1 text-muted-foreground">
                           <p>• <strong>Nome Completo:</strong> Seu nome e sobrenome</p>
                           <p>• <strong>CPF:</strong> Será validado automaticamente</p>
-                          <p>• <strong>E-mail:</strong> Para login e recuperação</p>
+                          <p>• <strong>E-mail:</strong> Só aceitamos @gmail.com ou @outlook.com</p>
                           <p>• <strong>Telefone:</strong> 11 dígitos com DDD</p>
                           <p>• <strong>Senha:</strong> Mínimo 6 caracteres</p>
                         </div>
@@ -1116,6 +1218,18 @@ const Auth = () => {
                         <div className="ml-8 space-y-1 text-muted-foreground">
                           <p>• Com código: <strong className="text-accent">1 mês + 3 dias grátis</strong></p>
                           <p>• Sem código: <strong>3 dias grátis</strong></p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-foreground flex items-center gap-2">
+                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
+                          Etapa 4: Verificação de E-mail
+                        </h3>
+                        <div className="ml-8 space-y-1 text-muted-foreground">
+                          <p>• Confirme seu e-mail clicando no link enviado</p>
+                          <p>• Use o botão para abrir Gmail ou Outlook</p>
+                          <p>• Após confirmar, clique em "Criar Conta"</p>
                         </div>
                       </div>
                     </div>
