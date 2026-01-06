@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, validateInviteCode, type SignUpData } from "@/lib/auth";
 import { isValidCPF } from "@/lib/cpfValidator";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, AlertTriangle, MessageCircle } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, ChevronRight, ChevronLeft, Check, User, MapPin, Ticket } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 import logo from "@/assets/logo.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -42,6 +42,21 @@ const Auth = () => {
     neighborhood: "",
     city: "",
     state: "",
+  });
+
+  // Estado do passo do cadastro (1, 2 ou 3)
+  const [registerStep, setRegisterStep] = useState(1);
+
+  // Dados do formulário de cadastro
+  const [formData, setFormData] = useState({
+    fullName: "",
+    cpf: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    cep: "",
+    number: "",
   });
 
   // Estado do código de convite
@@ -151,13 +166,57 @@ const Auth = () => {
     }
   };
 
+  const formatCPF = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 11) v = v.slice(0, 11);
+    
+    let formatted = v;
+    if (v.length > 3) {
+      formatted = v.slice(0, 3) + "." + v.slice(3);
+    }
+    if (v.length > 6) {
+      formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
+    }
+    if (v.length > 9) {
+      formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
+    }
+    return formatted;
+  };
+
+  const formatPhone = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 11) v = v.slice(0, 11);
+    
+    let formatted = v;
+    if (v.length > 0) {
+      formatted = "(" + v;
+    }
+    if (v.length > 2) {
+      formatted = "(" + v.slice(0, 2) + ") " + v.slice(2);
+    }
+    if (v.length > 7) {
+      formatted = "(" + v.slice(0, 2) + ") " + v.slice(2, 7) + "-" + v.slice(7);
+    }
+    return formatted;
+  };
+
+  const formatCEPInput = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 8) v = v.slice(0, 8);
+    
+    if (v.length > 5) {
+      return v.slice(0, 5) + "-" + v.slice(5);
+    }
+    return v;
+  };
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const identifier = formData.get("identifier") as string;
-    const password = formData.get("password") as string;
+    const formDataEvent = new FormData(e.currentTarget);
+    const identifier = formDataEvent.get("identifier") as string;
+    const password = formDataEvent.get("password") as string;
 
     try {
       // Verificar se é CPF e se está bloqueado
@@ -198,38 +257,109 @@ const Auth = () => {
     setShowBlockedAccountDialog(false);
   };
 
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // Validação do passo 1 (Dados Pessoais)
+  const validateStep1 = () => {
+    if (!formData.fullName.trim()) {
+      toast({ variant: "destructive", title: "Erro", description: "Nome completo é obrigatório" });
+      return false;
+    }
+
+    const cpfValue = formData.cpf.replace(/\D/g, "");
+    if (!isValidCPF(cpfValue)) {
+      toast({ variant: "destructive", title: "Erro", description: "CPF inválido" });
+      return false;
+    }
+
+    if (!formData.email.includes("@")) {
+      toast({ variant: "destructive", title: "Erro", description: "Email inválido" });
+      return false;
+    }
+
+    const phoneValue = formData.phone.replace(/\D/g, "");
+    if (phoneValue.length !== 11) {
+      toast({ variant: "destructive", title: "Erro", description: "Telefone deve ter 11 dígitos (DDD + número)" });
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      toast({ variant: "destructive", title: "Erro", description: "Senha deve ter no mínimo 6 caracteres" });
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({ variant: "destructive", title: "Erro", description: "As senhas não coincidem" });
+      return false;
+    }
+
+    return true;
+  };
+
+  // Validação do passo 2 (Endereço)
+  const validateStep2 = () => {
+    const cepValue = formData.cep.replace(/\D/g, "");
+    if (cepValue.length !== 8) {
+      toast({ variant: "destructive", title: "Erro", description: "CEP inválido" });
+      return false;
+    }
+
+    if (!addressData.street.trim()) {
+      toast({ variant: "destructive", title: "Erro", description: "Rua é obrigatória" });
+      return false;
+    }
+
+    if (!formData.number.trim()) {
+      toast({ variant: "destructive", title: "Erro", description: "Número é obrigatório" });
+      return false;
+    }
+
+    if (!addressData.neighborhood.trim()) {
+      toast({ variant: "destructive", title: "Erro", description: "Bairro é obrigatório" });
+      return false;
+    }
+
+    if (!selectedEstado) {
+      toast({ variant: "destructive", title: "Erro", description: "Estado é obrigatório" });
+      return false;
+    }
+
+    if (!selectedCidade) {
+      toast({ variant: "destructive", title: "Erro", description: "Cidade é obrigatória" });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (registerStep === 1 && validateStep1()) {
+      setRegisterStep(2);
+    } else if (registerStep === 2 && validateStep2()) {
+      setRegisterStep(3);
+    }
+  };
+
+  const handlePreviousStep = () => {
+    if (registerStep > 1) {
+      setRegisterStep(registerStep - 1);
+    }
+  };
+
+  const handleRegister = async () => {
+    // Validar código de convite se fornecido
+    if (hasInviteCode && inviteCode && codeValidationStatus !== "valid") {
+      toast({
+        variant: "destructive",
+        title: "Código inválido",
+        description: "Por favor, verifique o código de convite.",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirmPassword") as string;
-
-    if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "As senhas não coincidem.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // Validar CPF
-    const cpfValue = (formData.get("cpf") as string).replace(/\D/g, "");
-    if (!isValidCPF(cpfValue)) {
-      toast({
-        variant: "destructive",
-        title: "CPF inválido",
-        description: "Por favor, digite um CPF válido.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // Verificar se o CPF está bloqueado
     try {
+      // Verificar se o CPF está bloqueado
+      const cpfValue = formData.cpf.replace(/\D/g, "");
       const { data: isBlocked, error: blockError } = await supabase.rpc('is_cpf_blocked', {
         check_cpf: cpfValue
       });
@@ -240,77 +370,50 @@ const Auth = () => {
         toast({
           variant: "destructive",
           title: "CPF bloqueado",
-          description: "Este CPF não pode ser utilizado para criar uma nova conta. Entre em contato com o suporte se precisar de ajuda.",
+          description: "Este CPF não pode ser utilizado para criar uma nova conta.",
         });
         setIsLoading(false);
         return;
       }
-    } catch (error) {
-      console.error('Erro ao verificar CPF bloqueado:', error);
-    }
 
-    // Validar telefone (11 dígitos com DDD)
-    const phoneValue = (formData.get("phone") as string).replace(/\D/g, "");
-    if (phoneValue.length !== 11) {
-      toast({
-        variant: "destructive",
-        title: "Telefone inválido",
-        description: "O telefone deve ter 11 dígitos (DDD + número).",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // Validar código de convite se fornecido
-    if (hasInviteCode && inviteCode && codeValidationStatus !== "valid") {
-      toast({
-        variant: "destructive",
-        title: "Código inválido",
-        description: "Por favor, verifique o código de convite.",
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // Verificar se o IP já usou este código de convite
-    if (hasInviteCode && inviteCode && codeValidationStatus === "valid") {
-      try {
-        const response = await supabase.functions.invoke('validate-invite-ip', {
-          body: { invite_code: inviteCode, action: 'check' }
-        });
-        
-        if (response.error) {
-          console.error('Erro ao verificar IP:', response.error);
-        } else if (!response.data.can_use) {
-          toast({
-            variant: "destructive",
-            title: "Código já utilizado",
-            description: response.data.message || "Este dispositivo já utilizou este código de convite para criar uma conta.",
+      // Verificar se o IP já usou este código de convite
+      if (hasInviteCode && inviteCode && codeValidationStatus === "valid") {
+        try {
+          const response = await supabase.functions.invoke('validate-invite-ip', {
+            body: { invite_code: inviteCode, action: 'check' }
           });
-          setIsLoading(false);
-          return;
+          
+          if (response.error) {
+            console.error('Erro ao verificar IP:', response.error);
+          } else if (!response.data.can_use) {
+            toast({
+              variant: "destructive",
+              title: "Código já utilizado",
+              description: response.data.message || "Este dispositivo já utilizou este código de convite.",
+            });
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Erro ao verificar IP:', error);
         }
-      } catch (error) {
-        console.error('Erro ao verificar IP:', error);
       }
-    }
 
-    const data: SignUpData = {
-      fullName: formData.get("fullName") as string,
-      cpf: (formData.get("cpf") as string).replace(/\D/g, ""),
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      cep: formData.get("cep") as string,
-      street: addressData.street,
-      number: formData.get("number") as string,
-      neighborhood: addressData.neighborhood,
-      city: selectedCidade,
-      state: selectedEstado,
-      password,
-      referredByCode: hasInviteCode && codeValidationStatus === "valid" ? inviteCode : undefined,
-    };
+      const data: SignUpData = {
+        fullName: formData.fullName,
+        cpf: cpfValue,
+        email: formData.email,
+        phone: formData.phone,
+        cep: formData.cep,
+        street: addressData.street,
+        number: formData.number,
+        neighborhood: addressData.neighborhood,
+        city: selectedCidade,
+        state: selectedEstado,
+        password: formData.password,
+        referredByCode: hasInviteCode && codeValidationStatus === "valid" ? inviteCode : undefined,
+      };
 
-    try {
       await signUp(data);
       
       // Registrar uso do código de convite com IP
@@ -327,6 +430,26 @@ const Auth = () => {
         title: "Conta criada!",
         description: trialMessage,
       });
+
+      // Reset form
+      setRegisterStep(1);
+      setFormData({
+        fullName: "",
+        cpf: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: "",
+        cep: "",
+        number: "",
+      });
+      setAddressData({ street: "", neighborhood: "", city: "", state: "" });
+      setSelectedEstado("");
+      setSelectedCidade("");
+      setHasInviteCode(null);
+      setInviteCode("");
+      setCodeValidationStatus("idle");
+      
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -337,6 +460,25 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  const StepIndicator = ({ step, label, icon: Icon }: { step: number; label: string; icon: any }) => (
+    <div className="flex flex-col items-center gap-1">
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+        registerStep === step 
+          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
+          : registerStep > step 
+            ? "bg-accent text-accent-foreground" 
+            : "bg-muted text-muted-foreground"
+      }`}>
+        {registerStep > step ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+      </div>
+      <span className={`text-xs font-medium ${
+        registerStep === step ? "text-primary" : "text-muted-foreground"
+      }`}>
+        {label}
+      </span>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/20 flex items-center justify-center p-4 relative overflow-hidden">
@@ -431,7 +573,7 @@ const Auth = () => {
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs defaultValue="login" className="w-full" onValueChange={() => setRegisterStep(1)}>
               <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-muted/50">
                 <TabsTrigger value="login" className="font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Entrar
@@ -498,13 +640,29 @@ const Auth = () => {
               </TabsContent>
 
               <TabsContent value="register" className="space-y-4">
-                <form onSubmit={handleRegister} className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Indicadores de passos */}
+                <div className="flex justify-center items-center gap-4 mb-6">
+                  <StepIndicator step={1} label="Dados" icon={User} />
+                  <div className={`flex-1 h-1 rounded-full max-w-16 transition-colors duration-300 ${registerStep > 1 ? 'bg-accent' : 'bg-muted'}`} />
+                  <StepIndicator step={2} label="Endereço" icon={MapPin} />
+                  <div className={`flex-1 h-1 rounded-full max-w-16 transition-colors duration-300 ${registerStep > 2 ? 'bg-accent' : 'bg-muted'}`} />
+                  <StepIndicator step={3} label="Código" icon={Ticket} />
+                </div>
+
+                {/* Passo 1: Dados Pessoais */}
+                {registerStep === 1 && (
+                  <div className="space-y-4">
+                    <div className="text-center mb-4">
+                      <h3 className="font-semibold text-lg">Dados Pessoais</h3>
+                      <p className="text-sm text-muted-foreground">Preencha suas informações básicas</p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="fullName" className="text-sm font-medium">Nome Completo</Label>
                       <Input
                         id="fullName"
-                        name="fullName"
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                         required
                         disabled={isLoading}
                         className="h-11 bg-background/50 border-border/50 focus:border-primary"
@@ -515,51 +673,34 @@ const Auth = () => {
                       <Label htmlFor="cpf" className="text-sm font-medium">CPF</Label>
                       <Input
                         id="cpf"
-                        name="cpf"
                         placeholder="000.000.000-00"
+                        value={formData.cpf}
+                        onChange={(e) => {
+                          const formatted = formatCPF(e.target.value);
+                          setFormData({ ...formData, cpf: formatted });
+                          const clean = formatted.replace(/\D/g, "");
+                          if (clean.length === 11) {
+                            setCpfError(!isValidCPF(clean) ? "CPF inválido" : null);
+                          } else {
+                            setCpfError(null);
+                          }
+                        }}
                         required
                         disabled={isLoading}
                         inputMode="numeric"
                         maxLength={14}
                         className={`h-11 bg-background/50 border-border/50 focus:border-primary ${cpfError ? "border-destructive" : ""}`}
-                        onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, "");
-                          if (value.length > 11) value = value.slice(0, 11);
-                          
-                          let formatted = value;
-                          if (value.length > 3) {
-                            formatted = value.slice(0, 3) + "." + value.slice(3);
-                          }
-                          if (value.length > 6) {
-                            formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
-                          }
-                          if (value.length > 9) {
-                            formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
-                          }
-                          e.target.value = formatted;
-                          
-                          if (value.length === 11) {
-                            if (!isValidCPF(value)) {
-                              setCpfError("CPF inválido");
-                            } else {
-                              setCpfError(null);
-                            }
-                          } else {
-                            setCpfError(null);
-                          }
-                        }}
                       />
-                      {cpfError && (
-                        <p className="text-xs text-destructive">{cpfError}</p>
-                      )}
+                      {cpfError && <p className="text-xs text-destructive">{cpfError}</p>}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
                       <Input
                         id="email"
-                        name="email"
                         type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         required
                         disabled={isLoading}
                         className="h-11 bg-background/50 border-border/50 focus:border-primary"
@@ -570,39 +711,93 @@ const Auth = () => {
                       <Label htmlFor="phone" className="text-sm font-medium">Telefone</Label>
                       <Input
                         id="phone"
-                        name="phone"
                         placeholder="(00) 00000-0000"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value);
+                          setFormData({ ...formData, phone: formatted });
+                          const clean = formatted.replace(/\D/g, "");
+                          if (clean.length > 0 && clean.length < 11) {
+                            setPhoneError("Telefone deve ter 11 dígitos");
+                          } else {
+                            setPhoneError(null);
+                          }
+                        }}
                         required
                         disabled={isLoading}
                         inputMode="numeric"
                         maxLength={15}
                         className={`h-11 bg-background/50 border-border/50 focus:border-primary ${phoneError ? "border-destructive" : ""}`}
-                        onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, "");
-                          if (value.length > 11) value = value.slice(0, 11);
-                          
-                          let formatted = value;
-                          if (value.length > 0) {
-                            formatted = "(" + value;
-                          }
-                          if (value.length > 2) {
-                            formatted = "(" + value.slice(0, 2) + ") " + value.slice(2);
-                          }
-                          if (value.length > 7) {
-                            formatted = "(" + value.slice(0, 2) + ") " + value.slice(2, 7) + "-" + value.slice(7);
-                          }
-                          e.target.value = formatted;
-                          
-                          if (value.length > 0 && value.length < 11) {
-                            setPhoneError("Telefone deve ter 11 dígitos (DDD + número)");
-                          } else {
-                            setPhoneError(null);
-                          }
-                        }}
                       />
-                      {phoneError && (
-                        <p className="text-xs text-destructive">{phoneError}</p>
-                      )}
+                      {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Mínimo 6 caracteres"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            required
+                            disabled={isLoading}
+                            className="h-11 pr-10 bg-background/50 border-border/50 focus:border-primary"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Repita a senha"
+                            value={formData.confirmPassword}
+                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            required
+                            disabled={isLoading}
+                            className="h-11 pr-10 bg-background/50 border-border/50 focus:border-primary"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button 
+                      type="button" 
+                      onClick={handleNextStep} 
+                      className="w-full h-12 text-base font-bold mt-4"
+                      disabled={isLoading}
+                    >
+                      Próximo
+                      <ChevronRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Passo 2: Endereço */}
+                {registerStep === 2 && (
+                  <div className="space-y-4">
+                    <div className="text-center mb-4">
+                      <h3 className="font-semibold text-lg">Endereço</h3>
+                      <p className="text-sm text-muted-foreground">Digite o CEP para preenchimento automático</p>
                     </div>
 
                     <div className="space-y-2">
@@ -610,39 +805,29 @@ const Auth = () => {
                       <div className="relative">
                         <Input
                           id="cep"
-                          name="cep"
                           placeholder="00000-000"
+                          value={formData.cep}
+                          onChange={(e) => {
+                            const formatted = formatCEPInput(e.target.value);
+                            setFormData({ ...formData, cep: formatted });
+                            handleCEPChange(formatted);
+                          }}
                           maxLength={9}
                           required
                           disabled={isLoading || isFetchingCEP}
                           inputMode="numeric"
                           className="h-11 bg-background/50 border-border/50 focus:border-primary"
-                          onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, "");
-                            if (value.length > 8) value = value.slice(0, 8);
-                            
-                            let formatted = value;
-                            if (value.length > 5) {
-                              formatted = value.slice(0, 5) + "-" + value.slice(5);
-                            }
-                            e.target.value = formatted;
-                            handleCEPChange(value);
-                          }}
                         />
                         {isFetchingCEP && (
                           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Digite o CEP para preencher automaticamente
-                      </p>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="street" className="text-sm font-medium">Rua</Label>
                       <Input
                         id="street"
-                        name="street"
                         value={addressData.street}
                         onChange={(e) => setAddressData({ ...addressData, street: e.target.value })}
                         required
@@ -651,142 +836,114 @@ const Auth = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="number" className="text-sm font-medium">Número</Label>
-                      <Input
-                        id="number"
-                        name="number"
-                        required
-                        disabled={isLoading}
-                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="neighborhood" className="text-sm font-medium">Bairro</Label>
-                      <Input
-                        id="neighborhood"
-                        name="neighborhood"
-                        value={addressData.neighborhood}
-                        onChange={(e) => setAddressData({ ...addressData, neighborhood: e.target.value })}
-                        required
-                        disabled={isLoading}
-                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="state" className="text-sm font-medium">Estado</Label>
-                      <Select
-                        value={selectedEstado}
-                        onValueChange={setSelectedEstado}
-                        disabled={isLoading}
-                        required
-                      >
-                        <SelectTrigger className="h-11 bg-background/50 border-border/50">
-                          <SelectValue placeholder="Selecione o estado" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover z-50">
-                          {estados.map((estado) => (
-                            <SelectItem key={estado.id} value={estado.sigla}>
-                              {estado.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="city" className="text-sm font-medium">Cidade</Label>
-                      <Select
-                        value={selectedCidade}
-                        onValueChange={setSelectedCidade}
-                        disabled={isLoading || !selectedEstado}
-                        required
-                      >
-                        <SelectTrigger className="h-11 bg-background/50 border-border/50">
-                          <SelectValue placeholder={selectedEstado ? "Selecione a cidade" : "Selecione o estado primeiro"} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover z-50 max-h-[300px]">
-                          {cidades.map((cidade) => (
-                            <SelectItem key={cidade.id} value={cidade.nome}>
-                              {cidade.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-                      <div className="relative">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="number" className="text-sm font-medium">Número</Label>
                         <Input
-                          id="password"
-                          name="password"
-                          type={showPassword ? "text" : "password"}
+                          id="number"
+                          value={formData.number}
+                          onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                           required
                           disabled={isLoading}
-                          className="h-11 pr-12 bg-background/50 border-border/50 focus:border-primary"
+                          className="h-11 bg-background/50 border-border/50 focus:border-primary"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="neighborhood" className="text-sm font-medium">Bairro</Label>
+                        <Input
+                          id="neighborhood"
+                          value={addressData.neighborhood}
+                          onChange={(e) => setAddressData({ ...addressData, neighborhood: e.target.value })}
+                          required
+                          disabled={isLoading}
+                          className="h-11 bg-background/50 border-border/50 focus:border-primary"
+                        />
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar Senha</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          required
-                          disabled={isLoading}
-                          className="h-11 pr-12 bg-background/50 border-border/50 focus:border-primary"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Estado</Label>
+                        <Select value={selectedEstado} onValueChange={setSelectedEstado} disabled={isLoading}>
+                          <SelectTrigger className="h-11 bg-background/50 border-border/50">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover z-50">
+                            {estados.map((estado) => (
+                              <SelectItem key={estado.id} value={estado.sigla}>
+                                {estado.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Cidade</Label>
+                        <Select value={selectedCidade} onValueChange={setSelectedCidade} disabled={isLoading || !selectedEstado}>
+                          <SelectTrigger className="h-11 bg-background/50 border-border/50">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover z-50 max-h-[300px]">
+                            {cidades.map((cidade) => (
+                              <SelectItem key={cidade.id} value={cidade.nome}>
+                                {cidade.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handlePreviousStep}
+                        className="flex-1 h-12"
+                        disabled={isLoading}
+                      >
+                        <ChevronLeft className="mr-2 h-5 w-5" />
+                        Voltar
+                      </Button>
+                      <Button 
+                        type="button" 
+                        onClick={handleNextStep}
+                        className="flex-1 h-12"
+                        disabled={isLoading}
+                      >
+                        Próximo
+                        <ChevronRight className="ml-2 h-5 w-5" />
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Código de Convite */}
-                  <div className="space-y-4 pt-4 border-t border-border/50">
-                    <div className="flex items-center gap-3 text-accent">
-                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                        <Gift className="h-4 w-4" />
-                      </div>
-                      <span className="font-semibold">Código de Convite</span>
+                {/* Passo 3: Código de Convite */}
+                {registerStep === 3 && (
+                  <div className="space-y-6">
+                    <div className="text-center mb-4">
+                      <h3 className="font-semibold text-lg">Código de Convite</h3>
+                      <p className="text-sm text-muted-foreground">Você tem um código de convite de um amigo?</p>
                     </div>
-                    
+
                     {hasInviteCode === null ? (
-                      <div className="space-y-3">
-                        <p className="text-sm text-muted-foreground">
-                          Você tem um código de convite de um amigo?
-                        </p>
+                      <div className="space-y-4">
                         <div className="flex gap-3">
                           <Button
                             type="button"
                             variant="outline"
-                            className="flex-1 h-11 border-accent text-accent hover:bg-accent/10 font-semibold"
+                            className="flex-1 h-14 border-accent text-accent hover:bg-accent/10 font-semibold"
                             onClick={() => setHasInviteCode(true)}
                           >
+                            <Gift className="mr-2 h-5 w-5" />
                             Sim, tenho!
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
-                            className="flex-1 h-11"
+                            className="flex-1 h-14"
                             onClick={() => setHasInviteCode(false)}
                           >
                             Não tenho
@@ -794,16 +951,16 @@ const Auth = () => {
                         </div>
                       </div>
                     ) : hasInviteCode ? (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Digite o código de convite</Label>
+                          <Label className="text-sm font-medium">Digite o código</Label>
                           <div className="relative">
                             <Input
                               value={inviteCode}
                               onChange={(e) => handleInviteCodeChange(e.target.value)}
                               placeholder="Ex: ABC123"
-                              maxLength={6}
-                              className="h-12 uppercase font-mono text-lg tracking-widest text-center bg-background/50 border-border/50"
+                              maxLength={8}
+                              className="h-14 uppercase font-mono text-xl tracking-widest text-center bg-background/50 border-border/50"
                               disabled={isLoading}
                               autoCapitalize="characters"
                               style={{ textTransform: 'uppercase' }}
@@ -821,18 +978,18 @@ const Auth = () => {
                             </div>
                           </div>
                           {codeValidationStatus === "valid" && (
-                            <p className="text-sm text-accent font-semibold bg-accent/10 p-2 rounded-lg text-center">
+                            <p className="text-sm text-accent font-semibold bg-accent/10 p-3 rounded-lg text-center">
                               🎉 Código válido! Você ganhará 1 mês + 3 dias grátis!
                             </p>
                           )}
                           {codeValidationStatus === "invalid" && (
-                            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-lg text-center">
+                            <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg text-center">
                               Código inválido. Verifique e tente novamente.
                             </p>
                           )}
                           {codeValidationStatus === "used" && (
-                            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-lg text-center">
-                              Este código já foi utilizado por outra pessoa.
+                            <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg text-center">
+                              Este código já foi utilizado.
                             </p>
                           )}
                         </div>
@@ -847,278 +1004,146 @@ const Auth = () => {
                             setCodeValidationStatus("idle");
                           }}
                         >
-                          Não tenho código
+                          Na verdade, não tenho código
                         </Button>
                       </div>
                     ) : (
-                      <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
-                        <p className="text-sm text-muted-foreground">
+                      <div className="bg-muted/30 rounded-xl p-5 border border-border/50 text-center">
+                        <p className="text-muted-foreground">
                           Sem código? Sem problema! Você ainda ganha <strong className="text-foreground">3 dias grátis</strong>.
                         </p>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="mt-2 text-accent hover:text-accent hover:bg-accent/10"
+                          className="mt-3 text-accent hover:text-accent hover:bg-accent/10"
                           onClick={() => setHasInviteCode(true)}
                         >
                           Na verdade, tenho um código!
                         </Button>
                       </div>
                     )}
-                  </div>
 
-                  <Button type="submit" className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Criando sua conta...
-                      </>
-                    ) : (
-                      "Criar Conta"
-                    )}
-                  </Button>
-
-                  <p className="text-sm text-center text-muted-foreground">
-                    {hasInviteCode && codeValidationStatus === "valid" 
-                      ? "Ao criar sua conta, você ganha 1 mês + 3 dias de teste grátis! 🎉"
-                      : "Ao criar sua conta, você ganha 3 dias de teste grátis"
-                    }
-                  </p>
-
-                  {/* Manual de Como Criar Conta */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full h-11 border-border/50 hover:bg-muted/50" type="button">
-                        <HelpCircle className="mr-2 h-4 w-4" />
-                        Manual: Como Criar Minha Conta
+                    <div className="flex gap-3 mt-6">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handlePreviousStep}
+                        className="flex-1 h-12"
+                        disabled={isLoading}
+                      >
+                        <ChevronLeft className="mr-2 h-5 w-5" />
+                        Voltar
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-xl">
-                          <HelpCircle className="h-5 w-5 text-primary" />
-                          Manual Completo: Como Criar Sua Conta
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-6 text-sm">
-                        {/* Introdução */}
-                        <div className="bg-primary/5 p-4 rounded-lg">
-                          <p className="text-muted-foreground">
-                            Bem-vindo ao JTC FluxPDV! Este manual vai te guiar passo a passo no processo de criação da sua conta. 
-                            Ao finalizar o cadastro, você ganhará automaticamente <strong>3 dias de teste grátis</strong> com acesso completo ao sistema.
-                            Se você tiver um <strong>código de convite</strong>, ganha <strong>1 mês + 3 dias grátis</strong>!
-                          </p>
-                        </div>
+                      <Button 
+                        type="button" 
+                        onClick={handleRegister}
+                        className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80"
+                        disabled={isLoading || hasInviteCode === null || (hasInviteCode && codeValidationStatus !== "valid" && inviteCode.length > 0)}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Criando...
+                          </>
+                        ) : (
+                          "Criar Conta"
+                        )}
+                      </Button>
+                    </div>
 
-                        {/* Passo 1 */}
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                            Informações Pessoais
-                          </h3>
-                          <div className="ml-8 space-y-2 text-muted-foreground">
-                            <p><strong>Nome Completo:</strong> Digite seu nome completo (nome e sobrenome). Este nome aparecerá no sistema e nos relatórios.</p>
-                            <p><strong>CPF:</strong> Digite seu CPF (apenas números ou com pontos e traço). O CPF é usado para identificação única e também pode ser usado para fazer login.</p>
-                            <div className="bg-yellow-500/10 p-2 rounded text-xs border border-yellow-500/20">
-                              ⚠️ <strong>Importante:</strong> O sistema valida se o CPF é válido. CPFs com dígitos verificadores incorretos serão rejeitados.
-                            </div>
-                            <div className="bg-muted/50 p-2 rounded text-xs">
-                              💡 <strong>Dica:</strong> O CPF pode ser digitado com ou sem formatação (12345678900 ou 123.456.789-00)
-                            </div>
-                          </div>
-                        </div>
+                    <p className="text-xs text-center text-muted-foreground">
+                      {hasInviteCode && codeValidationStatus === "valid" 
+                        ? "Ao criar sua conta, você ganha 1 mês + 3 dias de teste grátis! 🎉"
+                        : "Ao criar sua conta, você ganha 3 dias de teste grátis"
+                      }
+                    </p>
+                  </div>
+                )}
 
-                        {/* Passo 2 */}
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-                            Contato
-                          </h3>
-                          <div className="ml-8 space-y-2 text-muted-foreground">
-                            <p><strong>E-mail:</strong> Digite um e-mail válido. Este e-mail será usado para:</p>
-                            <ul className="list-disc list-inside ml-2">
-                              <li>Fazer login no sistema</li>
-                              <li>Receber notificações importantes</li>
-                              <li>Recuperação de conta (se necessário)</li>
-                            </ul>
-                            <p><strong>Telefone:</strong> Digite seu número de telefone com DDD. Exemplo: (98) 99999-9999</p>
-                          </div>
-                        </div>
+                {/* Manual de Como Criar Conta */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full h-11 border-border/50 hover:bg-muted/50 mt-4" type="button">
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      Manual: Como Criar Minha Conta
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                        <HelpCircle className="h-5 w-5 text-primary" />
+                        Manual: Como Criar Sua Conta
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6 text-sm">
+                      <div className="bg-primary/5 p-4 rounded-lg">
+                        <p className="text-muted-foreground">
+                          O cadastro é dividido em <strong>3 etapas simples</strong>. Siga as instruções abaixo:
+                        </p>
+                      </div>
 
-                        {/* Passo 3 */}
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
-                            Endereço
-                          </h3>
-                          <div className="ml-8 space-y-2 text-muted-foreground">
-                            <p><strong>CEP:</strong> Digite o CEP da sua localização. O sistema irá preencher automaticamente:</p>
-                            <ul className="list-disc list-inside ml-2">
-                              <li>Rua</li>
-                              <li>Bairro</li>
-                              <li>Cidade</li>
-                              <li>Estado</li>
-                            </ul>
-                            <div className="bg-muted/50 p-2 rounded text-xs">
-                              💡 <strong>Dica:</strong> Se não souber o CEP, você pode selecionar primeiro o Estado e depois a Cidade manualmente.
-                            </div>
-                            <p><strong>Número:</strong> Digite o número do seu endereço (casa, apartamento, sala comercial, etc.)</p>
-                            <p><strong>Campos Automáticos:</strong> Após digitar o CEP, os campos Rua, Bairro, Estado e Cidade serão preenchidos automaticamente. Você pode editá-los se necessário.</p>
-                          </div>
-                        </div>
-
-                        {/* Passo 4 */}
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
-                            Senha
-                          </h3>
-                          <div className="ml-8 space-y-2 text-muted-foreground">
-                            <p><strong>Senha:</strong> Crie uma senha segura para sua conta.</p>
-                            <p><strong>Confirmar Senha:</strong> Digite a mesma senha novamente para confirmar.</p>
-                            <div className="bg-muted/50 p-2 rounded text-xs">
-                              💡 <strong>Dicas de segurança:</strong>
-                              <ul className="list-disc list-inside ml-2 mt-1">
-                                <li>Use pelo menos 6 caracteres</li>
-                                <li>Combine letras maiúsculas, minúsculas e números</li>
-                                <li>Evite senhas óbvias como "123456" ou sua data de nascimento</li>
-                              </ul>
-                            </div>
-                            <p>Clique no ícone do olho (👁️) para visualizar a senha enquanto digita.</p>
-                          </div>
-                        </div>
-
-                        {/* Passo 5 - Código de Convite */}
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">5</span>
-                            Código de Convite (Opcional)
-                          </h3>
-                          <div className="ml-8 space-y-2 text-muted-foreground">
-                            <p>Se você recebeu um código de convite de um amigo:</p>
-                            <ol className="list-decimal list-inside ml-2">
-                              <li>Clique em "Sim, tenho um código!"</li>
-                              <li>Digite o código de 8 caracteres</li>
-                              <li>Aguarde a validação (ícone verde = válido)</li>
-                            </ol>
-                            <div className="bg-accent/10 p-2 rounded text-xs border border-accent/20">
-                              🎁 <strong>Benefícios:</strong> Com código válido você ganha <strong>1 mês + 3 dias grátis</strong> (33 dias total) e seu amigo ganha mais 1 mês!
-                            </div>
-                            <div className="bg-destructive/10 p-2 rounded text-xs border border-destructive/20">
-                              ⚠️ <strong>Atenção:</strong> Cada código só pode ser usado uma vez. Códigos já utilizados serão rejeitados.
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Passo 6 */}
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">6</span>
-                            Finalizar Cadastro
-                          </h3>
-                          <div className="ml-8 space-y-2 text-muted-foreground">
-                            <p>Após preencher todos os campos, clique no botão <strong>"Criar Conta"</strong>.</p>
-                            <p>O sistema irá:</p>
-                            <ul className="list-disc list-inside ml-2">
-                              <li>Validar o CPF (dígitos verificadores)</li>
-                              <li>Validar o código de convite (se informado)</li>
-                              <li>Verificar se e-mail e CPF já não estão cadastrados</li>
-                              <li>Criar sua conta no sistema</li>
-                              <li>Ativar automaticamente o período de teste grátis</li>
-                              <li>Redirecionar você para o Dashboard principal</li>
-                            </ul>
-                          </div>
-                        </div>
-
-                        {/* Após o Cadastro */}
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground flex items-center gap-2">
-                            <span className="bg-accent text-accent-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">✓</span>
-                            Após o Cadastro
-                          </h3>
-                          <div className="ml-8 space-y-2 text-muted-foreground">
-                            <p>Com sua conta criada, você poderá:</p>
-                            <ul className="list-disc list-inside ml-2">
-                              <li>Configurar as informações da sua loja</li>
-                              <li>Cadastrar produtos e categorias</li>
-                              <li>Cadastrar clientes</li>
-                              <li>Realizar vendas</li>
-                              <li>Gerar relatórios</li>
-                              <li>Compartilhar seu código de convite para ganhar mais tempo grátis</li>
-                            </ul>
-                            <div className="bg-accent/10 p-3 rounded-lg mt-3">
-                              <p className="font-medium text-foreground">📌 Seu Código de Convite:</p>
-                              <p>Após criar sua conta, você receberá um código único nas Configurações. Compartilhe com amigos e ganhe <strong>1 mês grátis</strong> para cada pessoa que se cadastrar usando seu código!</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Login */}
-                        <div className="space-y-2 border-t pt-4">
-                          <h3 className="font-semibold text-foreground">Como Fazer Login</h3>
-                          <div className="text-muted-foreground">
-                            <p>Após criar sua conta, você pode fazer login de duas formas:</p>
-                            <ul className="list-disc list-inside ml-2 mt-2">
-                              <li><strong>E-mail + Senha:</strong> Use o e-mail cadastrado</li>
-                              <li><strong>CPF + Senha:</strong> Use o CPF cadastrado (apenas números)</li>
-                            </ul>
-                          </div>
-                        </div>
-
-                        {/* Problemas Comuns */}
-                        <div className="space-y-2 border-t pt-4">
-                          <h3 className="font-semibold text-foreground">Problemas Comuns</h3>
-                          <div className="text-muted-foreground space-y-2">
-                            <p><strong>"CPF inválido":</strong> O CPF digitado não passou na validação. Verifique se digitou corretamente (11 dígitos).</p>
-                            <p><strong>"As senhas não coincidem":</strong> Verifique se digitou a mesma senha nos dois campos.</p>
-                            <p><strong>"CEP não encontrado":</strong> Verifique se o CEP está correto ou preencha o endereço manualmente.</p>
-                            <p><strong>"E-mail já cadastrado":</strong> Este e-mail já possui uma conta. Use outro e-mail ou faça login.</p>
-                            <p><strong>"CPF já cadastrado":</strong> Este CPF já possui uma conta. Faça login com suas credenciais.</p>
-                            <p><strong>"Código de convite inválido":</strong> O código não existe. Verifique com quem te enviou.</p>
-                            <p><strong>"Código já utilizado":</strong> Este código já foi usado por outra pessoa. Cada código só pode ser usado uma vez.</p>
-                          </div>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-foreground flex items-center gap-2">
+                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                          Etapa 1: Dados Pessoais
+                        </h3>
+                        <div className="ml-8 space-y-1 text-muted-foreground">
+                          <p>• <strong>Nome Completo:</strong> Seu nome e sobrenome</p>
+                          <p>• <strong>CPF:</strong> Será validado automaticamente</p>
+                          <p>• <strong>E-mail:</strong> Para login e recuperação</p>
+                          <p>• <strong>Telefone:</strong> 11 dígitos com DDD</p>
+                          <p>• <strong>Senha:</strong> Mínimo 6 caracteres</p>
                         </div>
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                </form>
+
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-foreground flex items-center gap-2">
+                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                          Etapa 2: Endereço
+                        </h3>
+                        <div className="ml-8 space-y-1 text-muted-foreground">
+                          <p>• <strong>CEP:</strong> Digite para preenchimento automático</p>
+                          <p>• Complete os campos restantes se necessário</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-foreground flex items-center gap-2">
+                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+                          Etapa 3: Código de Convite
+                        </h3>
+                        <div className="ml-8 space-y-1 text-muted-foreground">
+                          <p>• Com código: <strong className="text-accent">1 mês + 3 dias grátis</strong></p>
+                          <p>• Sem código: <strong>3 dias grátis</strong></p>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
       </div>
 
-      {/* Dialog de Conta Bloqueada */}
+      {/* Dialog de conta bloqueada */}
       <AlertDialog open={showBlockedAccountDialog} onOpenChange={setShowBlockedAccountDialog}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <div className="flex items-center justify-center mb-4">
-              <div className="p-4 bg-destructive/10 rounded-full">
-                <AlertTriangle className="h-12 w-12 text-destructive" />
-              </div>
-            </div>
-            <AlertDialogTitle className="text-center text-xl">
-              Esta conta foi excluída
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Conta Bloqueada
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-center space-y-3">
-              <p>
-                A conta associada a este CPF foi excluída anteriormente. 
-                Para reativar sua conta, entre em contato conosco pelo WhatsApp.
-              </p>
+            <AlertDialogDescription>
+              Esta conta foi bloqueada. Se você acredita que isso foi um erro ou deseja solicitar a reativação, entre em contato conosco.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-            <AlertDialogAction 
-              onClick={handleReactivateAccount}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Reativar minha conta
+          <AlertDialogFooter>
+            <AlertDialogCancel>Fechar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReactivateAccount} className="bg-accent hover:bg-accent/90">
+              Solicitar Reativação
             </AlertDialogAction>
-            <AlertDialogCancel className="w-full">
-              Cancelar
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
