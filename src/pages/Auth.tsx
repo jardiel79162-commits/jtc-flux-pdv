@@ -1105,27 +1105,32 @@ const Auth = () => {
                 {registerStep === 4 && (
                   <div className="space-y-6">
                     <div className="text-center mb-4">
-                      <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle2 className="w-10 h-10 text-accent" />
+                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <Mail className="w-10 h-10 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-xl text-accent">Conta Criada!</h3>
+                      <h3 className="font-semibold text-xl">
+                        Precisamos confirmar o seu {getEmailProvider(formData.email) === "gmail" ? "Gmail" : "Outlook"}
+                      </h3>
                       <p className="text-sm text-muted-foreground mt-3">
-                        Foi enviado um link de confirmação para o e-mail:
+                        Foi enviado um link de confirmação para:
                       </p>
                       <p className="font-bold text-primary text-lg mt-2 break-all">
                         {formData.email}
                       </p>
                     </div>
 
-                    <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
-                      <p className="text-sm text-amber-700 dark:text-amber-400 text-center">
-                        <strong>⚠️ Importante:</strong> Você precisa confirmar seu e-mail antes de fazer login. Verifique também a pasta de spam!
+                    <div className="bg-destructive/10 rounded-xl p-4 border border-destructive/30">
+                      <p className="text-sm text-destructive text-center font-medium">
+                        ⚠️ Sua conta só será ativada após confirmar o e-mail!
+                      </p>
+                      <p className="text-xs text-destructive/80 text-center mt-1">
+                        Sem a confirmação, você não conseguirá fazer login.
                       </p>
                     </div>
 
                     <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
                       <p className="text-sm text-muted-foreground text-center">
-                        <strong>Lembrete:</strong> Só aceitamos e-mails <span className="text-primary font-medium">@gmail.com</span> ou <span className="text-primary font-medium">@outlook.com</span>
+                        <strong>Só lembrando:</strong> Só aceitamos e-mails <span className="text-primary font-medium">@gmail.com</span> ou <span className="text-primary font-medium">@outlook.com</span>
                       </p>
                     </div>
 
@@ -1149,8 +1154,8 @@ const Auth = () => {
 
                     <p className="text-xs text-center text-muted-foreground">
                       {hasInviteCode && codeValidationStatus === "valid" 
-                        ? "🎉 Você ganhou 1 mês + 3 dias de teste grátis!"
-                        : "Você ganhou 3 dias de teste grátis!"
+                        ? "🎉 Após confirmar, você terá 1 mês + 3 dias grátis!"
+                        : "Após confirmar, você terá 3 dias de teste grátis!"
                       }
                     </p>
                   </div>
