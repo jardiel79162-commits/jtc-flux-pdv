@@ -69,6 +69,9 @@ const Auth = () => {
 
   // Estado para conta bloqueada
   const [showBlockedAccountDialog, setShowBlockedAccountDialog] = useState(false);
+  
+  // Estado para conta criada (email enviado)
+  const [accountCreated, setAccountCreated] = useState(false);
 
   useEffect(() => {
     // Verificar se já está logado
@@ -241,11 +244,21 @@ const Auth = () => {
         description: "Login realizado com sucesso.",
       });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro no login",
-        description: error.message || "Verifique suas credenciais e tente novamente.",
-      });
+      // Verificar se é erro de email não confirmado
+      const errorMessage = error.message?.toLowerCase() || "";
+      if (errorMessage.includes("email not confirmed") || errorMessage.includes("email_not_confirmed")) {
+        toast({
+          variant: "destructive",
+          title: "E-mail não confirmado",
+          description: "Você ainda não fez a confirmação na sua caixa de entrada. Verifique seu e-mail e clique no link de confirmação.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro no login",
+          description: error.message || "Verifique suas credenciais e tente novamente.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -366,26 +379,7 @@ const Auth = () => {
     }
   };
 
-  const handleGoToEmailVerification = () => {
-    // Validar código de convite se fornecido
-    if (hasInviteCode && inviteCode && codeValidationStatus !== "valid") {
-      toast({
-        variant: "destructive",
-        title: "Código inválido",
-        description: "Por favor, verifique o código de convite.",
-      });
-      return;
-    }
-    setRegisterStep(4);
-  };
-
-  const handlePreviousStep = () => {
-    if (registerStep > 1) {
-      setRegisterStep(registerStep - 1);
-    }
-  };
-
-  const handleRegister = async () => {
+  const handleGoToEmailVerification = async () => {
     // Validar código de convite se fornecido
     if (hasInviteCode && inviteCode && codeValidationStatus !== "valid") {
       toast({
@@ -464,32 +458,14 @@ const Auth = () => {
         });
       }
       
-      const trialMessage = hasInviteCode && codeValidationStatus === "valid" 
-        ? "Você ganhou 1 mês + 3 dias de teste grátis! 🎉"
-        : "Você ganhou 3 dias de teste grátis. Seja bem-vindo!";
+      // Conta criada com sucesso, ir para etapa de verificação
+      setAccountCreated(true);
+      setRegisterStep(4);
+      
       toast({
         title: "Conta criada!",
-        description: trialMessage,
+        description: "Enviamos um link de confirmação para seu e-mail.",
       });
-
-      // Reset form
-      setRegisterStep(1);
-      setFormData({
-        fullName: "",
-        cpf: "",
-        email: "",
-        phone: "",
-        password: "",
-        confirmPassword: "",
-        cep: "",
-        number: "",
-      });
-      setAddressData({ street: "", neighborhood: "", city: "", state: "" });
-      setSelectedEstado("");
-      setSelectedCidade("");
-      setHasInviteCode(null);
-      setInviteCode("");
-      setCodeValidationStatus("idle");
       
     } catch (error: any) {
       toast({
@@ -500,6 +476,33 @@ const Auth = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePreviousStep = () => {
+    if (registerStep > 1) {
+      setRegisterStep(registerStep - 1);
+    }
+  };
+
+  const resetForm = () => {
+    setRegisterStep(1);
+    setFormData({
+      fullName: "",
+      cpf: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      cep: "",
+      number: "",
+    });
+    setAddressData({ street: "", neighborhood: "", city: "", state: "" });
+    setSelectedEstado("");
+    setSelectedCidade("");
+    setHasInviteCode(null);
+    setInviteCode("");
+    setCodeValidationStatus("idle");
+    setAccountCreated(false);
   };
 
   const StepIndicator = ({ step, label, icon: Icon }: { step: number; label: string; icon: any }) => (
@@ -1102,15 +1105,21 @@ const Auth = () => {
                 {registerStep === 4 && (
                   <div className="space-y-6">
                     <div className="text-center mb-4">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <Mail className="w-8 h-8 text-primary" />
+                      <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-10 h-10 text-accent" />
                       </div>
-                      <h3 className="font-semibold text-lg">Verifique seu E-mail</h3>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Foi enviado um link de confirmação para:
+                      <h3 className="font-semibold text-xl text-accent">Conta Criada!</h3>
+                      <p className="text-sm text-muted-foreground mt-3">
+                        Foi enviado um link de confirmação para o e-mail:
                       </p>
-                      <p className="font-medium text-primary mt-1 break-all">
+                      <p className="font-bold text-primary text-lg mt-2 break-all">
                         {formData.email}
+                      </p>
+                    </div>
+
+                    <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+                      <p className="text-sm text-amber-700 dark:text-amber-400 text-center">
+                        <strong>⚠️ Importante:</strong> Você precisa confirmar seu e-mail antes de fazer login. Verifique também a pasta de spam!
                       </p>
                     </div>
 
@@ -1129,36 +1138,20 @@ const Auth = () => {
                       {getEmailProvider(formData.email) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
                     </Button>
 
-                    <div className="flex gap-3">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={handlePreviousStep}
-                        className="flex-1 h-12"
-                        disabled={isLoading}
-                      >
-                        <ChevronLeft className="mr-2 h-5 w-5" />
-                        Voltar
-                      </Button>
-                      <Button 
-                        type="button" 
-                        onClick={handleRegister}
-                        className="flex-1 h-12 bg-gradient-to-r from-accent to-accent/80"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Criando...
-                          </>
-                        ) : (
-                          "Criar Conta"
-                        )}
-                      </Button>
-                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={resetForm}
+                      className="w-full h-12"
+                    >
+                      Voltar para o Login
+                    </Button>
 
                     <p className="text-xs text-center text-muted-foreground">
-                      Clique em "Criar Conta" após confirmar seu e-mail
+                      {hasInviteCode && codeValidationStatus === "valid" 
+                        ? "🎉 Você ganhou 1 mês + 3 dias de teste grátis!"
+                        : "Você ganhou 3 dias de teste grátis!"
+                      }
                     </p>
                   </div>
                 )}
