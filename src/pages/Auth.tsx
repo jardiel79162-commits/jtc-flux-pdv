@@ -74,16 +74,21 @@ const Auth = () => {
   // Estado para conta criada (email enviado)
   const [accountCreated, setAccountCreated] = useState(false);
 
-  const handleResendConfirmationEmail = async () => {
-    if (!formData.email) return;
+  // Estado para email não confirmado no login
+  const [showUnconfirmedEmailUI, setShowUnconfirmedEmailUI] = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
+
+  const handleResendConfirmationEmail = async (emailToResend?: string) => {
+    const email = emailToResend || formData.email || unconfirmedEmail;
+    if (!email) return;
 
     setIsResendingConfirmation(true);
     try {
       const { error } = await supabase.auth.resend({
         type: "signup",
-        email: formData.email,
+        email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/confirmar-email`,
         },
       });
 
@@ -283,11 +288,25 @@ const Auth = () => {
       // Verificar se é erro de email não confirmado
       const errorMessage = error.message?.toLowerCase() || "";
       if (errorMessage.includes("email not confirmed") || errorMessage.includes("email_not_confirmed")) {
-        toast({
-          variant: "destructive",
-          title: "E-mail não confirmado",
-          description: "Você ainda não fez a confirmação na sua caixa de entrada. Verifique seu e-mail e clique no link de confirmação.",
-        });
+        // Guardar o email e mostrar a UI de reenvio
+        const formDataEvent = new FormData(e.currentTarget);
+        const usedIdentifier = formDataEvent.get("identifier") as string;
+        
+        // Se for CPF, precisamos buscar o email associado
+        const cleanIdentifier = usedIdentifier.replace(/\D/g, "");
+        const isCPF = /^\d{11}$/.test(cleanIdentifier);
+        
+        if (isCPF) {
+          // Buscar email pelo CPF
+          const { data } = await supabase.rpc('get_user_email_by_cpf', { search_cpf: cleanIdentifier });
+          if (data && data.length > 0) {
+            setUnconfirmedEmail(data[0].email);
+          }
+        } else {
+          setUnconfirmedEmail(usedIdentifier);
+        }
+        
+        setShowUnconfirmedEmailUI(true);
       } else {
         toast({
           variant: "destructive",
@@ -664,51 +683,120 @@ const Auth = () => {
               </TabsList>
 
               <TabsContent value="login" className="space-y-6">
-                <form onSubmit={handleLogin} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="identifier" className="text-sm font-medium">E-mail ou CPF</Label>
-                    <Input
-                      id="identifier"
-                      name="identifier"
-                      placeholder="seu@email.com ou 12345678900"
-                      required
-                      disabled={isLoading}
-                      className="h-12 text-base bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
-                    />
-                  </div>
+                {/* UI de email não confirmado */}
+                {showUnconfirmedEmailUI ? (
+                  <div className="space-y-6">
+                    <div className="text-center mb-4">
+                      <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+                        <Mail className="w-10 h-10 text-amber-500" />
+                      </div>
+                      <h3 className="font-semibold text-xl text-amber-600">E-mail não confirmado</h3>
+                      <p className="text-sm text-muted-foreground mt-3">
+                        Você ainda não confirmou seu e-mail:
+                      </p>
+                      <p className="font-bold text-primary text-lg mt-2 break-all">
+                        {unconfirmedEmail}
+                      </p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-                    <div className="relative">
+                    <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+                      <p className="text-sm text-amber-700 dark:text-amber-400 text-center">
+                        ⚠️ Para acessar sua conta, você precisa clicar no link de confirmação que enviamos para seu e-mail.
+                      </p>
+                    </div>
+
+                    <Button 
+                      type="button" 
+                      onClick={() => {
+                        const provider = getEmailProvider(unconfirmedEmail);
+                        if (provider === "gmail") {
+                          window.open("https://mail.google.com", "_blank");
+                        } else if (provider === "outlook") {
+                          window.open("https://outlook.live.com", "_blank");
+                        }
+                      }}
+                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary to-primary/80"
+                    >
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      {getEmailProvider(unconfirmedEmail) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleResendConfirmationEmail(unconfirmedEmail)}
+                      className="w-full h-12"
+                      disabled={isResendingConfirmation}
+                    >
+                      {isResendingConfirmation ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Reenviando...
+                        </>
+                      ) : (
+                        "Reenviar e-mail de confirmação"
+                      )}
+                    </Button>
+
+                    <Button 
+                      type="button" 
+                      variant="ghost"
+                      onClick={() => {
+                        setShowUnconfirmedEmailUI(false);
+                        setUnconfirmedEmail("");
+                      }}
+                      className="w-full h-12"
+                    >
+                      Voltar para o Login
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleLogin} className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="identifier" className="text-sm font-medium">E-mail ou CPF</Label>
                       <Input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
+                        id="identifier"
+                        name="identifier"
+                        placeholder="seu@email.com ou 12345678900"
                         required
                         disabled={isLoading}
-                        className="h-12 text-base pr-12 bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
+                        className="h-12 text-base bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
                     </div>
-                  </div>
 
-                  <Button type="submit" className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Entrando...
-                      </>
-                    ) : (
-                      "Entrar"
-                    )}
-                  </Button>
-                </form>
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          required
+                          disabled={isLoading}
+                          className="h-12 text-base pr-12 bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Entrando...
+                        </>
+                      ) : (
+                        "Entrar"
+                      )}
+                    </Button>
+                  </form>
+                )}
 
                 {/* Mobile branding */}
                 <div className="lg:hidden pt-4 border-t border-border/50">
@@ -1182,7 +1270,7 @@ const Auth = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={handleResendConfirmationEmail}
+                      onClick={() => handleResendConfirmationEmail()}
                       className="w-full h-12"
                       disabled={isResendingConfirmation}
                     >
