@@ -20,7 +20,7 @@ export const signUp = async (data: SignUpData) => {
     email: data.email,
     password: data.password,
     options: {
-      emailRedirectTo: `${window.location.origin}/`,
+      emailRedirectTo: `${window.location.origin}/confirmar-email`,
       data: {
         full_name: data.fullName,
         cpf: data.cpf,
