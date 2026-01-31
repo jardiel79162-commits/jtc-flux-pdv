@@ -796,7 +796,7 @@ const Auth = () => {
 
                     <Button 
                       type="submit" 
-                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-xl" 
+                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-full" 
                       disabled={isLoading}
                     >
                       {isLoading ? (
