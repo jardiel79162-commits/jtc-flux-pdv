@@ -969,7 +969,7 @@ const Auth = () => {
                     <Button 
                       type="button" 
                       onClick={handleNextStep} 
-                      className="w-full h-14 text-base font-bold mt-6 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-xl"
+                      className="w-full h-14 text-base font-bold mt-6 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-full"
                       disabled={isLoading}
                     >
                       Próximo
@@ -1099,7 +1099,7 @@ const Auth = () => {
                       <Button 
                         type="button" 
                         onClick={handleNextStep}
-                        className="flex-1 h-14 rounded-xl bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25"
+                        className="flex-1 h-14 rounded-full bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300"
                         disabled={isLoading}
                       >
                         Próximo
@@ -1233,7 +1233,7 @@ const Auth = () => {
                       <Button 
                         type="button" 
                         onClick={handleGoToEmailVerification}
-                        className="flex-1 h-14 rounded-xl bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25"
+                        className="flex-1 h-14 rounded-full bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300"
                         disabled={isLoading || hasInviteCode === null || (hasInviteCode && codeValidationStatus !== "valid" && inviteCode.length > 0)}
                       >
                         Próximo
