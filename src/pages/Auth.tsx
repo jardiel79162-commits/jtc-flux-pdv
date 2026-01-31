@@ -598,10 +598,10 @@ const Auth = () => {
           <div className="space-y-8">
             <div className="flex items-center gap-7">
               <div className="relative group">
-                <div className="absolute -inset-3 bg-gradient-to-r from-primary via-accent to-primary rounded-3xl blur-lg opacity-50 group-hover:opacity-70 transition-all duration-700 animate-[pulse_3s_ease-in-out_infinite]" />
+                <div className="absolute -inset-3 bg-gradient-to-r from-primary via-accent to-primary rounded-full blur-lg opacity-50 group-hover:opacity-70 transition-all duration-700 animate-[pulse_3s_ease-in-out_infinite]" />
                 <div className="relative">
-                  <img src={logo} alt="JTC FluxPDV" className="relative w-32 h-32 rounded-2xl object-cover shadow-2xl ring-2 ring-white/20" />
-                  <div className="absolute -bottom-2 -right-2 w-11 h-11 rounded-xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-lg shadow-accent/30">
+                  <img src={logo} alt="JTC FluxPDV" className="relative w-32 h-32 rounded-full object-cover shadow-2xl ring-2 ring-white/20" />
+                  <div className="absolute -bottom-1 -right-1 w-11 h-11 rounded-full bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-lg shadow-accent/30">
                     <CheckCircle2 className="w-6 h-6 text-white" />
                   </div>
                 </div>
@@ -662,8 +662,8 @@ const Auth = () => {
           <CardHeader className="text-center pb-4 pt-8 relative z-10">
             <div className="flex flex-col items-center gap-5 mb-2">
               <div className="relative group">
-                <div className="absolute -inset-3 bg-gradient-to-r from-primary to-accent rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition-all duration-500" />
-                <img src={logo} alt="JTC FluxPDV" className="relative w-20 h-20 rounded-2xl object-cover shadow-xl ring-2 ring-white/10" />
+                <div className="absolute -inset-3 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-40 group-hover:opacity-60 transition-all duration-500" />
+                <img src={logo} alt="JTC FluxPDV" className="relative w-20 h-20 rounded-full object-cover shadow-xl ring-2 ring-white/10" />
               </div>
               <div className="text-center space-y-1">
                 <CardTitle className="text-3xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">JTC FluxPDV</CardTitle>
