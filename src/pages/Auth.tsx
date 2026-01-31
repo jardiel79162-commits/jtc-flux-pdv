@@ -561,18 +561,18 @@ const Auth = () => {
   };
 
   const StepIndicator = ({ step, label, icon: Icon }: { step: number; label: string; icon: any }) => (
-    <div className="flex flex-col items-center gap-1">
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+    <div className="flex flex-col items-center gap-1.5">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-500 ${
         registerStep === step 
-          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
+          ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30 scale-110" 
           : registerStep > step 
-            ? "bg-accent text-accent-foreground" 
-            : "bg-muted text-muted-foreground"
+            ? "bg-gradient-to-br from-accent to-accent/80 text-white shadow-md shadow-accent/20" 
+            : "bg-muted/50 text-muted-foreground border border-border/50"
       }`}>
         {registerStep > step ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
       </div>
-      <span className={`text-xs font-medium ${
-        registerStep === step ? "text-primary" : "text-muted-foreground"
+      <span className={`text-xs font-semibold transition-colors duration-300 ${
+        registerStep === step ? "text-primary" : registerStep > step ? "text-accent" : "text-muted-foreground"
       }`}>
         {label}
       </span>
@@ -580,104 +580,110 @@ const Auth = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/20 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorations with enhanced glow */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/30 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-accent/30 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2 animate-pulse" />
-      <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-primary/20 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-accent/25 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '1s' }} />
-      <div className="absolute bottom-1/4 left-1/4 w-[250px] h-[250px] bg-primary/25 rounded-full blur-[50px] animate-pulse" style={{ animationDelay: '2s' }} />
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-primary/25 via-background to-accent/20 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Enhanced background decorations with floating animation */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-primary/40 to-primary/10 rounded-full blur-[120px] -translate-x-1/3 -translate-y-1/3 animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-to-tl from-accent/40 to-accent/10 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3 animate-[pulse_5s_ease-in-out_infinite]" />
+        <div className="absolute top-1/3 right-1/4 w-[350px] h-[350px] bg-primary/15 rounded-full blur-[80px] animate-[pulse_6s_ease-in-out_infinite]" />
+        <div className="absolute bottom-1/3 left-1/4 w-[300px] h-[300px] bg-accent/20 rounded-full blur-[70px] animate-[pulse_7s_ease-in-out_infinite]" />
+        
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
+      </div>
       
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
-        {/* Seção de branding */}
-        <div className="hidden lg:flex flex-col justify-center space-y-10 p-8">
-          <div className="space-y-6">
-            <div className="flex items-center gap-6">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-20 items-center relative z-10">
+        {/* Seção de branding - Redesenhada */}
+        <div className="hidden lg:flex flex-col justify-center space-y-8 p-8">
+          <div className="space-y-8">
+            <div className="flex items-center gap-7">
               <div className="relative group">
-                <div className="absolute -inset-2 bg-gradient-to-r from-primary to-accent rounded-3xl blur opacity-40 group-hover:opacity-60 transition duration-500" />
-                <img src={logo} alt="JTC FluxPDV" className="relative w-28 h-28 rounded-2xl object-cover shadow-2xl" />
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-accent flex items-center justify-center shadow-lg animate-pulse">
-                  <CheckCircle2 className="w-6 h-6 text-accent-foreground" />
+                <div className="absolute -inset-3 bg-gradient-to-r from-primary via-accent to-primary rounded-3xl blur-lg opacity-50 group-hover:opacity-70 transition-all duration-700 animate-[pulse_3s_ease-in-out_infinite]" />
+                <div className="relative">
+                  <img src={logo} alt="JTC FluxPDV" className="relative w-32 h-32 rounded-2xl object-cover shadow-2xl ring-2 ring-white/20" />
+                  <div className="absolute -bottom-2 -right-2 w-11 h-11 rounded-xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-lg shadow-accent/30">
+                    <CheckCircle2 className="w-6 h-6 text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <h1 className="text-5xl lg:text-6xl font-black gradient-text tracking-tight">
-                  JTC FluxPDV
+              <div className="space-y-3">
+                <h1 className="text-5xl xl:text-6xl font-black tracking-tight">
+                  <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">JTC FluxPDV</span>
                 </h1>
-                <p className="text-xl text-muted-foreground font-light">
-                  Sistema profissional de gestão para sua loja
+                <p className="text-lg text-muted-foreground/90 font-normal max-w-xs">
+                  O sistema de gestão que sua loja merece
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-5 p-5 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/50 transition-all duration-300 hover:shadow-xl hover:border-primary/40 hover:scale-[1.02] group cursor-pointer">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-primary/30 transition-all duration-300">
-                <ShoppingCart className="w-8 h-8 text-primary-foreground" />
+          <div className="space-y-3 pt-2">
+            {[
+              { icon: ShoppingCart, title: "PDV Rápido e Intuitivo", desc: "Vendas em segundos com interface simplificada", gradient: "from-primary to-primary/70", shadow: "shadow-primary/20" },
+              { icon: Package, title: "Controle de Estoque", desc: "Gerencie produtos e fornecedores facilmente", gradient: "from-accent to-accent/70", shadow: "shadow-accent/20" },
+              { icon: TrendingUp, title: "Relatórios Inteligentes", desc: "Métricas e insights para seu negócio crescer", gradient: "from-success to-success/70", shadow: "shadow-success/20" },
+            ].map((item, i) => (
+              <div 
+                key={i}
+                className="flex items-center gap-5 p-5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] hover:shadow-xl group cursor-pointer"
+                style={{ animationDelay: `${i * 100}ms` }}
+              >
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shrink-0 shadow-lg ${item.shadow} group-hover:scale-110 transition-transform duration-300`}>
+                  <item.icon className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm">{item.desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-xl text-foreground">PDV Completo</h3>
-                <p className="text-muted-foreground">Sistema de vendas rápido e eficiente</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-5 p-5 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/50 transition-all duration-300 hover:shadow-xl hover:border-accent/40 hover:scale-[1.02] group cursor-pointer">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-accent/30 transition-all duration-300">
-                <Package className="w-8 h-8 text-accent-foreground" />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl text-foreground">Gestão de Estoque</h3>
-                <p className="text-muted-foreground">Controle total dos seus produtos</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-5 p-5 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/50 transition-all duration-300 hover:shadow-xl hover:border-success/40 hover:scale-[1.02] group cursor-pointer">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success to-success/70 flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-success/30 transition-all duration-300">
-                <TrendingUp className="w-8 h-8 text-success-foreground" />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl text-foreground">Relatórios Detalhados</h3>
-                <p className="text-muted-foreground">Análises completas do seu negócio</p>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="pt-6 flex items-center gap-4 p-5 rounded-2xl bg-accent/10 border border-accent/30">
-            <Gift className="w-8 h-8 text-accent" />
+          <div className="flex items-center gap-5 p-5 rounded-2xl bg-gradient-to-r from-accent/15 to-accent/5 border border-accent/30 backdrop-blur-sm">
+            <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
+              <Gift className="w-6 h-6 text-accent" />
+            </div>
             <div>
-              <p className="font-semibold text-foreground">Convide amigos e ganhe!</p>
-              <p className="text-muted-foreground">
-                <strong className="text-accent">1 mês grátis</strong> para cada cadastro com seu código!
+              <p className="font-bold text-foreground">Programa de Indicação</p>
+              <p className="text-sm text-muted-foreground">
+                Convide amigos e ganhe <span className="text-accent font-bold">1 mês grátis</span>!
               </p>
             </div>
           </div>
         </div>
 
-        {/* Formulários */}
-        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/10 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
+        {/* Card do formulário - Redesenhado */}
+        <Card className="shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-white/10 bg-card/90 backdrop-blur-2xl relative overflow-hidden rounded-3xl">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-accent/15 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle,transparent_30%,rgba(0,0,0,0.02)_70%)] pointer-events-none" />
           
-          <CardHeader className="text-center pb-2 relative z-10">
-            <div className="flex flex-col items-center gap-4 mb-4">
-              <div className="relative">
-                <div className="absolute -inset-2 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-30" />
-                <img src={logo} alt="JTC FluxPDV" className="relative w-20 h-20 rounded-xl object-cover shadow-xl" />
+          <CardHeader className="text-center pb-4 pt-8 relative z-10">
+            <div className="flex flex-col items-center gap-5 mb-2">
+              <div className="relative group">
+                <div className="absolute -inset-3 bg-gradient-to-r from-primary to-accent rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition-all duration-500" />
+                <img src={logo} alt="JTC FluxPDV" className="relative w-20 h-20 rounded-2xl object-cover shadow-xl ring-2 ring-white/10" />
               </div>
-              <div className="text-center">
-                <CardTitle className="text-3xl font-black gradient-text">JTC FluxPDV</CardTitle>
-                <CardDescription className="text-base mt-1">Sistema de Gestão Profissional</CardDescription>
+              <div className="text-center space-y-1">
+                <CardTitle className="text-3xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">JTC FluxPDV</CardTitle>
+                <CardDescription className="text-base text-muted-foreground">Acesse sua conta ou crie uma nova</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="relative z-10">
+          <CardContent className="relative z-10 px-6 pb-8">
             <Tabs defaultValue="login" className="w-full" onValueChange={() => setRegisterStep(1)}>
-              <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-muted/50">
-                <TabsTrigger value="login" className="font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-muted/30 rounded-xl h-14">
+                <TabsTrigger 
+                  value="login" 
+                  className="font-bold text-base rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300"
+                >
                   Entrar
                 </TabsTrigger>
-                <TabsTrigger value="register" className="font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <TabsTrigger 
+                  value="register" 
+                  className="font-bold text-base rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300"
+                >
                   Criar Conta
                 </TabsTrigger>
               </TabsList>
@@ -751,96 +757,104 @@ const Auth = () => {
                     </Button>
                   </div>
                 ) : (
-                  <form onSubmit={handleLogin} className="space-y-5">
-                    <div className="space-y-2">
-                      <Label htmlFor="identifier" className="text-sm font-medium">E-mail ou CPF</Label>
-                      <Input
-                        id="identifier"
-                        name="identifier"
-                        placeholder="seu@email.com ou 12345678900"
-                        required
-                        disabled={isLoading}
-                        className="h-12 text-base bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
-                      />
+                  <form onSubmit={handleLogin} className="space-y-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="identifier" className="text-sm font-semibold text-foreground/90">E-mail ou CPF</Label>
+                      <div className="relative group">
+                        <Input
+                          id="identifier"
+                          name="identifier"
+                          placeholder="seu@email.com ou 000.000.000-00"
+                          required
+                          disabled={isLoading}
+                          className="h-14 text-base bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl pl-5 placeholder:text-muted-foreground/50 transition-all duration-300"
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-                      <div className="relative">
+                    <div className="space-y-3">
+                      <Label htmlFor="password" className="text-sm font-semibold text-foreground/90">Senha</Label>
+                      <div className="relative group">
                         <Input
                           id="password"
                           name="password"
                           type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
                           required
                           disabled={isLoading}
-                          className="h-12 text-base pr-12 bg-background/50 border-border/50 focus:border-primary focus:ring-primary"
+                          className="h-14 text-base pr-14 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl pl-5 placeholder:text-muted-foreground/50 transition-all duration-300"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors duration-200 p-1"
                         >
                           {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                       </div>
                     </div>
 
-                    <Button type="submit" className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
+                    <Button 
+                      type="submit" 
+                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-xl" 
+                      disabled={isLoading}
+                    >
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           Entrando...
                         </>
                       ) : (
-                        "Entrar"
+                        "Entrar na Conta"
                       )}
                     </Button>
                   </form>
                 )}
 
-                {/* Mobile branding */}
-                <div className="lg:hidden pt-4 border-t border-border/50">
-                  <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
-                    <Gift className="w-5 h-5 text-accent" />
-                    <span>Convide amigos e ganhe <strong className="text-accent">1 mês grátis</strong>!</span>
+                {/* Mobile branding - Redesenhado */}
+                <div className="lg:hidden pt-6 border-t border-border/30 mt-6">
+                  <div className="flex items-center justify-center gap-4 p-4 rounded-xl bg-gradient-to-r from-accent/10 to-accent/5 border border-accent/20">
+                    <Gift className="w-6 h-6 text-accent" />
+                    <span className="text-sm text-muted-foreground">Convide amigos e ganhe <strong className="text-accent font-bold">1 mês grátis</strong>!</span>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="register" className="space-y-4">
-                {/* Indicadores de passos */}
-                <div className="flex justify-center items-center gap-2 mb-6">
+              <TabsContent value="register" className="space-y-5">
+                {/* Indicadores de passos - Redesenhado */}
+                <div className="flex justify-center items-center gap-3 mb-8 py-2">
                   <StepIndicator step={1} label="Dados" icon={User} />
-                  <div className={`flex-1 h-1 rounded-full max-w-8 transition-colors duration-300 ${registerStep > 1 ? 'bg-accent' : 'bg-muted'}`} />
+                  <div className={`flex-1 h-1 rounded-full max-w-10 transition-all duration-500 ${registerStep > 1 ? 'bg-gradient-to-r from-accent to-accent/70' : 'bg-muted/50'}`} />
                   <StepIndicator step={2} label="Endereço" icon={MapPin} />
-                  <div className={`flex-1 h-1 rounded-full max-w-8 transition-colors duration-300 ${registerStep > 2 ? 'bg-accent' : 'bg-muted'}`} />
+                  <div className={`flex-1 h-1 rounded-full max-w-10 transition-all duration-500 ${registerStep > 2 ? 'bg-gradient-to-r from-accent to-accent/70' : 'bg-muted/50'}`} />
                   <StepIndicator step={3} label="Código" icon={Ticket} />
-                  <div className={`flex-1 h-1 rounded-full max-w-8 transition-colors duration-300 ${registerStep > 3 ? 'bg-accent' : 'bg-muted'}`} />
+                  <div className={`flex-1 h-1 rounded-full max-w-10 transition-all duration-500 ${registerStep > 3 ? 'bg-gradient-to-r from-accent to-accent/70' : 'bg-muted/50'}`} />
                   <StepIndicator step={4} label="E-mail" icon={Mail} />
                 </div>
 
-                {/* Passo 1: Dados Pessoais */}
+                {/* Passo 1: Dados Pessoais - Redesenhado */}
                 {registerStep === 1 && (
-                  <div className="space-y-4">
-                    <div className="text-center mb-4">
-                      <h3 className="font-semibold text-lg">Dados Pessoais</h3>
-                      <p className="text-sm text-muted-foreground">Preencha suas informações básicas</p>
+                  <div className="space-y-5 animate-fade-in">
+                    <div className="text-center mb-6">
+                      <h3 className="font-bold text-xl text-foreground">Dados Pessoais</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Preencha suas informações básicas</p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName" className="text-sm font-medium">Nome Completo</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="fullName" className="text-sm font-semibold text-foreground/90">Nome Completo</Label>
                       <Input
                         id="fullName"
+                        placeholder="Digite seu nome completo"
                         value={formData.fullName}
                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                         required
                         disabled={isLoading}
-                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
+                        className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="cpf" className="text-sm font-medium">CPF</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="cpf" className="text-sm font-semibold text-foreground/90">CPF</Label>
                       <Input
                         id="cpf"
                         placeholder="000.000.000-00"
@@ -859,26 +873,28 @@ const Auth = () => {
                         disabled={isLoading}
                         inputMode="numeric"
                         maxLength={14}
-                        className={`h-11 bg-background/50 border-border/50 focus:border-primary ${cpfError ? "border-destructive" : ""}`}
+                        className={`h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300 ${cpfError ? "border-destructive ring-destructive/20" : ""}`}
                       />
-                      {cpfError && <p className="text-xs text-destructive">{cpfError}</p>}
+                      {cpfError && <p className="text-xs text-destructive font-medium">{cpfError}</p>}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="email" className="text-sm font-semibold text-foreground/90">E-mail</Label>
                       <Input
                         id="email"
                         type="email"
+                        placeholder="seu@email.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         required
                         disabled={isLoading}
-                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
+                        className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                       />
+                      <p className="text-xs text-muted-foreground">Apenas @gmail.com ou @outlook.com</p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-sm font-medium">Telefone</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="phone" className="text-sm font-semibold text-foreground/90">Telefone</Label>
                       <Input
                         id="phone"
                         placeholder="(00) 00000-0000"
@@ -897,37 +913,37 @@ const Auth = () => {
                         disabled={isLoading}
                         inputMode="numeric"
                         maxLength={15}
-                        className={`h-11 bg-background/50 border-border/50 focus:border-primary ${phoneError ? "border-destructive" : ""}`}
+                        className={`h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300 ${phoneError ? "border-destructive ring-destructive/20" : ""}`}
                       />
-                      {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
+                      {phoneError && <p className="text-xs text-destructive font-medium">{phoneError}</p>}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="password" className="text-sm font-semibold text-foreground/90">Senha</Label>
                         <div className="relative">
                           <Input
                             id="password"
                             type={showPassword ? "text" : "password"}
-                            placeholder="Mínimo 6 caracteres"
+                            placeholder="Min. 6 caracteres"
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             required
                             disabled={isLoading}
-                            className="h-11 pr-10 bg-background/50 border-border/50 focus:border-primary"
+                            className="h-12 pr-11 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors duration-200"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="confirmPassword" className="text-sm font-semibold text-foreground/90">Confirmar</Label>
                         <div className="relative">
                           <Input
                             id="confirmPassword"
@@ -937,12 +953,12 @@ const Auth = () => {
                             onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                             required
                             disabled={isLoading}
-                            className="h-11 pr-10 bg-background/50 border-border/50 focus:border-primary"
+                            className="h-12 pr-11 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                           />
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors duration-200"
                           >
                             {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -953,7 +969,7 @@ const Auth = () => {
                     <Button 
                       type="button" 
                       onClick={handleNextStep} 
-                      className="w-full h-12 text-base font-bold mt-4"
+                      className="w-full h-14 text-base font-bold mt-6 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-xl"
                       disabled={isLoading}
                     >
                       Próximo
@@ -962,16 +978,16 @@ const Auth = () => {
                   </div>
                 )}
 
-                {/* Passo 2: Endereço */}
+                {/* Passo 2: Endereço - Redesenhado */}
                 {registerStep === 2 && (
-                  <div className="space-y-4">
-                    <div className="text-center mb-4">
-                      <h3 className="font-semibold text-lg">Endereço</h3>
-                      <p className="text-sm text-muted-foreground">Digite o CEP para preenchimento automático</p>
+                  <div className="space-y-5 animate-fade-in">
+                    <div className="text-center mb-6">
+                      <h3 className="font-bold text-xl text-foreground">Endereço</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Digite o CEP para preenchimento automático</p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="cep" className="text-sm font-medium">CEP</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="cep" className="text-sm font-semibold text-foreground/90">CEP</Label>
                       <div className="relative">
                         <Input
                           id="cep"
@@ -986,60 +1002,63 @@ const Auth = () => {
                           required
                           disabled={isLoading || isFetchingCEP}
                           inputMode="numeric"
-                          className="h-11 bg-background/50 border-border/50 focus:border-primary"
+                          className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                         />
                         {isFetchingCEP && (
-                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                          <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-primary" />
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="street" className="text-sm font-medium">Rua</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="street" className="text-sm font-semibold text-foreground/90">Rua</Label>
                       <Input
                         id="street"
+                        placeholder="Nome da rua"
                         value={addressData.street}
                         onChange={(e) => setAddressData({ ...addressData, street: e.target.value })}
                         required
                         disabled={isLoading}
-                        className="h-11 bg-background/50 border-border/50 focus:border-primary"
+                        className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="number" className="text-sm font-medium">Número</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="number" className="text-sm font-semibold text-foreground/90">Número</Label>
                         <Input
                           id="number"
+                          placeholder="Nº"
                           value={formData.number}
                           onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                           required
                           disabled={isLoading}
-                          className="h-11 bg-background/50 border-border/50 focus:border-primary"
+                          className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="neighborhood" className="text-sm font-medium">Bairro</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="neighborhood" className="text-sm font-semibold text-foreground/90">Bairro</Label>
                         <Input
                           id="neighborhood"
+                          placeholder="Seu bairro"
                           value={addressData.neighborhood}
                           onChange={(e) => setAddressData({ ...addressData, neighborhood: e.target.value })}
                           required
                           disabled={isLoading}
-                          className="h-11 bg-background/50 border-border/50 focus:border-primary"
+                          className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Estado</Label>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-foreground/90">Estado</Label>
                         <Select value={selectedEstado} onValueChange={setSelectedEstado} disabled={isLoading}>
-                          <SelectTrigger className="h-11 bg-background/50 border-border/50">
+                          <SelectTrigger className="h-12 bg-muted/30 border-border/40 rounded-xl">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
-                          <SelectContent className="bg-popover z-50">
+                          <SelectContent className="bg-popover z-50 rounded-xl">
                             {estados.map((estado) => (
                               <SelectItem key={estado.id} value={estado.sigla}>
                                 {estado.nome}
@@ -1049,13 +1068,13 @@ const Auth = () => {
                         </Select>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Cidade</Label>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-foreground/90">Cidade</Label>
                         <Select value={selectedCidade} onValueChange={setSelectedCidade} disabled={isLoading || !selectedEstado}>
-                          <SelectTrigger className="h-11 bg-background/50 border-border/50">
+                          <SelectTrigger className="h-12 bg-muted/30 border-border/40 rounded-xl">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
-                          <SelectContent className="bg-popover z-50 max-h-[300px]">
+                          <SelectContent className="bg-popover z-50 max-h-[300px] rounded-xl">
                             {cidades.map((cidade) => (
                               <SelectItem key={cidade.id} value={cidade.nome}>
                                 {cidade.nome}
@@ -1066,12 +1085,12 @@ const Auth = () => {
                       </div>
                     </div>
 
-                    <div className="flex gap-3 mt-4">
+                    <div className="flex gap-3 mt-6">
                       <Button 
                         type="button" 
                         variant="outline" 
                         onClick={handlePreviousStep}
-                        className="flex-1 h-12"
+                        className="flex-1 h-14 rounded-xl border-border/50 hover:bg-muted/50"
                         disabled={isLoading}
                       >
                         <ChevronLeft className="mr-2 h-5 w-5" />
@@ -1080,7 +1099,7 @@ const Auth = () => {
                       <Button 
                         type="button" 
                         onClick={handleNextStep}
-                        className="flex-1 h-12"
+                        className="flex-1 h-14 rounded-xl bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25"
                         disabled={isLoading}
                       >
                         Próximo
@@ -1090,30 +1109,30 @@ const Auth = () => {
                   </div>
                 )}
 
-                {/* Passo 3: Código de Convite */}
+                {/* Passo 3: Código de Convite - Redesenhado */}
                 {registerStep === 3 && (
-                  <div className="space-y-6">
-                    <div className="text-center mb-4">
-                      <h3 className="font-semibold text-lg">Código de Convite</h3>
-                      <p className="text-sm text-muted-foreground">Você tem um código de convite de um amigo?</p>
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="text-center mb-6">
+                      <h3 className="font-bold text-xl text-foreground">Código de Convite</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Você tem um código de convite de um amigo?</p>
                     </div>
 
                     {hasInviteCode === null ? (
-                      <div className="space-y-4">
-                        <div className="flex gap-3">
+                      <div className="space-y-5">
+                        <div className="flex gap-4">
                           <Button
                             type="button"
                             variant="outline"
-                            className="flex-1 h-14 border-accent text-accent hover:bg-accent/10 font-semibold"
+                            className="flex-1 h-16 border-2 border-accent/50 text-accent hover:bg-accent/10 hover:border-accent font-bold text-base rounded-xl transition-all duration-300"
                             onClick={() => setHasInviteCode(true)}
                           >
-                            <Gift className="mr-2 h-5 w-5" />
+                            <Gift className="mr-2 h-6 w-6" />
                             Sim, tenho!
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
-                            className="flex-1 h-14"
+                            className="flex-1 h-16 border-border/50 hover:bg-muted/50 font-medium text-base rounded-xl"
                             onClick={() => setHasInviteCode(false)}
                           >
                             Não tenho
@@ -1121,53 +1140,59 @@ const Auth = () => {
                         </div>
                       </div>
                     ) : hasInviteCode ? (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Digite o código</Label>
+                      <div className="space-y-5">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-semibold text-foreground/90">Digite o código</Label>
                           <div className="relative">
                             <Input
                               value={inviteCode}
                               onChange={(e) => handleInviteCodeChange(e.target.value)}
                               placeholder="Ex: ABC123"
                               maxLength={8}
-                              className="h-14 uppercase font-mono text-xl tracking-widest text-center bg-background/50 border-border/50"
+                              className="h-16 uppercase font-mono text-2xl tracking-[0.3em] text-center bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                               disabled={isLoading}
                               autoCapitalize="characters"
                               style={{ textTransform: 'uppercase' }}
                             />
                             <div className="absolute right-4 top-1/2 -translate-y-1/2">
                               {isValidatingCode && (
-                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
                               )}
                               {!isValidatingCode && codeValidationStatus === "valid" && (
-                                <CheckCircle2 className="h-6 w-6 text-accent" />
+                                <CheckCircle2 className="h-7 w-7 text-accent" />
                               )}
                               {!isValidatingCode && (codeValidationStatus === "invalid" || codeValidationStatus === "used") && (
-                                <XCircle className="h-6 w-6 text-destructive" />
+                                <XCircle className="h-7 w-7 text-destructive" />
                               )}
                             </div>
                           </div>
                           {codeValidationStatus === "valid" && (
-                            <p className="text-sm text-accent font-semibold bg-accent/10 p-3 rounded-lg text-center">
-                              🎉 Código válido! Você ganhará 1 mês + 3 dias grátis!
-                            </p>
+                            <div className="bg-gradient-to-r from-accent/15 to-accent/5 p-4 rounded-xl border border-accent/30 text-center">
+                              <p className="text-sm text-accent font-bold">
+                                🎉 Código válido! Você ganhará 1 mês + 3 dias grátis!
+                              </p>
+                            </div>
                           )}
                           {codeValidationStatus === "invalid" && (
-                            <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg text-center">
-                              Código inválido. Verifique e tente novamente.
-                            </p>
+                            <div className="bg-destructive/10 p-4 rounded-xl border border-destructive/30 text-center">
+                              <p className="text-sm text-destructive font-medium">
+                                Código inválido. Verifique e tente novamente.
+                              </p>
+                            </div>
                           )}
                           {codeValidationStatus === "used" && (
-                            <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg text-center">
-                              Este código já foi utilizado.
-                            </p>
+                            <div className="bg-destructive/10 p-4 rounded-xl border border-destructive/30 text-center">
+                              <p className="text-sm text-destructive font-medium">
+                                Este código já foi utilizado.
+                              </p>
+                            </div>
                           )}
                         </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="text-muted-foreground hover:text-foreground"
+                          className="text-muted-foreground hover:text-foreground w-full"
                           onClick={() => {
                             setHasInviteCode(false);
                             setInviteCode("");
@@ -1178,7 +1203,7 @@ const Auth = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="bg-muted/30 rounded-xl p-5 border border-border/50 text-center">
+                      <div className="bg-muted/20 rounded-2xl p-6 border border-border/30 text-center">
                         <p className="text-muted-foreground">
                           Sem código? Sem problema! Você ainda ganha <strong className="text-foreground">3 dias grátis</strong>.
                         </p>
@@ -1186,7 +1211,7 @@ const Auth = () => {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="mt-3 text-accent hover:text-accent hover:bg-accent/10"
+                          className="mt-4 text-accent hover:text-accent hover:bg-accent/10 font-medium"
                           onClick={() => setHasInviteCode(true)}
                         >
                           Na verdade, tenho um código!
@@ -1194,12 +1219,12 @@ const Auth = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-3 mt-6">
+                    <div className="flex gap-3 mt-8">
                       <Button 
                         type="button" 
                         variant="outline" 
                         onClick={handlePreviousStep}
-                        className="flex-1 h-12"
+                        className="flex-1 h-14 rounded-xl border-border/50 hover:bg-muted/50"
                         disabled={isLoading}
                       >
                         <ChevronLeft className="mr-2 h-5 w-5" />
@@ -1208,7 +1233,7 @@ const Auth = () => {
                       <Button 
                         type="button" 
                         onClick={handleGoToEmailVerification}
-                        className="flex-1 h-12"
+                        className="flex-1 h-14 rounded-xl bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25"
                         disabled={isLoading || hasInviteCode === null || (hasInviteCode && codeValidationStatus !== "valid" && inviteCode.length > 0)}
                       >
                         Próximo
@@ -1216,7 +1241,7 @@ const Auth = () => {
                       </Button>
                     </div>
 
-                    <p className="text-xs text-center text-muted-foreground">
+                    <p className="text-xs text-center text-muted-foreground pt-2">
                       {hasInviteCode && codeValidationStatus === "valid" 
                         ? "Você ganhará 1 mês + 3 dias de teste grátis! 🎉"
                         : "Você ganhará 3 dias de teste grátis"
@@ -1225,45 +1250,45 @@ const Auth = () => {
                   </div>
                 )}
 
-                {/* Passo 4: Verificação de E-mail */}
+                {/* Passo 4: Verificação de E-mail - Redesenhado */}
                 {registerStep === 4 && (
-                  <div className="space-y-6">
-                    <div className="text-center mb-4">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <Mail className="w-10 h-10 text-primary" />
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="text-center mb-6">
+                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/10">
+                        <Mail className="w-12 h-12 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-xl">
-                        Precisamos confirmar o seu {getEmailProvider(formData.email) === "gmail" ? "Gmail" : "Outlook"}
+                      <h3 className="font-bold text-2xl text-foreground">
+                        Confirme seu {getEmailProvider(formData.email) === "gmail" ? "Gmail" : "Outlook"}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-3">
                         Foi enviado um link de confirmação para:
                       </p>
-                      <p className="font-bold text-primary text-lg mt-2 break-all">
+                      <p className="font-bold text-primary text-lg mt-2 break-all bg-primary/5 py-2 px-4 rounded-lg inline-block">
                         {formData.email}
                       </p>
                     </div>
 
-                    <div className="bg-destructive/10 rounded-xl p-4 border border-destructive/30">
-                      <p className="text-sm text-destructive text-center font-medium">
+                    <div className="bg-gradient-to-r from-destructive/15 to-destructive/5 rounded-xl p-5 border border-destructive/30">
+                      <p className="text-sm text-destructive text-center font-bold">
                         ⚠️ Sua conta só será ativada após confirmar o e-mail!
                       </p>
-                      <p className="text-xs text-destructive/80 text-center mt-1">
+                      <p className="text-xs text-destructive/80 text-center mt-2">
                         Sem a confirmação, você não conseguirá fazer login.
                       </p>
                     </div>
 
-                    <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
-                      <p className="text-sm text-muted-foreground text-center">
-                        <strong>Só lembrando:</strong> Só aceitamos e-mails <span className="text-primary font-medium">@gmail.com</span> ou <span className="text-primary font-medium">@outlook.com</span>
+                    <div className="bg-muted/20 rounded-xl p-4 border border-border/30 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Lembrete:</strong> Só aceitamos <span className="text-primary font-semibold">@gmail.com</span> ou <span className="text-primary font-semibold">@outlook.com</span>
                       </p>
                     </div>
 
                     <Button 
                       type="button" 
                       onClick={openEmailApp}
-                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary to-primary/80"
+                      className="w-full h-16 text-lg font-bold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 rounded-xl"
                     >
-                      <ExternalLink className="mr-2 h-5 w-5" />
+                      <ExternalLink className="mr-3 h-6 w-6" />
                       {getEmailProvider(formData.email) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
                     </Button>
 
@@ -1271,12 +1296,12 @@ const Auth = () => {
                       type="button"
                       variant="outline"
                       onClick={() => handleResendConfirmationEmail()}
-                      className="w-full h-12"
+                      className="w-full h-14 rounded-xl border-border/50 hover:bg-muted/50"
                       disabled={isResendingConfirmation}
                     >
                       {isResendingConfirmation ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           Reenviando...
                         </>
                       ) : (
@@ -1286,14 +1311,14 @@ const Auth = () => {
 
                     <Button 
                       type="button" 
-                      variant="outline"
+                      variant="ghost"
                       onClick={resetForm}
-                      className="w-full h-12"
+                      className="w-full h-12 text-muted-foreground hover:text-foreground"
                     >
                       Voltar para o Login
                     </Button>
 
-                    <p className="text-xs text-center text-muted-foreground">
+                    <p className="text-sm text-center text-muted-foreground pt-2">
                       {hasInviteCode && codeValidationStatus === "valid" 
                         ? "🎉 Após confirmar, você terá 1 mês + 3 dias grátis!"
                         : "Após confirmar, você terá 3 dias de teste grátis!"
@@ -1302,11 +1327,11 @@ const Auth = () => {
                   </div>
                 )}
 
-                {/* Manual de Como Criar Conta */}
+                {/* Manual de Como Criar Conta - Redesenhado */}
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full h-11 border-border/50 hover:bg-muted/50 mt-4" type="button">
-                      <HelpCircle className="mr-2 h-4 w-4" />
+                    <Button variant="ghost" className="w-full h-12 text-muted-foreground hover:text-foreground hover:bg-muted/30 mt-6 rounded-xl" type="button">
+                      <HelpCircle className="mr-2 h-5 w-5" />
                       Manual: Como Criar Minha Conta
                     </Button>
                   </DialogTrigger>
