@@ -59,6 +59,7 @@ const Settings = () => {
 
   // Estado do código de convite
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteCodeLoading, setInviteCodeLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     fetchSettings();
@@ -97,17 +98,34 @@ const Settings = () => {
   }, []);
 
   const fetchInviteCode = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    setInviteCodeLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log("Usuário não encontrado para buscar código de convite");
+        setInviteCodeLoading(false);
+        return;
+      }
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("invite_code")
-      .eq("id", user.id)
-      .single();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("invite_code")
+        .eq("id", user.id)
+        .single();
 
-    if (data?.invite_code) {
-      setInviteCode(data.invite_code);
+      if (error) {
+        console.error("Erro ao buscar código de convite:", error);
+      }
+
+      if (data?.invite_code) {
+        setInviteCode(data.invite_code);
+      } else {
+        console.log("Código de convite não encontrado para o usuário:", user.id);
+      }
+    } catch (err) {
+      console.error("Erro inesperado ao buscar código de convite:", err);
+    } finally {
+      setInviteCodeLoading(false);
     }
   };
 
@@ -732,7 +750,16 @@ const Settings = () => {
 
                 <div className="bg-background rounded-xl p-4 md:p-6 text-center space-y-4 border border-accent/20">
                   <div className="text-2xl md:text-4xl font-mono font-bold tracking-widest text-primary break-all">
-                    {inviteCode || "Carregando..."}
+                    {inviteCodeLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span className="text-lg text-muted-foreground">Carregando...</span>
+                      </div>
+                    ) : inviteCode ? (
+                      inviteCode
+                    ) : (
+                      <span className="text-lg text-destructive">Código não encontrado</span>
+                    )}
                   </div>
                   
                   <div className="flex gap-2 justify-center flex-wrap">
@@ -740,7 +767,7 @@ const Settings = () => {
                       onClick={handleCopyCode}
                       variant="outline"
                       className="gap-2"
-                      disabled={!inviteCode}
+                      disabled={!inviteCode || inviteCodeLoading}
                       size="sm"
                     >
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -750,7 +777,7 @@ const Settings = () => {
                     <Button
                       onClick={handleShare}
                       className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
-                      disabled={!inviteCode}
+                      disabled={!inviteCode || inviteCodeLoading}
                       size="sm"
                     >
                       <Share2 className="h-4 w-4" />
