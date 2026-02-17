@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { signIn, signUp, validateInviteCode, type SignUpData } from "@/lib/auth";
 import { isValidCPF } from "@/lib/cpfValidator";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, ChevronRight, ChevronLeft, Check, User, MapPin, Ticket, Mail, ExternalLink } from "lucide-react";
+import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, ChevronRight, ChevronLeft, Check, User, MapPin, Ticket, Mail, ExternalLink, AlertTriangle } from "lucide-react";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 import logo from "@/assets/logo.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -67,6 +67,7 @@ const Auth = () => {
   const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid" | "used">("idle");
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Estado para conta bloqueada
   const [showBlockedAccountDialog, setShowBlockedAccountDialog] = useState(false);
@@ -257,6 +258,7 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthError(null);
 
     const formDataEvent = new FormData(e.currentTarget);
     const identifier = formDataEvent.get("identifier") as string;
@@ -285,19 +287,15 @@ const Auth = () => {
         description: "Login realizado com sucesso.",
       });
     } catch (error: any) {
-      // Verificar se é erro de email não confirmado
       const errorMessage = error.message?.toLowerCase() || "";
       if (errorMessage.includes("email not confirmed") || errorMessage.includes("email_not_confirmed")) {
-        // Guardar o email e mostrar a UI de reenvio
         const formDataEvent = new FormData(e.currentTarget);
         const usedIdentifier = formDataEvent.get("identifier") as string;
         
-        // Se for CPF, precisamos buscar o email associado
         const cleanIdentifier = usedIdentifier.replace(/\D/g, "");
         const isCPF = /^\d{11}$/.test(cleanIdentifier);
         
         if (isCPF) {
-          // Buscar email pelo CPF
           const { data } = await supabase.rpc('get_user_email_by_cpf', { search_cpf: cleanIdentifier });
           if (data && data.length > 0) {
             setUnconfirmedEmail(data[0].email);
@@ -307,12 +305,12 @@ const Auth = () => {
         }
         
         setShowUnconfirmedEmailUI(true);
+      } else if (errorMessage.includes("invalid login credentials") || errorMessage.includes("invalid_credentials")) {
+        setAuthError("E-mail/CPF ou senha incorretos. Verifique seus dados e tente novamente.");
+      } else if (errorMessage.includes("cpf não encontrado")) {
+        setAuthError("CPF não encontrado. Verifique se digitou corretamente ou crie uma conta.");
       } else {
-        toast({
-          variant: "destructive",
-          title: "Erro no login",
-          description: error.message || "Verifique suas credenciais e tente novamente.",
-        });
+        setAuthError(error.message || "Ocorreu um erro ao tentar entrar. Tente novamente.");
       }
     } finally {
       setIsLoading(false);
@@ -350,43 +348,43 @@ const Auth = () => {
   // Validação do passo 1 (Dados Pessoais)
   const validateStep1 = () => {
     if (!formData.fullName.trim()) {
-      toast({ variant: "destructive", title: "Erro", description: "Nome completo é obrigatório" });
+      setAuthError("Nome completo é obrigatório.");
       return false;
     }
 
     const cpfValue = formData.cpf.replace(/\D/g, "");
     if (!isValidCPF(cpfValue)) {
-      toast({ variant: "destructive", title: "Erro", description: "CPF inválido" });
+      setAuthError("CPF inválido. Verifique os números digitados.");
       return false;
     }
 
     if (!formData.email.includes("@")) {
-      toast({ variant: "destructive", title: "Erro", description: "Email inválido" });
+      setAuthError("E-mail inválido. Digite um e-mail válido.");
       return false;
     }
 
-    // Validar se o email é Gmail ou Outlook
     if (!isValidEmailProvider(formData.email)) {
-      toast({ variant: "destructive", title: "Erro", description: "Só aceitamos emails @gmail.com ou @outlook.com" });
+      setAuthError("Só aceitamos e-mails @gmail.com ou @outlook.com.");
       return false;
     }
 
     const phoneValue = formData.phone.replace(/\D/g, "");
     if (phoneValue.length !== 11) {
-      toast({ variant: "destructive", title: "Erro", description: "Telefone deve ter 11 dígitos (DDD + número)" });
+      setAuthError("Telefone deve ter 11 dígitos (DDD + número).");
       return false;
     }
 
     if (formData.password.length < 6) {
-      toast({ variant: "destructive", title: "Erro", description: "Senha deve ter no mínimo 6 caracteres" });
+      setAuthError("Senha deve ter no mínimo 6 caracteres.");
       return false;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast({ variant: "destructive", title: "Erro", description: "As senhas não coincidem" });
+      setAuthError("As senhas não coincidem. Verifique e tente novamente.");
       return false;
     }
 
+    setAuthError(null);
     return true;
   };
 
@@ -394,39 +392,41 @@ const Auth = () => {
   const validateStep2 = () => {
     const cepValue = formData.cep.replace(/\D/g, "");
     if (cepValue.length !== 8) {
-      toast({ variant: "destructive", title: "Erro", description: "CEP inválido" });
+      setAuthError("CEP inválido. Digite um CEP com 8 dígitos.");
       return false;
     }
 
     if (!addressData.street.trim()) {
-      toast({ variant: "destructive", title: "Erro", description: "Rua é obrigatória" });
+      setAuthError("Rua é obrigatória.");
       return false;
     }
 
     if (!formData.number.trim()) {
-      toast({ variant: "destructive", title: "Erro", description: "Número é obrigatório" });
+      setAuthError("Número é obrigatório.");
       return false;
     }
 
     if (!addressData.neighborhood.trim()) {
-      toast({ variant: "destructive", title: "Erro", description: "Bairro é obrigatório" });
+      setAuthError("Bairro é obrigatório.");
       return false;
     }
 
     if (!selectedEstado) {
-      toast({ variant: "destructive", title: "Erro", description: "Estado é obrigatório" });
+      setAuthError("Estado é obrigatório.");
       return false;
     }
 
     if (!selectedCidade) {
-      toast({ variant: "destructive", title: "Erro", description: "Cidade é obrigatória" });
+      setAuthError("Cidade é obrigatória.");
       return false;
     }
 
+    setAuthError(null);
     return true;
   };
 
   const handleNextStep = () => {
+    setAuthError(null);
     if (registerStep === 1 && validateStep1()) {
       setRegisterStep(2);
     } else if (registerStep === 2 && validateStep2()) {
@@ -435,17 +435,13 @@ const Auth = () => {
   };
 
   const handleGoToEmailVerification = async () => {
-    // Validar código de convite se fornecido
     if (hasInviteCode && inviteCode && codeValidationStatus !== "valid") {
-      toast({
-        variant: "destructive",
-        title: "Código inválido",
-        description: "Por favor, verifique o código de convite.",
-      });
+      setAuthError("Código de convite inválido. Verifique e tente novamente.");
       return;
     }
 
     setIsLoading(true);
+    setAuthError(null);
 
     try {
       // Verificar se o CPF está bloqueado
@@ -457,11 +453,7 @@ const Auth = () => {
       if (blockError) {
         console.error('Erro ao verificar CPF:', blockError);
       } else if (isBlocked) {
-        toast({
-          variant: "destructive",
-          title: "CPF bloqueado",
-          description: "Este CPF não pode ser utilizado para criar uma nova conta.",
-        });
+        setAuthError("Este CPF está bloqueado e não pode ser utilizado para criar uma nova conta.");
         setIsLoading(false);
         return;
       }
@@ -476,11 +468,7 @@ const Auth = () => {
           if (response.error) {
             console.error('Erro ao verificar IP:', response.error);
           } else if (!response.data.can_use) {
-            toast({
-              variant: "destructive",
-              title: "Código já utilizado",
-              description: response.data.message || "Este dispositivo já utilizou este código de convite.",
-            });
+            setAuthError(response.data.message || "Este dispositivo já utilizou este código de convite.");
             setIsLoading(false);
             return;
           }
@@ -523,11 +511,7 @@ const Auth = () => {
       });
       
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro no cadastro",
-        description: error.message || "Não foi possível criar sua conta.",
-      });
+      setAuthError(error.message || "Não foi possível criar sua conta. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -672,7 +656,7 @@ const Auth = () => {
             </div>
           </CardHeader>
           <CardContent className="relative z-10 px-6 pb-8">
-            <Tabs defaultValue="login" className="w-full" onValueChange={() => setRegisterStep(1)}>
+            <Tabs defaultValue="login" className="w-full" onValueChange={() => { setRegisterStep(1); setAuthError(null); }}>
               <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-muted/30 rounded-xl h-14">
                 <TabsTrigger 
                   value="login" 
@@ -793,6 +777,20 @@ const Auth = () => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Erro inline */}
+                    {authError && (
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in">
+                        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-destructive">Atenção</p>
+                          <p className="text-sm text-destructive/80 mt-0.5">{authError}</p>
+                        </div>
+                        <button onClick={() => setAuthError(null)} className="text-destructive/60 hover:text-destructive transition-colors">
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
 
                     <Button 
                       type="submit" 
@@ -966,6 +964,20 @@ const Auth = () => {
                       </div>
                     </div>
 
+                    {/* Erro inline - Step 1 */}
+                    {authError && (
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in mt-4">
+                        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-destructive">Atenção</p>
+                          <p className="text-sm text-destructive/80 mt-0.5">{authError}</p>
+                        </div>
+                        <button onClick={() => setAuthError(null)} className="text-destructive/60 hover:text-destructive transition-colors">
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+
                     <Button 
                       type="button" 
                       onClick={handleNextStep} 
@@ -1084,6 +1096,20 @@ const Auth = () => {
                         </Select>
                       </div>
                     </div>
+
+                    {/* Erro inline - Step 2 */}
+                    {authError && (
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in">
+                        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-destructive">Atenção</p>
+                          <p className="text-sm text-destructive/80 mt-0.5">{authError}</p>
+                        </div>
+                        <button onClick={() => setAuthError(null)} className="text-destructive/60 hover:text-destructive transition-colors">
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
 
                     <div className="flex gap-3 mt-6">
                       <Button 
@@ -1216,6 +1242,20 @@ const Auth = () => {
                         >
                           Na verdade, tenho um código!
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Erro inline - Step 3 */}
+                    {authError && (
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in">
+                        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-destructive">Atenção</p>
+                          <p className="text-sm text-destructive/80 mt-0.5">{authError}</p>
+                        </div>
+                        <button onClick={() => setAuthError(null)} className="text-destructive/60 hover:text-destructive transition-colors">
+                          <XCircle className="h-4 w-4" />
+                        </button>
                       </div>
                     )}
 
