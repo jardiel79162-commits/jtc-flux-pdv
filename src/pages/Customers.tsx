@@ -65,31 +65,6 @@ const Customers = () => {
     loadCustomers();
   }, []);
 
-  const loadCustomers = async () => {
-    setIsLoading(true);
-    await fetchCustomers();
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    if (selectedCustomer) {
-      fetchTransactions(selectedCustomer.id);
-    }
-  }, [selectedCustomer]);
-
-  // Bloquear se assinatura expirada
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
-  if (isLoading) {
-    return (
-      <PageLoader pageName="Clientes">
-        <CustomersSkeleton />
-      </PageLoader>
-    );
-  }
-
   const fetchCustomers = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -122,6 +97,31 @@ const Customers = () => {
 
     setTransactions(data || []);
   };
+
+  const loadCustomers = async () => {
+    setIsLoading(true);
+    await fetchCustomers();
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    if (selectedCustomer) {
+      fetchTransactions(selectedCustomer.id);
+    }
+  }, [selectedCustomer]);
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
+
+  if (isLoading) {
+    return (
+      <PageLoader pageName="Clientes">
+        <CustomersSkeleton />
+      </PageLoader>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

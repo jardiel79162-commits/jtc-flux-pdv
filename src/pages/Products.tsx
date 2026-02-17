@@ -85,29 +85,6 @@ const Products = () => {
     parent_id: "",
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    await Promise.all([fetchProducts(), fetchCategories(), fetchSuppliers()]);
-    setIsLoading(false);
-  };
-
-  // Bloquear se assinatura expirada
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
-  if (isLoading) {
-    return (
-      <PageLoader pageName="Produtos">
-        <ProductsSkeleton />
-      </PageLoader>
-    );
-  }
-
   const fetchProducts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -171,6 +148,29 @@ const Products = () => {
       setSuppliers(data || []);
     }
   };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchProducts(), fetchCategories(), fetchSuppliers()]);
+    setIsLoading(false);
+  };
+
+  // Bloquear se assinatura expirada
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
+
+  if (isLoading) {
+    return (
+      <PageLoader pageName="Produtos">
+        <ProductsSkeleton />
+      </PageLoader>
+    );
+  }
 
   const handleSaveProduct = async () => {
     if (isSavingProduct) return; // Evitar dupla submissão
