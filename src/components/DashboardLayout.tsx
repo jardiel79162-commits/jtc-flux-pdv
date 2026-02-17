@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,50 +101,76 @@ const DashboardLayout = () => {
       </header>
 
       {/* Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-30 bg-background pt-16">
-          <nav className="p-4 space-y-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-30 bg-background pt-16"
+          >
+            <nav className="p-4 space-y-1">
+              {menuItems.map((item, index) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
 
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    className="w-full justify-start gap-3"
+                return (
+                  <motion.div
+                    key={item.path}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.04, duration: 0.2 }}
                   >
-                    <Icon className="w-5 h-5" />
-                    {item.label}
-                  </Button>
-                </Link>
-              );
-            })}
+                    <Link
+                      to={item.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className="w-full justify-start gap-3 transition-all duration-150 active:scale-[0.97]"
+                      >
+                        <Icon className="w-5 h-5" />
+                        {item.label}
+                      </Button>
+                    </Link>
+                  </motion.div>
+                );
+              })}
 
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-destructive hover:text-destructive"
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                handleLogout();
-              }}
-            >
-              <LogOut className="w-5 h-5" />
-              Sair
-            </Button>
-          </nav>
-        </div>
-      )}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: menuItems.length * 0.04, duration: 0.2 }}
+              >
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 text-destructive hover:text-destructive transition-all duration-150 active:scale-[0.97]"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  <LogOut className="w-5 h-5" />
+                  Sair
+                </Button>
+              </motion.div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <main className="pt-16 min-h-screen overflow-hidden">
-        <div className="p-4 md:p-8 w-full max-w-full overflow-hidden">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="p-4 md:p-8 w-full max-w-full overflow-hidden"
+        >
           <Outlet />
-        </div>
+        </motion.div>
       </main>
 
       {/* Auri Chat Bot - esconde na página /auri */}
