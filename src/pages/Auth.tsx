@@ -564,16 +564,14 @@ const Auth = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-primary/25 via-background to-accent/20 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Enhanced background decorations with floating animation */}
+    <div className="auth-page-bg">
+      {/* Background decorations - CSS classes for consistent loading */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-primary/40 to-primary/10 rounded-full blur-[120px] -translate-x-1/3 -translate-y-1/3 animate-[pulse_4s_ease-in-out_infinite]" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-to-tl from-accent/40 to-accent/10 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3 animate-[pulse_5s_ease-in-out_infinite]" />
-        <div className="absolute top-1/3 right-1/4 w-[350px] h-[350px] bg-primary/15 rounded-full blur-[80px] animate-[pulse_6s_ease-in-out_infinite]" />
-        <div className="absolute bottom-1/3 left-1/4 w-[300px] h-[300px] bg-accent/20 rounded-full blur-[70px] animate-[pulse_7s_ease-in-out_infinite]" />
-        
-        {/* Subtle grid pattern overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
+        <div className="auth-orb auth-orb-1" />
+        <div className="auth-orb auth-orb-2" />
+        <div className="auth-orb auth-orb-3" />
+        <div className="auth-orb auth-orb-4" />
+        <div className="auth-grid-overlay" />
       </div>
       
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-20 items-center relative z-10">
@@ -637,16 +635,15 @@ const Auth = () => {
         </div>
 
         {/* Card do formulário - Redesenhado */}
-        <Card className="shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-white/10 bg-card/90 backdrop-blur-2xl relative overflow-hidden rounded-3xl">
+        <Card className="auth-card">
           {/* Decorative elements */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-accent/15 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle,transparent_30%,rgba(0,0,0,0.02)_70%)] pointer-events-none" />
+          <div className="auth-card-glow-tr" />
+          <div className="auth-card-glow-bl" />
           
           <CardHeader className="text-center pb-4 pt-8 relative z-10">
             <div className="flex flex-col items-center gap-5 mb-2">
               <div className="relative group">
-                <div className="absolute -inset-3 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-40 group-hover:opacity-60 transition-all duration-500" />
+                <div className="auth-logo-glow" />
                 <img src={logo} alt="JTC FluxPDV" className="relative w-20 h-20 rounded-full object-cover shadow-xl ring-2 ring-white/10" />
               </div>
               <div className="text-center space-y-1">
@@ -660,13 +657,13 @@ const Auth = () => {
               <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-muted/30 rounded-xl h-14">
                 <TabsTrigger 
                   value="login" 
-                  className="font-bold text-base rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300"
+                  className="auth-tab font-bold text-base rounded-lg transition-all duration-300"
                 >
                   Entrar
                 </TabsTrigger>
                 <TabsTrigger 
                   value="register" 
-                  className="font-bold text-base rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300"
+                  className="auth-tab font-bold text-base rounded-lg transition-all duration-300"
                 >
                   Criar Conta
                 </TabsTrigger>
