@@ -44,14 +44,6 @@ const Suppliers = () => {
     notes: "",
   });
 
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
-
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
-
   const fetchSuppliers = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -68,6 +60,14 @@ const Suppliers = () => {
       setSuppliers(data || []);
     }
   };
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   const handleSave = async () => {
     if (isSaving) return;

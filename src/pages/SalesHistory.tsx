@@ -52,11 +52,6 @@ const SalesHistory = () => {
   const { toast } = useToast();
   const { isActive, isExpired, isTrial, loading } = useSubscription();
 
-  useEffect(() => {
-    fetchSales();
-    fetchStoreInfo();
-  }, []);
-
   const fetchStoreInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -74,9 +69,10 @@ const SalesHistory = () => {
     }
   };
 
-  if (!loading && isExpired) {
-    return <SubscriptionBlocker isTrial={isTrial} />;
-  }
+  useEffect(() => {
+    fetchSales();
+    fetchStoreInfo();
+  }, []);
 
   const fetchSales = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -114,7 +110,6 @@ const SalesHistory = () => {
               product_id: item.product_id,
               quantity: item.quantity,
               unit_price: item.unit_price,
-              // Usar product_name da sale_items se produto foi deletado
               product_name: item.products?.name || item.product_name || "Produto removido",
               cost_price: item.products?.cost_price || 0,
             })) || [],
@@ -125,6 +120,10 @@ const SalesHistory = () => {
       setSales(salesWithItems);
     }
   };
+
+  if (!loading && isExpired) {
+    return <SubscriptionBlocker isTrial={isTrial} />;
+  }
 
   const handleCancelSale = async () => {
     if (!saleToCancel) return;
