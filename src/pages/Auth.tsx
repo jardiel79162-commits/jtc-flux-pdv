@@ -1384,7 +1384,7 @@ const Auth = () => {
                   </div>
                 )}
 
-                {/* Manual de Como Criar Conta - Redesenhado */}
+                {/* Manual de Como Criar Conta - Premium */}
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="ghost" className="w-full h-12 text-muted-foreground hover:text-foreground hover:bg-muted/30 mt-6 rounded-xl" type="button">
@@ -1392,66 +1392,79 @@ const Auth = () => {
                       Manual: Como Criar Minha Conta
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2 text-xl">
-                        <HelpCircle className="h-5 w-5 text-primary" />
-                        Manual: Como Criar Sua Conta
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-6 text-sm">
-                      <div className="bg-primary/5 p-4 rounded-lg">
-                        <p className="text-muted-foreground">
-                          O cadastro é dividido em <strong>4 etapas simples</strong>. Siga as instruções abaixo:
-                        </p>
-                      </div>
+                  <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto p-0 gap-0 rounded-2xl">
+                    {/* Header com gradiente */}
+                    <div className="bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground rounded-t-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-3 text-xl text-primary-foreground">
+                          <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                            <HelpCircle className="h-5 w-5" />
+                          </div>
+                          Como Criar Sua Conta
+                        </DialogTitle>
+                      </DialogHeader>
+                      <p className="text-primary-foreground/80 text-sm mt-2">
+                        Siga as <strong>4 etapas</strong> abaixo para criar sua conta rapidamente.
+                      </p>
+                    </div>
 
-                      <div className="space-y-2">
-                        <h3 className="font-semibold text-foreground flex items-center gap-2">
-                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                          Etapa 1: Dados Pessoais
-                        </h3>
-                        <div className="ml-8 space-y-1 text-muted-foreground">
+                    <div className="p-5 space-y-4">
+                      {/* Etapa 1 */}
+                      <div className="relative pl-10 pb-4 border-l-2 border-primary/20 ml-3">
+                        <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">1</div>
+                        <h3 className="font-semibold text-foreground text-sm mb-2">Dados Pessoais & Senha</h3>
+                        <div className="space-y-1.5 text-xs text-muted-foreground bg-muted/30 rounded-xl p-3">
                           <p>• <strong>Nome Completo:</strong> Seu nome e sobrenome</p>
-                          <p>• <strong>CPF:</strong> Será validado automaticamente</p>
-                          <p>• <strong>E-mail:</strong> Só aceitamos @gmail.com ou @outlook.com</p>
-                          <p>• <strong>Telefone:</strong> 11 dígitos com DDD</p>
-                          <p>• <strong>Senha:</strong> Mínimo 6 caracteres</p>
+                          <p>• <strong>CPF:</strong> Será validado automaticamente (formato: 000.000.000-00)</p>
+                          <p>• <strong>E-mail:</strong> Aceitamos apenas <strong className="text-primary">@gmail.com</strong> ou <strong className="text-primary">@outlook.com</strong></p>
+                          <p>• <strong>Telefone:</strong> 11 dígitos com DDD (formato: (00) 00000-0000)</p>
+                          <p>• <strong>Senha:</strong> Mínimo 6 caracteres — a confirmação valida em tempo real ✅</p>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <h3 className="font-semibold text-foreground flex items-center gap-2">
-                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-                          Etapa 2: Endereço
-                        </h3>
-                        <div className="ml-8 space-y-1 text-muted-foreground">
-                          <p>• <strong>CEP:</strong> Digite para preenchimento automático</p>
-                          <p>• Complete os campos restantes se necessário</p>
+                      {/* Etapa 2 */}
+                      <div className="relative pl-10 pb-4 border-l-2 border-primary/20 ml-3">
+                        <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">2</div>
+                        <h3 className="font-semibold text-foreground text-sm mb-2">Endereço</h3>
+                        <div className="space-y-1.5 text-xs text-muted-foreground bg-muted/30 rounded-xl p-3">
+                          <p>• <strong>CEP:</strong> Digite e o endereço preenche automaticamente</p>
+                          <p>• <strong>Número:</strong> Informe o número da residência</p>
+                          <p>• Se o CEP não encontrar, selecione estado e cidade manualmente</p>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <h3 className="font-semibold text-foreground flex items-center gap-2">
-                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
-                          Etapa 3: Código de Convite
-                        </h3>
-                        <div className="ml-8 space-y-1 text-muted-foreground">
-                          <p>• Com código: <strong className="text-accent">1 mês + 3 dias grátis</strong></p>
-                          <p>• Sem código: <strong>3 dias grátis</strong></p>
+                      {/* Etapa 3 */}
+                      <div className="relative pl-10 pb-4 border-l-2 border-primary/20 ml-3">
+                        <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">3</div>
+                        <h3 className="font-semibold text-foreground text-sm mb-2">Código de Convite</h3>
+                        <div className="space-y-1.5 text-xs text-muted-foreground bg-muted/30 rounded-xl p-3">
+                          <p className="flex items-center gap-1.5">
+                            <Gift className="h-3.5 w-3.5 text-accent shrink-0" />
+                            <strong>Com código:</strong> <span className="text-accent font-semibold">1 mês + 3 dias grátis!</span>
+                          </p>
+                          <p>• <strong>Sem código:</strong> 3 dias de teste grátis</p>
+                          <p>• O código é validado automaticamente ao digitar</p>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <h3 className="font-semibold text-foreground flex items-center gap-2">
-                          <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
-                          Etapa 4: Verificação de E-mail
-                        </h3>
-                        <div className="ml-8 space-y-1 text-muted-foreground">
-                          <p>• Confirme seu e-mail clicando no link enviado</p>
-                          <p>• Use o botão para abrir Gmail ou Outlook</p>
-                          <p>• Após confirmar, clique em "Criar Conta"</p>
+                      {/* Etapa 4 */}
+                      <div className="relative pl-10 ml-3">
+                        <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold shadow-md">4</div>
+                        <h3 className="font-semibold text-foreground text-sm mb-2">Verificação de E-mail</h3>
+                        <div className="space-y-1.5 text-xs text-muted-foreground bg-muted/30 rounded-xl p-3">
+                          <p>• Um link de confirmação será enviado ao seu e-mail</p>
+                          <p>• Clique no link para ativar sua conta</p>
+                          <p>• Use os botões rápidos para abrir <strong>Gmail</strong> ou <strong>Outlook</strong></p>
+                          <p>• Verifique também a pasta de <strong>spam/lixo eletrônico</strong></p>
                         </div>
+                      </div>
+
+                      {/* Dica final */}
+                      <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          <strong className="text-foreground">Pronto!</strong> Após confirmar o e-mail, faça login e comece a usar o JTC FluxPDV. Seu período gratuito começa imediatamente.
+                        </p>
                       </div>
                     </div>
                   </DialogContent>
