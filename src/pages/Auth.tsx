@@ -951,7 +951,7 @@ const Auth = () => {
                             onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                             required
                             disabled={isLoading}
-                            className="h-12 pr-11 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
+                            className={`h-12 pr-11 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300 ${formData.confirmPassword.length > 0 ? (formData.password === formData.confirmPassword ? "border-green-500 ring-green-500/20" : "border-destructive ring-destructive/20") : ""}`}
                           />
                           <button
                             type="button"
@@ -963,6 +963,23 @@ const Auth = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Validação em tempo real das senhas */}
+                    {formData.confirmPassword.length > 0 && (
+                      <div className={`flex items-center gap-2 text-xs font-medium ${formData.password === formData.confirmPassword ? "text-green-600" : "text-destructive"}`}>
+                        {formData.password === formData.confirmPassword ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>As senhas coincidem</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4" />
+                            <span>As senhas não coincidem</span>
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     {/* Erro inline - Step 1 */}
                     {authError && (
