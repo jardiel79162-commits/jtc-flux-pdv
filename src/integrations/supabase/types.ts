@@ -1007,6 +1007,12 @@ export type Database = {
           trial_ends_at: string
         }[]
       }
+      get_profile_created_at_by_email: {
+        Args: { p_email: string }
+        Returns: {
+          created_at: string
+        }[]
+      }
       get_user_email_by_cpf: {
         Args: { search_cpf: string }
         Returns: {

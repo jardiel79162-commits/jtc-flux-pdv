@@ -78,6 +78,48 @@ const Auth = () => {
   // Estado para email não confirmado no login
   const [showUnconfirmedEmailUI, setShowUnconfirmedEmailUI] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
+  const [signupExpiry, setSignupExpiry] = useState<Date | null>(null);
+  const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+  const [signupExpired, setSignupExpired] = useState(false);
+
+  // Contador regressivo de 24h para liberação do cadastro
+  useEffect(() => {
+    if (!showUnconfirmedEmailUI || !unconfirmedEmail) return;
+
+    let interval: ReturnType<typeof setInterval>;
+
+    const fetchAndStartCountdown = async () => {
+      const { data } = await (supabase.rpc as any)('get_profile_created_at_by_email', { p_email: unconfirmedEmail });
+      if (!data || (data as any[]).length === 0) return;
+
+      const createdAt = new Date((data as any[])[0].created_at);
+      const expiryDate = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+
+      const tick = () => {
+        const now = new Date();
+        const diff = expiryDate.getTime() - now.getTime();
+
+        if (diff <= 0) {
+          setSignupExpired(true);
+          setCountdown(null);
+          clearInterval(interval);
+          return;
+        }
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdown({ hours, minutes, seconds });
+        setSignupExpired(false);
+      };
+
+      tick();
+      interval = setInterval(tick, 1000);
+    };
+
+    fetchAndStartCountdown();
+    return () => clearInterval(interval);
+  }, [showUnconfirmedEmailUI, unconfirmedEmail]);
 
   const handleResendConfirmationEmail = async (emailToResend?: string) => {
     const email = emailToResend || formData.email || unconfirmedEmail;
@@ -683,68 +725,120 @@ const Auth = () => {
               <TabsContent value="login" className="space-y-6">
                 {/* UI de email não confirmado */}
                 {showUnconfirmedEmailUI ? (
-                  <div className="space-y-6">
-                    <div className="text-center mb-4">
-                      <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
-                        <Mail className="w-10 h-10 text-amber-500" />
+                  <div className="space-y-5">
+                    {/* Ícone e título */}
+                    <div className="text-center">
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${signupExpired ? "bg-green-500/10" : "bg-amber-500/10"}`}>
+                        <Mail className={`w-10 h-10 ${signupExpired ? "text-green-500" : "text-amber-500"}`} />
                       </div>
-                      <h3 className="font-semibold text-xl text-amber-600">E-mail não confirmado</h3>
-                      <p className="text-sm text-muted-foreground mt-3">
-                        Você ainda não confirmou seu e-mail:
+                      <h3 className={`font-semibold text-xl ${signupExpired ? "text-green-600" : "text-amber-600"}`}>
+                        {signupExpired ? "Cadastro liberado!" : "E-mail não confirmado"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {signupExpired
+                          ? "O prazo de verificação expirou. Agora você pode criar uma nova conta com este e-mail ou CPF."
+                          : "Você ainda não confirmou seu e-mail:"}
                       </p>
-                      <p className="font-bold text-primary text-lg mt-2 break-all">
-                        {unconfirmedEmail}
-                      </p>
+                      {!signupExpired && (
+                        <p className="font-bold text-primary text-base mt-1 break-all">{unconfirmedEmail}</p>
+                      )}
                     </div>
 
-                    <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30 space-y-2">
-                      <p className="text-sm text-amber-700 dark:text-amber-400 text-center">
-                        ⚠️ Para acessar sua conta, clique no link de confirmação que enviamos para seu e-mail.
-                      </p>
-                      <p className="text-xs text-amber-600 dark:text-amber-500 text-center">
-                        Após 24 horas sem confirmação, o e-mail e CPF ficam disponíveis para novo cadastro.
-                      </p>
-                    </div>
+                    {/* Contador regressivo */}
+                    {!signupExpired && (
+                      <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30 space-y-3">
+                        <p className="text-sm text-amber-700 dark:text-amber-400 text-center">
+                          ⚠️ Confirme seu e-mail para acessar a conta.
+                        </p>
+                        {countdown ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="flex flex-col items-center bg-amber-500/20 rounded-lg px-3 py-2 min-w-[52px]">
+                              <span className="text-xl font-black text-amber-700 dark:text-amber-400 tabular-nums">
+                                {String(countdown.hours).padStart(2, "0")}
+                              </span>
+                              <span className="text-[10px] text-amber-600 dark:text-amber-500 font-medium uppercase tracking-wide">horas</span>
+                            </div>
+                            <span className="text-amber-600 font-bold text-xl">:</span>
+                            <div className="flex flex-col items-center bg-amber-500/20 rounded-lg px-3 py-2 min-w-[52px]">
+                              <span className="text-xl font-black text-amber-700 dark:text-amber-400 tabular-nums">
+                                {String(countdown.minutes).padStart(2, "0")}
+                              </span>
+                              <span className="text-[10px] text-amber-600 dark:text-amber-500 font-medium uppercase tracking-wide">min</span>
+                            </div>
+                            <span className="text-amber-600 font-bold text-xl">:</span>
+                            <div className="flex flex-col items-center bg-amber-500/20 rounded-lg px-3 py-2 min-w-[52px]">
+                              <span className="text-xl font-black text-amber-700 dark:text-amber-400 tabular-nums">
+                                {String(countdown.seconds).padStart(2, "0")}
+                              </span>
+                              <span className="text-[10px] text-amber-600 dark:text-amber-500 font-medium uppercase tracking-wide">seg</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-amber-600 dark:text-amber-500 text-center">Calculando tempo restante...</p>
+                        )}
+                        <p className="text-xs text-amber-600 dark:text-amber-500 text-center">
+                          Após este tempo, e-mail e CPF ficam livres para novo cadastro.
+                        </p>
+                      </div>
+                    )}
 
-                    <Button 
-                      type="button" 
-                      onClick={() => {
-                        const provider = getEmailProvider(unconfirmedEmail);
-                        if (provider === "gmail") {
-                          window.open("https://mail.google.com", "_blank");
-                        } else if (provider === "outlook") {
-                          window.open("https://outlook.live.com", "_blank");
-                        }
-                      }}
-                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary to-primary/80"
-                    >
-                      <ExternalLink className="mr-2 h-5 w-5" />
-                      {getEmailProvider(unconfirmedEmail) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
-                    </Button>
+                    {/* Expirado: ir para criar conta */}
+                    {signupExpired ? (
+                      <Button
+                        type="button"
+                        className="w-full h-14 text-base font-bold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                        onClick={() => {
+                          setShowUnconfirmedEmailUI(false);
+                          setUnconfirmedEmail("");
+                          setSignupExpired(false);
+                          setCountdown(null);
+                          // Mudar para aba de cadastro
+                          const registerTab = document.querySelector('[data-value="register"]') as HTMLButtonElement;
+                          registerTab?.click();
+                        }}
+                      >
+                        <CheckCircle2 className="mr-2 h-5 w-5" />
+                        Criar Nova Conta
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const provider = getEmailProvider(unconfirmedEmail);
+                            if (provider === "gmail") window.open("https://mail.google.com", "_blank");
+                            else if (provider === "outlook") window.open("https://outlook.live.com", "_blank");
+                          }}
+                          className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary to-primary/80"
+                        >
+                          <ExternalLink className="mr-2 h-5 w-5" />
+                          {getEmailProvider(unconfirmedEmail) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleResendConfirmationEmail(unconfirmedEmail)}
+                          className="w-full h-12"
+                          disabled={isResendingConfirmation}
+                        >
+                          {isResendingConfirmation ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Reenviando...</>
+                          ) : (
+                            "Reenviar e-mail de confirmação"
+                          )}
+                        </Button>
+                      </>
+                    )}
 
                     <Button
                       type="button"
-                      variant="outline"
-                      onClick={() => handleResendConfirmationEmail(unconfirmedEmail)}
-                      className="w-full h-12"
-                      disabled={isResendingConfirmation}
-                    >
-                      {isResendingConfirmation ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Reenviando...
-                        </>
-                      ) : (
-                        "Reenviar e-mail de confirmação"
-                      )}
-                    </Button>
-
-                    <Button 
-                      type="button" 
                       variant="ghost"
                       onClick={() => {
                         setShowUnconfirmedEmailUI(false);
                         setUnconfirmedEmail("");
+                        setSignupExpired(false);
+                        setCountdown(null);
                       }}
                       className="w-full h-12"
                     >
@@ -768,7 +862,7 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="password" className="text-sm font-semibold text-foreground/90">Senha</Label>
+
                       <div className="relative group">
                         <Input
                           id="password"
