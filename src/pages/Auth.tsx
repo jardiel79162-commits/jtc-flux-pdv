@@ -510,7 +510,19 @@ const Auth = () => {
       });
       
     } catch (error: any) {
-      setAuthError(error.message || "Não foi possível criar sua conta. Tente novamente.");
+      const errorMsg = (error.message || "").toLowerCase();
+      if (
+        errorMsg.includes("já existe um usuário cadastrado") ||
+        errorMsg.includes("user already registered") ||
+        errorMsg.includes("email address is already registered") ||
+        errorMsg.includes("already been registered")
+      ) {
+        setAuthError(
+          "Este e-mail ou CPF está aguardando verificação. Verifique sua caixa de entrada (e spam). Após 24 horas sem confirmação, o cadastro será liberado para nova tentativa."
+        );
+      } else {
+        setAuthError(error.message || "Não foi possível criar sua conta. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -685,9 +697,12 @@ const Auth = () => {
                       </p>
                     </div>
 
-                    <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+                    <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30 space-y-2">
                       <p className="text-sm text-amber-700 dark:text-amber-400 text-center">
-                        ⚠️ Para acessar sua conta, você precisa clicar no link de confirmação que enviamos para seu e-mail.
+                        ⚠️ Para acessar sua conta, clique no link de confirmação que enviamos para seu e-mail.
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-500 text-center">
+                        Após 24 horas sem confirmação, o e-mail e CPF ficam disponíveis para novo cadastro.
                       </p>
                     </div>
 
