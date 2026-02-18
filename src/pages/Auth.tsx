@@ -884,40 +884,50 @@ const Auth = () => {
                           required
                           disabled={isLoading}
                           className={`h-12 bg-muted/30 border-border/40 focus:ring-2 rounded-xl transition-all duration-300 pr-28 ${
-                            formData.email && getEmailProvider(formData.email) === "gmail"
+                            getEmailProvider(formData.email) === "gmail"
                               ? "focus:border-red-400 focus:ring-red-400/20 border-red-400/50"
-                              : formData.email && getEmailProvider(formData.email) === "outlook"
+                              : getEmailProvider(formData.email) === "outlook"
                               ? "focus:border-blue-400 focus:ring-blue-400/20 border-blue-400/50"
-                              : formData.email && getEmailProvider(formData.email) === "unknown"
+                              : (() => { const d = formData.email.split("@")[1] || ""; return formData.email.includes("@") && d.includes("."); })() && getEmailProvider(formData.email) === "unknown"
                               ? "focus:border-destructive focus:ring-destructive/20 border-destructive/50"
                               : "focus:border-primary focus:ring-primary/20"
                           }`}
                         />
-                        {formData.email && (
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                            {getEmailProvider(formData.email) === "gmail" && (
-                              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-400/30 text-red-500 text-xs font-bold">
-                                <span className="text-base leading-none">G</span> Gmail
-                              </span>
-                            )}
-                            {getEmailProvider(formData.email) === "outlook" && (
-                              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-400/30 text-blue-500 text-xs font-bold">
-                                <span className="text-base leading-none">⊞</span> Outlook
-                              </span>
-                            )}
-                            {getEmailProvider(formData.email) === "unknown" && formData.email.includes("@") && (
-                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold">
-                                ✕ Inválido
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        {(() => {
+                          const provider = getEmailProvider(formData.email);
+                          const domain = formData.email.split("@")[1] || "";
+                          const hasDot = formData.email.includes("@") && domain.includes(".");
+                          return (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              {provider === "gmail" && (
+                                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-400/30 text-red-500 text-xs font-bold">
+                                  <span className="text-base leading-none">G</span> Gmail
+                                </span>
+                              )}
+                              {provider === "outlook" && (
+                                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-400/30 text-blue-500 text-xs font-bold">
+                                  <span className="text-base leading-none">⊞</span> Outlook
+                                </span>
+                              )}
+                              {provider === "unknown" && hasDot && (
+                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold">
+                                  ✕ Inválido
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
-                      {formData.email && getEmailProvider(formData.email) === "unknown" && formData.email.includes("@") ? (
-                        <p className="text-xs text-destructive font-medium">Apenas @gmail.com ou @outlook.com são aceitos</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Apenas @gmail.com ou @outlook.com</p>
-                      )}
+                      {(() => {
+                        const provider = getEmailProvider(formData.email);
+                        const domain = formData.email.split("@")[1] || "";
+                        const hasDot = formData.email.includes("@") && domain.includes(".");
+                        return provider === "unknown" && hasDot ? (
+                          <p className="text-xs text-destructive font-medium">Apenas @gmail.com ou @outlook.com são aceitos</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Apenas @gmail.com ou @outlook.com</p>
+                        );
+                      })()}
                     </div>
 
                     <div className="space-y-3">
