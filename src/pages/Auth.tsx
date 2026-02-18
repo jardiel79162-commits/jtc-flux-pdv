@@ -1,198 +1,199 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { signIn, signUp, validateInviteCode, type SignUpData } from "@/lib/auth";
-import { isValidCPF } from "@/lib/cpfValidator";
-import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, TrendingUp, Package, Loader2, Eye, EyeOff, HelpCircle, Gift, CheckCircle2, XCircle, ChevronRight, ChevronLeft, Check, User, MapPin, Ticket, Mail, ExternalLink, AlertTriangle } from "lucide-react";
-import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
+import { LogIn, UserPlus, Mail, Lock, Store, User, Gift } from "lucide-react";
 import logo from "@/assets/logo.jpg";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const Auth = () => {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [storeName, setStoreName] = useState("");
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isFetchingCEP, setIsFetchingCEP] = useState(false);
-  const [estados, setEstados] = useState<Estado[]>([]);
-  const [cidades, setCidades] = useState<Cidade[]>([]);
-  const [selectedEstado, setSelectedEstado] = useState("");
-  const [selectedCidade, setSelectedCidade] = useState("");
-  const [addressData, setAddressData] = useState({
-    street: "",
-    neighborhood: "",
-    city: "",
-    state: "",
-  });
 
-  // Estado do passo do cadastro (1, 2 ou 3)
-  const [registerStep, setRegisterStep] = useState(1);
+  const referralCode = searchParams.get("ref");
 
-  // Dados do formulário de cadastro
-  const [formData, setFormData] = useState({
-    fullName: "",
-    cpf: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    cep: "",
-    number: "",
-  });
-
-  // Estado do código de convite
-  const [hasInviteCode, setHasInviteCode] = useState<boolean | null>(null);
-  const [inviteCode, setInviteCode] = useState("");
-  const [isValidatingCode, setIsValidatingCode] = useState(false);
-  const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid" | "used">("idle");
-  const [cpfError, setCpfError] = useState<string | null>(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-
-  // Estado para conta bloqueada
-  const [showBlockedAccountDialog, setShowBlockedAccountDialog] = useState(false);
-
-  // Estado para conta criada (email enviado)
-  const [accountCreated, setAccountCreated] = useState(false);
-
-  // Estado para email não confirmado no login
-  const [showUnconfirmedEmailUI, setShowUnconfirmedEmailUI] = useState(false);
-  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
-  const [signupExpiry, setSignupExpiry] = useState<Date | null>(null);
-  const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
-  const [signupExpired, setSignupExpired] = useState(false);
-
-  // Contador regressivo de 24h para liberação do cadastro
   useEffect(() => {
-    if (!showUnconfirmedEmailUI || !unconfirmedEmail) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+  }, [navigate]);
 
-    let interval: ReturnType<typeof setInterval>;
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-    const fetchAndStartCountdown = async () => {
-      const { data } = await (supabase.rpc as any)('get_profile_created_at_by_email', { p_email: unconfirmedEmail });
-      if (!data || (data as any[]).length === 0) return;
-
-      const createdAt = new Date((data as any[])[0].created_at);
-      const expiryDate = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
-
-      const tick = () => {
-        const now = new Date();
-        const diff = expiryDate.getTime() - now.getTime();
-
-        if (diff <= 0) {
-          setSignupExpired(true);
-          setCountdown(null);
-          clearInterval(interval);
-          return;
-        }
-
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setCountdown({ hours, minutes, seconds });
-        setSignupExpired(false);
-      };
-
-      tick();
-      interval = setInterval(tick, 1000);
-    };
-
-    fetchAndStartCountdown();
-    return () => clearInterval(interval);
-  }, [showUnconfirmedEmailUI, unconfirmedEmail]);
-
-  const handleResendConfirmationEmail = async (emailToResend?: string) => {
-    const email = emailToResend || formData.email || unconfirmedEmail;
-    if (!email) return;
-
-    setIsResendingConfirmation(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/confirmar-email`,
-        },
-      });
+      if (isSignUp) {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              store_name: storeName,
+              referred_by: referralCode,
+            },
+            emailRedirectTo: `${window.location.origin}/confirmar-email`,
+          },
+        });
 
-      if (error) throw error;
+        if (signUpError) throw signUpError;
 
-      toast({
-        title: "E-mail reenviado",
-        description: "Enviamos um novo link de confirmação. Verifique também o spam.",
-      });
+        if (signUpData.user) {
+          toast({
+            title: "Cadastro realizado!",
+            description: "Verifique seu e-mail para confirmar a conta.",
+          });
+        }
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
+        title: "Erro",
+        description: error.message,
         variant: "destructive",
-        title: "Não foi possível reenviar",
-        description: error?.message || "Tente novamente em instantes.",
       });
     } finally {
-      setIsResendingConfirmation(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const redirectIfConfirmed = (session: any) => {
-      const confirmedAt = session?.user?.email_confirmed_at ?? session?.user?.confirmed_at;
-      if (session && confirmedAt) {
-        navigate("/dashboard");
-      }
-    };
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-primary/10">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="relative p-1 rounded-full bg-gradient-to-tr from-amber-200 via-yellow-500 to-amber-200 shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+              <img src={logo} alt="JTC FluxPDV Logo" className="w-24 h-24 rounded-full object-cover border-2 border-white/20" />
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold tracking-tight text-primary">
+            {isSignUp ? "Criar Conta" : "Bem-vindo de volta"}
+          </CardTitle>
+          <CardDescription className="text-base">
+            {isSignUp 
+              ? "Comece seu teste grátis de 3 dias agora mesmo"
+              : "Entre com suas credenciais para acessar o sistema"}
+          </CardDescription>
+          {referralCode && (
+            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-sm font-medium">
+              <Gift className="h-4 w-4" />
+              Convite aplicado: +1 mês grátis!
+            </div>
+          )}
+        </CardHeader>
+        <form onSubmit={handleAuth}>
+          <CardContent className="space-y-4">
+            {isSignUp && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nome Completo</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="fullName"
+                      placeholder="Seu nome"
+                      className="pl-10"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="storeName">Nome da Loja</Label>
+                  <div className="relative">
+                    <Store className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="storeName"
+                      placeholder="Nome do seu negócio"
+                      className="pl-10"
+                      value={storeName}
+                      onChange={(e) => setStoreName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button className="w-full h-12 text-lg" type="submit" disabled={loading}>
+              {loading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : isSignUp ? (
+                <><UserPlus className="mr-2 h-5 w-5" /> Criar Conta</>
+              ) : (
+                <><LogIn className="mr-2 h-5 w-5" /> Entrar</>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp
+                ? "Já tem uma conta? Entre aqui"
+                : "Não tem uma conta? Cadastre-se agora"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  );
+};
 
-    // Verificar se já está logado (somente se e-mail já estiver confirmado)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      redirectIfConfirmed(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      redirectIfConfirmed(session);
-    });
-
-    // Carregar estados
-    fetchEstados().then(setEstados);
-
-    // Verificar código de referência na URL
-    const refCode = searchParams.get("ref");
-    if (refCode) {
-      setHasInviteCode(true);
-      setInviteCode(refCode.toUpperCase());
-      validateCode(refCode);
-    }
-
-    return () => subscription.unsubscribe();
-  }, [navigate, searchParams]);
-
-  useEffect(() => {
-    // Carregar cidades quando estado mudar
-    if (selectedEstado) {
-      fetchCidades(selectedEstado).then(setCidades);
-    } else {
-      setCidades([]);
-    }
-  }, [selectedEstado]);
+export default Auth;
 
   const validateCode = async (code: string) => {
     if (code.length < 6) {
