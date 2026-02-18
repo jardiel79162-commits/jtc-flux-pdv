@@ -187,12 +187,11 @@ const Auth = () => {
       const data = await fetchCEP(cleanCEP);
       
       if (data) {
-        setAddressData({
-          street: data.logradouro,
-          neighborhood: data.bairro,
+        setAddressData(prev => ({
+          ...prev,
           city: data.localidade,
           state: data.uf,
-        });
+        }));
         setSelectedEstado(data.uf);
         setSelectedCidade(data.localidade);
         
