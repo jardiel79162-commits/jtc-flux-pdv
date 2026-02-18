@@ -874,17 +874,50 @@ const Auth = () => {
 
                     <div className="space-y-3">
                       <Label htmlFor="email" className="text-sm font-semibold text-foreground/90">E-mail</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        required
-                        disabled={isLoading}
-                        className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
-                      />
-                      <p className="text-xs text-muted-foreground">Apenas @gmail.com ou @outlook.com</p>
+                      <div className="relative">
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          required
+                          disabled={isLoading}
+                          className={`h-12 bg-muted/30 border-border/40 focus:ring-2 rounded-xl transition-all duration-300 pr-28 ${
+                            formData.email && getEmailProvider(formData.email) === "gmail"
+                              ? "focus:border-red-400 focus:ring-red-400/20 border-red-400/50"
+                              : formData.email && getEmailProvider(formData.email) === "outlook"
+                              ? "focus:border-blue-400 focus:ring-blue-400/20 border-blue-400/50"
+                              : formData.email && getEmailProvider(formData.email) === "unknown"
+                              ? "focus:border-destructive focus:ring-destructive/20 border-destructive/50"
+                              : "focus:border-primary focus:ring-primary/20"
+                          }`}
+                        />
+                        {formData.email && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            {getEmailProvider(formData.email) === "gmail" && (
+                              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-400/30 text-red-500 text-xs font-bold">
+                                <span className="text-base leading-none">G</span> Gmail
+                              </span>
+                            )}
+                            {getEmailProvider(formData.email) === "outlook" && (
+                              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-400/30 text-blue-500 text-xs font-bold">
+                                <span className="text-base leading-none">⊞</span> Outlook
+                              </span>
+                            )}
+                            {getEmailProvider(formData.email) === "unknown" && formData.email.includes("@") && (
+                              <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold">
+                                ✕ Inválido
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {formData.email && getEmailProvider(formData.email) === "unknown" && formData.email.includes("@") ? (
+                        <p className="text-xs text-destructive font-medium">Apenas @gmail.com ou @outlook.com são aceitos</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Apenas @gmail.com ou @outlook.com</p>
+                      )}
                     </div>
 
                     <div className="space-y-3">
