@@ -1,206 +1,145 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus, Mail, Lock, Store, User, Gift } from "lucide-react";
+import { Mail, Gift, Eye, EyeOff, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronRight, ChevronLeft, HelpCircle, ExternalLink, ShoppingCart, Package, TrendingUp, Check, MapPin, Ticket, User } from "lucide-react";
 import logo from "@/assets/logo.jpg";
+import { signIn, signUp, type SignUpData, validateInviteCode } from "@/lib/auth";
+import { isValidCPF } from "@/lib/cpfValidator";
+import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 
 const Auth = () => {
-  const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [storeName, setStoreName] = useState("");
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const referralCode = searchParams.get("ref");
+  // Auth state
+  const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Login state
+  const [showUnconfirmedEmailUI, setShowUnconfirmedEmailUI] = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
+  const [showBlockedAccountDialog, setShowBlockedAccountDialog] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
+  const [signupExpired, setSignupExpired] = useState(false);
+  const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+
+  // Register state
+  const [registerStep, setRegisterStep] = useState(1);
+  const [accountCreated, setAccountCreated] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: "",
+    cpf: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    cep: "",
+    number: "",
+  });
+  const [addressData, setAddressData] = useState({
+    street: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+  });
+  const [selectedEstado, setSelectedEstado] = useState("");
+  const [selectedCidade, setSelectedCidade] = useState("");
+  const [estados, setEstados] = useState<Estado[]>([]);
+  const [cidades, setCidades] = useState<Cidade[]>([]);
+  const [isFetchingCEP, setIsFetchingCEP] = useState(false);
+  const [cpfError, setCpfError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  // Invite code
+  const [hasInviteCode, setHasInviteCode] = useState<boolean | null>(null);
+  const [inviteCode, setInviteCode] = useState("");
+  const [codeValidationStatus, setCodeValidationStatus] = useState<"idle" | "valid" | "invalid" | "used">("idle");
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
+      if (session) navigate("/dashboard");
     });
   }, [navigate]);
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  useEffect(() => {
+    fetchEstados().then(setEstados);
+  }, []);
 
-    try {
-      if (isSignUp) {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              store_name: storeName,
-              referred_by: referralCode,
-            },
-            emailRedirectTo: `${window.location.origin}/confirmar-email`,
-          },
-        });
+  useEffect(() => {
+    if (selectedEstado) {
+      fetchCidades(selectedEstado).then(setCidades);
+    } else {
+      setCidades([]);
+    }
+  }, [selectedEstado]);
 
-        if (signUpError) throw signUpError;
+  // Countdown timer for unconfirmed email
+  useEffect(() => {
+    if (!showUnconfirmedEmailUI || !unconfirmedEmail) return;
 
-        if (signUpData.user) {
-          toast({
-            title: "Cadastro realizado!",
-            description: "Verifique seu e-mail para confirmar a conta.",
-          });
+    const fetchCreatedAt = async () => {
+      const { data } = await supabase.rpc('get_profile_created_at_by_email', { p_email: unconfirmedEmail });
+      if (!data || data.length === 0) return;
+
+      const createdAt = new Date(data[0].created_at);
+      const expiryDate = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+
+      const interval = setInterval(() => {
+        const now = new Date();
+        const diff = expiryDate.getTime() - now.getTime();
+
+        if (diff <= 0) {
+          clearInterval(interval);
+          setSignupExpired(true);
+          setCountdown(null);
+          return;
         }
-      } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
 
-        if (signInError) throw signInError;
-        navigate("/dashboard");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdown({ hours, minutes, seconds });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    };
+
+    fetchCreatedAt();
+  }, [showUnconfirmedEmailUI, unconfirmedEmail]);
+
+  const handleResendConfirmationEmail = async (email?: string) => {
+    const targetEmail = email || formData.email;
+    if (!targetEmail) return;
+
+    setIsResendingConfirmation(true);
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email: targetEmail });
+      if (error) throw error;
+      toast({ title: "E-mail reenviado!", description: "Verifique sua caixa de entrada." });
+    } catch {
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível reenviar o e-mail." });
     } finally {
-      setLoading(false);
+      setIsResendingConfirmation(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-primary/10">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative p-1 rounded-full bg-gradient-to-tr from-amber-200 via-yellow-500 to-amber-200 shadow-[0_0_15px_rgba(234,179,8,0.5)]">
-              <img src={logo} alt="JTC FluxPDV Logo" className="w-24 h-24 rounded-full object-cover border-2 border-white/20" />
-            </div>
-          </div>
-          <CardTitle className="text-3xl font-bold tracking-tight text-primary">
-            {isSignUp ? "Criar Conta" : "Bem-vindo de volta"}
-          </CardTitle>
-          <CardDescription className="text-base">
-            {isSignUp 
-              ? "Comece seu teste grátis de 3 dias agora mesmo"
-              : "Entre com suas credenciais para acessar o sistema"}
-          </CardDescription>
-          {referralCode && (
-            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-sm font-medium">
-              <Gift className="h-4 w-4" />
-              Convite aplicado: +1 mês grátis!
-            </div>
-          )}
-        </CardHeader>
-        <form onSubmit={handleAuth}>
-          <CardContent className="space-y-4">
-            {isSignUp && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Nome Completo</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="fullName"
-                      placeholder="Seu nome"
-                      className="pl-10"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="storeName">Nome da Loja</Label>
-                  <div className="relative">
-                    <Store className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="storeName"
-                      placeholder="Nome do seu negócio"
-                      className="pl-10"
-                      value={storeName}
-                      onChange={(e) => setStoreName(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  className="pl-10"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button className="w-full h-12 text-lg" type="submit" disabled={loading}>
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : isSignUp ? (
-                <><UserPlus className="mr-2 h-5 w-5" /> Criar Conta</>
-              ) : (
-                <><LogIn className="mr-2 h-5 w-5" /> Entrar</>
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full"
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp
-                ? "Já tem uma conta? Entre aqui"
-                : "Não tem uma conta? Cadastre-se agora"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
-  );
-};
-
-export default Auth;
 
   const validateCode = async (code: string) => {
     if (code.length < 6) {
       setCodeValidationStatus("idle");
       return;
     }
-    
     setIsValidatingCode(true);
     const result = await validateInviteCode(code);
     if (result.valid) {
@@ -228,7 +167,6 @@ export default Auth;
     if (cleanCEP.length === 8) {
       setIsFetchingCEP(true);
       const data = await fetchCEP(cleanCEP);
-      
       if (data) {
         setAddressData(prev => ({
           ...prev,
@@ -237,17 +175,9 @@ export default Auth;
         }));
         setSelectedEstado(data.uf);
         setSelectedCidade(data.localidade);
-        
-        toast({
-          title: "CEP encontrado!",
-          description: "Endereço preenchido automaticamente.",
-        });
+        toast({ title: "CEP encontrado!", description: "Endereço preenchido automaticamente." });
       } else {
-        toast({
-          variant: "destructive",
-          title: "CEP não encontrado",
-          description: "Verifique o CEP digitado.",
-        });
+        toast({ variant: "destructive", title: "CEP não encontrado", description: "Verifique o CEP digitado." });
       }
       setIsFetchingCEP(false);
     }
@@ -256,44 +186,27 @@ export default Auth;
   const formatCPF = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length > 11) v = v.slice(0, 11);
-    
     let formatted = v;
-    if (v.length > 3) {
-      formatted = v.slice(0, 3) + "." + v.slice(3);
-    }
-    if (v.length > 6) {
-      formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
-    }
-    if (v.length > 9) {
-      formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
-    }
+    if (v.length > 3) formatted = v.slice(0, 3) + "." + v.slice(3);
+    if (v.length > 6) formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
+    if (v.length > 9) formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
     return formatted;
   };
 
   const formatPhone = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length > 11) v = v.slice(0, 11);
-    
     let formatted = v;
-    if (v.length > 0) {
-      formatted = "(" + v;
-    }
-    if (v.length > 2) {
-      formatted = "(" + v.slice(0, 2) + ") " + v.slice(2);
-    }
-    if (v.length > 7) {
-      formatted = "(" + v.slice(0, 2) + ") " + v.slice(2, 7) + "-" + v.slice(7);
-    }
+    if (v.length > 0) formatted = "(" + v;
+    if (v.length > 2) formatted = "(" + v.slice(0, 2) + ") " + v.slice(2);
+    if (v.length > 7) formatted = "(" + v.slice(0, 2) + ") " + v.slice(2, 7) + "-" + v.slice(7);
     return formatted;
   };
 
   const formatCEPInput = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length > 8) v = v.slice(0, 8);
-    
-    if (v.length > 5) {
-      return v.slice(0, 5) + "-" + v.slice(5);
-    }
+    if (v.length > 5) return v.slice(0, 5) + "-" + v.slice(5);
     return v;
   };
 
@@ -307,15 +220,11 @@ export default Auth;
     const password = formDataEvent.get("password") as string;
 
     try {
-      // Verificar se é CPF e se está bloqueado
       const cleanIdentifier = identifier.replace(/\D/g, "");
       const isCPF = /^\d{11}$/.test(cleanIdentifier);
-      
+
       if (isCPF) {
-        const { data: isBlocked } = await supabase.rpc('is_cpf_blocked', {
-          check_cpf: cleanIdentifier
-        });
-        
+        const { data: isBlocked } = await supabase.rpc('is_cpf_blocked', { check_cpf: cleanIdentifier });
         if (isBlocked) {
           setShowBlockedAccountDialog(true);
           setIsLoading(false);
@@ -324,28 +233,21 @@ export default Auth;
       }
 
       await signIn(identifier, password);
-      toast({
-        title: "Bem-vindo!",
-        description: "Login realizado com sucesso.",
-      });
+      toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
     } catch (error: any) {
       const errorMessage = error.message?.toLowerCase() || "";
       if (errorMessage.includes("email not confirmed") || errorMessage.includes("email_not_confirmed")) {
-        const formDataEvent = new FormData(e.currentTarget);
-        const usedIdentifier = formDataEvent.get("identifier") as string;
-        
-        const cleanIdentifier = usedIdentifier.replace(/\D/g, "");
-        const isCPF = /^\d{11}$/.test(cleanIdentifier);
-        
+        const formDataEvent2 = new FormData(e.currentTarget);
+        const usedIdentifier = formDataEvent2.get("identifier") as string;
+        const cleanId = usedIdentifier.replace(/\D/g, "");
+        const isCPF = /^\d{11}$/.test(cleanId);
+
         if (isCPF) {
-          const { data } = await supabase.rpc('get_user_email_by_cpf', { search_cpf: cleanIdentifier });
-          if (data && data.length > 0) {
-            setUnconfirmedEmail(data[0].email);
-          }
+          const { data } = await supabase.rpc('get_user_email_by_cpf', { search_cpf: cleanId });
+          if (data && data.length > 0) setUnconfirmedEmail(data[0].email);
         } else {
           setUnconfirmedEmail(usedIdentifier);
         }
-        
         setShowUnconfirmedEmailUI(true);
       } else if (errorMessage.includes("invalid login credentials") || errorMessage.includes("invalid_credentials")) {
         setAuthError("E-mail/CPF ou senha incorretos. Verifique seus dados e tente novamente.");
@@ -365,7 +267,6 @@ export default Auth;
     setShowBlockedAccountDialog(false);
   };
 
-  // Detectar tipo de email
   const getEmailProvider = (email: string): "gmail" | "outlook" | "unknown" => {
     const lowerEmail = email.toLowerCase();
     if (lowerEmail.includes("@gmail.com")) return "gmail";
@@ -380,100 +281,40 @@ export default Auth;
 
   const openEmailApp = () => {
     const provider = getEmailProvider(formData.email);
-    if (provider === "gmail") {
-      window.open("https://mail.google.com", "_blank");
-    } else if (provider === "outlook") {
-      window.open("https://outlook.live.com", "_blank");
-    }
+    if (provider === "gmail") window.open("https://mail.google.com", "_blank");
+    else if (provider === "outlook") window.open("https://outlook.live.com", "_blank");
   };
 
-  // Validação do passo 1 (Dados Pessoais)
   const validateStep1 = () => {
-    if (!formData.fullName.trim()) {
-      setAuthError("Nome completo é obrigatório.");
-      return false;
-    }
-
+    if (!formData.fullName.trim()) { setAuthError("Nome completo é obrigatório."); return false; }
     const cpfValue = formData.cpf.replace(/\D/g, "");
-    if (!isValidCPF(cpfValue)) {
-      setAuthError("CPF inválido. Verifique os números digitados.");
-      return false;
-    }
-
-    if (!formData.email.includes("@")) {
-      setAuthError("E-mail inválido. Digite um e-mail válido.");
-      return false;
-    }
-
-    if (!isValidEmailProvider(formData.email)) {
-      setAuthError("Só aceitamos e-mails @gmail.com ou @outlook.com.");
-      return false;
-    }
-
+    if (!isValidCPF(cpfValue)) { setAuthError("CPF inválido. Verifique os números digitados."); return false; }
+    if (!formData.email.includes("@")) { setAuthError("E-mail inválido. Digite um e-mail válido."); return false; }
+    if (!isValidEmailProvider(formData.email)) { setAuthError("Só aceitamos e-mails @gmail.com ou @outlook.com."); return false; }
     const phoneValue = formData.phone.replace(/\D/g, "");
-    if (phoneValue.length !== 11) {
-      setAuthError("Telefone deve ter 11 dígitos (DDD + número).");
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      setAuthError("Senha deve ter no mínimo 6 caracteres.");
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setAuthError("As senhas não coincidem. Verifique e tente novamente.");
-      return false;
-    }
-
+    if (phoneValue.length !== 11) { setAuthError("Telefone deve ter 11 dígitos (DDD + número)."); return false; }
+    if (formData.password.length < 6) { setAuthError("Senha deve ter no mínimo 6 caracteres."); return false; }
+    if (formData.password !== formData.confirmPassword) { setAuthError("As senhas não coincidem. Verifique e tente novamente."); return false; }
     setAuthError(null);
     return true;
   };
 
-  // Validação do passo 2 (Endereço)
   const validateStep2 = () => {
     const cepValue = formData.cep.replace(/\D/g, "");
-    if (cepValue.length !== 8) {
-      setAuthError("CEP inválido. Digite um CEP com 8 dígitos.");
-      return false;
-    }
-
-    if (!addressData.street.trim()) {
-      setAuthError("Rua é obrigatória.");
-      return false;
-    }
-
-    if (!formData.number.trim()) {
-      setAuthError("Número é obrigatório.");
-      return false;
-    }
-
-    if (!addressData.neighborhood.trim()) {
-      setAuthError("Bairro é obrigatório.");
-      return false;
-    }
-
-    if (!selectedEstado) {
-      setAuthError("Estado é obrigatório.");
-      return false;
-    }
-
-    if (!selectedCidade) {
-      setAuthError("Cidade é obrigatória.");
-      return false;
-    }
-
+    if (cepValue.length !== 8) { setAuthError("CEP inválido. Digite um CEP com 8 dígitos."); return false; }
+    if (!addressData.street.trim()) { setAuthError("Rua é obrigatória."); return false; }
+    if (!formData.number.trim()) { setAuthError("Número é obrigatório."); return false; }
+    if (!addressData.neighborhood.trim()) { setAuthError("Bairro é obrigatório."); return false; }
+    if (!selectedEstado) { setAuthError("Estado é obrigatório."); return false; }
+    if (!selectedCidade) { setAuthError("Cidade é obrigatória."); return false; }
     setAuthError(null);
     return true;
   };
 
   const handleNextStep = () => {
     setAuthError(null);
-    if (registerStep === 1 && validateStep1()) {
-      setRegisterStep(2);
-    } else if (registerStep === 2 && validateStep2()) {
-      setRegisterStep(3);
-    }
+    if (registerStep === 1 && validateStep1()) setRegisterStep(2);
+    else if (registerStep === 2 && validateStep2()) setRegisterStep(3);
   };
 
   const handleGoToEmailVerification = async () => {
@@ -486,30 +327,20 @@ export default Auth;
     setAuthError(null);
 
     try {
-      // Verificar se o CPF está bloqueado
       const cpfValue = formData.cpf.replace(/\D/g, "");
-      const { data: isBlocked, error: blockError } = await supabase.rpc('is_cpf_blocked', {
-        check_cpf: cpfValue
-      });
-      
-      if (blockError) {
-        console.error('Erro ao verificar CPF:', blockError);
-      } else if (isBlocked) {
+      const { data: isBlocked, error: blockError } = await supabase.rpc('is_cpf_blocked', { check_cpf: cpfValue });
+      if (!blockError && isBlocked) {
         setAuthError("Este CPF está bloqueado e não pode ser utilizado para criar uma nova conta.");
         setIsLoading(false);
         return;
       }
 
-      // Verificar se o IP já usou este código de convite
       if (hasInviteCode && inviteCode && codeValidationStatus === "valid") {
         try {
           const response = await supabase.functions.invoke('validate-invite-ip', {
             body: { invite_code: inviteCode, action: 'check' }
           });
-          
-          if (response.error) {
-            console.error('Erro ao verificar IP:', response.error);
-          } else if (!response.data.can_use) {
+          if (!response.error && !response.data.can_use) {
             setAuthError(response.data.message || "Este dispositivo já utilizou este código de convite.");
             setIsLoading(false);
             return;
@@ -535,23 +366,17 @@ export default Auth;
       };
 
       await signUp(data);
-      
-      // Registrar uso do código de convite com IP
+
       if (hasInviteCode && inviteCode && codeValidationStatus === "valid") {
         await supabase.functions.invoke('validate-invite-ip', {
           body: { invite_code: inviteCode, action: 'register' }
         });
       }
-      
-      // Conta criada com sucesso, ir para etapa de verificação
+
       setAccountCreated(true);
       setRegisterStep(4);
-      
-      toast({
-        title: "Conta criada!",
-        description: "Enviamos um link de confirmação para seu e-mail.",
-      });
-      
+      toast({ title: "Conta criada!", description: "Enviamos um link de confirmação para seu e-mail." });
+
     } catch (error: any) {
       const errorMsg = (error.message || "").toLowerCase();
       if (
@@ -560,9 +385,7 @@ export default Auth;
         errorMsg.includes("email address is already registered") ||
         errorMsg.includes("already been registered")
       ) {
-        setAuthError(
-          "Este e-mail ou CPF está aguardando verificação. Verifique sua caixa de entrada (e spam). Após 24 horas sem confirmação, o cadastro será liberado para nova tentativa."
-        );
+        setAuthError("Este e-mail ou CPF está aguardando verificação. Verifique sua caixa de entrada (e spam). Após 24 horas sem confirmação, o cadastro será liberado para nova tentativa.");
       } else {
         setAuthError(error.message || "Não foi possível criar sua conta. Tente novamente.");
       }
@@ -572,23 +395,12 @@ export default Auth;
   };
 
   const handlePreviousStep = () => {
-    if (registerStep > 1) {
-      setRegisterStep(registerStep - 1);
-    }
+    if (registerStep > 1) setRegisterStep(registerStep - 1);
   };
 
   const resetForm = () => {
     setRegisterStep(1);
-    setFormData({
-      fullName: "",
-      cpf: "",
-      email: "",
-      phone: "",
-      password: "",
-      confirmPassword: "",
-      cep: "",
-      number: "",
-    });
+    setFormData({ fullName: "", cpf: "", email: "", phone: "", password: "", confirmPassword: "", cep: "", number: "" });
     setAddressData({ street: "", neighborhood: "", city: "", state: "" });
     setSelectedEstado("");
     setSelectedCidade("");
@@ -601,10 +413,10 @@ export default Auth;
   const StepIndicator = ({ step, label, icon: Icon }: { step: number; label: string; icon: any }) => (
     <div className="flex flex-col items-center gap-1.5">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-500 ${
-        registerStep === step 
-          ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30 scale-110" 
-          : registerStep > step 
-            ? "bg-gradient-to-br from-accent to-accent/80 text-white shadow-md shadow-accent/20" 
+        registerStep === step
+          ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30 scale-110"
+          : registerStep > step
+            ? "bg-gradient-to-br from-accent to-accent/80 text-white shadow-md shadow-accent/20"
             : "bg-muted/50 text-muted-foreground border border-border/50"
       }`}>
         {registerStep > step ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
@@ -619,7 +431,7 @@ export default Auth;
 
   return (
     <div className="auth-page-bg">
-      {/* Background decorations - CSS classes for consistent loading */}
+      {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="auth-orb auth-orb-1" />
         <div className="auth-orb auth-orb-2" />
@@ -627,9 +439,9 @@ export default Auth;
         <div className="auth-orb auth-orb-4" />
         <div className="auth-grid-overlay" />
       </div>
-      
+
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-20 items-center relative z-10">
-        {/* Seção de branding - Redesenhada */}
+        {/* Branding section */}
         <div className="hidden lg:flex flex-col justify-center space-y-8 p-8">
           <div className="space-y-8">
             <div className="flex items-center gap-7">
@@ -659,7 +471,7 @@ export default Auth;
               { icon: Package, title: "Controle de Estoque", desc: "Gerencie produtos e fornecedores facilmente", gradient: "from-accent to-accent/70", shadow: "shadow-accent/20" },
               { icon: TrendingUp, title: "Relatórios Inteligentes", desc: "Métricas e insights para seu negócio crescer", gradient: "from-success to-success/70", shadow: "shadow-success/20" },
             ].map((item, i) => (
-              <div 
+              <div
                 key={i}
                 className="flex items-center gap-5 p-5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] hover:shadow-xl group cursor-pointer"
                 style={{ animationDelay: `${i * 100}ms` }}
@@ -688,12 +500,11 @@ export default Auth;
           </div>
         </div>
 
-        {/* Card do formulário - Redesenhado */}
+        {/* Form card */}
         <Card className="auth-card">
-          {/* Decorative elements */}
           <div className="auth-card-glow-tr" />
           <div className="auth-card-glow-bl" />
-          
+
           <CardHeader className="text-center pb-4 pt-8 relative z-10">
             <div className="flex flex-col items-center gap-5 mb-2">
               <div className="relative group">
@@ -706,28 +517,22 @@ export default Auth;
               </div>
             </div>
           </CardHeader>
+
           <CardContent className="relative z-10 px-6 pb-8">
             <Tabs defaultValue="login" className="w-full" onValueChange={() => { setRegisterStep(1); setAuthError(null); }}>
               <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-muted/30 rounded-xl h-14">
-                <TabsTrigger 
-                  value="login" 
-                  className="auth-tab font-bold text-base rounded-lg transition-all duration-300"
-                >
+                <TabsTrigger value="login" className="auth-tab font-bold text-base rounded-lg transition-all duration-300">
                   Entrar
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="register" 
-                  className="auth-tab font-bold text-base rounded-lg transition-all duration-300"
-                >
+                <TabsTrigger value="register" className="auth-tab font-bold text-base rounded-lg transition-all duration-300">
                   Criar Conta
                 </TabsTrigger>
               </TabsList>
 
+              {/* LOGIN TAB */}
               <TabsContent value="login" className="space-y-6">
-                {/* UI de email não confirmado */}
                 {showUnconfirmedEmailUI ? (
                   <div className="space-y-5">
-                    {/* Ícone e título */}
                     <div className="text-center">
                       <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${signupExpired ? "bg-green-500/10" : "bg-amber-500/10"}`}>
                         <Mail className={`w-10 h-10 ${signupExpired ? "text-green-500" : "text-amber-500"}`} />
@@ -745,7 +550,6 @@ export default Auth;
                       )}
                     </div>
 
-                    {/* Contador regressivo */}
                     {!signupExpired && (
                       <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30 space-y-3">
                         <p className="text-sm text-amber-700 dark:text-amber-400 text-center">
@@ -783,7 +587,6 @@ export default Auth;
                       </div>
                     )}
 
-                    {/* Expirado: ir para criar conta */}
                     {signupExpired ? (
                       <Button
                         type="button"
@@ -793,7 +596,6 @@ export default Auth;
                           setUnconfirmedEmail("");
                           setSignupExpired(false);
                           setCountdown(null);
-                          // Mudar para aba de cadastro
                           const registerTab = document.querySelector('[data-value="register"]') as HTMLButtonElement;
                           registerTab?.click();
                         }}
@@ -815,7 +617,6 @@ export default Auth;
                           <ExternalLink className="mr-2 h-5 w-5" />
                           {getEmailProvider(unconfirmedEmail) === "gmail" ? "Abrir Gmail" : "Abrir Outlook"}
                         </Button>
-
                         <Button
                           type="button"
                           variant="outline"
@@ -850,20 +651,17 @@ export default Auth;
                   <form onSubmit={handleLogin} className="space-y-6">
                     <div className="space-y-3">
                       <Label htmlFor="identifier" className="text-sm font-semibold text-foreground/90">E-mail ou CPF</Label>
-                      <div className="relative group">
-                        <Input
-                          id="identifier"
-                          name="identifier"
-                          placeholder="seu@email.com ou 000.000.000-00"
-                          required
-                          disabled={isLoading}
-                          className="h-14 text-base bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl pl-5 placeholder:text-muted-foreground/50 transition-all duration-300"
-                        />
-                      </div>
+                      <Input
+                        id="identifier"
+                        name="identifier"
+                        placeholder="seu@email.com ou 000.000.000-00"
+                        required
+                        disabled={isLoading}
+                        className="h-14 text-base bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl pl-5 placeholder:text-muted-foreground/50 transition-all duration-300"
+                      />
                     </div>
 
                     <div className="space-y-3">
-
                       <div className="relative group">
                         <Input
                           id="password"
@@ -884,7 +682,6 @@ export default Auth;
                       </div>
                     </div>
 
-                    {/* Erro inline */}
                     {authError && (
                       <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in">
                         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -898,16 +695,13 @@ export default Auth;
                       </div>
                     )}
 
-                    <Button 
-                      type="submit" 
-                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-full" 
+                    <Button
+                      type="submit"
+                      className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-full"
                       disabled={isLoading}
                     >
                       {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Entrando...
-                        </>
+                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Entrando...</>
                       ) : (
                         "Entrar na Conta"
                       )}
@@ -915,7 +709,6 @@ export default Auth;
                   </form>
                 )}
 
-                {/* Mobile branding - Redesenhado */}
                 <div className="lg:hidden pt-6 border-t border-border/30 mt-6">
                   <div className="flex items-center justify-center gap-4 p-4 rounded-xl bg-gradient-to-r from-accent/10 to-accent/5 border border-accent/20">
                     <Gift className="w-6 h-6 text-accent" />
@@ -924,8 +717,8 @@ export default Auth;
                 </div>
               </TabsContent>
 
+              {/* REGISTER TAB */}
               <TabsContent value="register" className="space-y-5">
-                {/* Indicadores de passos - Redesenhado */}
                 <div className="flex justify-center items-center gap-3 mb-8 py-2">
                   <StepIndicator step={1} label="Dados" icon={User} />
                   <div className={`flex-1 h-1 rounded-full max-w-10 transition-all duration-500 ${registerStep > 1 ? 'bg-gradient-to-r from-accent to-accent/70' : 'bg-muted/50'}`} />
@@ -936,7 +729,7 @@ export default Auth;
                   <StepIndicator step={4} label="E-mail" icon={Mail} />
                 </div>
 
-                {/* Passo 1: Dados Pessoais - Redesenhado */}
+                {/* Step 1 */}
                 {registerStep === 1 && (
                   <div className="space-y-5 animate-fade-in">
                     <div className="text-center mb-6">
@@ -1113,24 +906,16 @@ export default Auth;
                       </div>
                     </div>
 
-                    {/* Validação em tempo real das senhas */}
                     {formData.confirmPassword.length > 0 && (
                       <div className={`flex items-center gap-2 text-xs font-medium ${formData.password === formData.confirmPassword ? "text-green-600" : "text-destructive"}`}>
                         {formData.password === formData.confirmPassword ? (
-                          <>
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span>As senhas coincidem</span>
-                          </>
+                          <><CheckCircle2 className="h-4 w-4" /><span>As senhas coincidem</span></>
                         ) : (
-                          <>
-                            <XCircle className="h-4 w-4" />
-                            <span>As senhas não coincidem</span>
-                          </>
+                          <><XCircle className="h-4 w-4" /><span>As senhas não coincidem</span></>
                         )}
                       </div>
                     )}
 
-                    {/* Erro inline - Step 1 */}
                     {authError && (
                       <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in mt-4">
                         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -1144,9 +929,9 @@ export default Auth;
                       </div>
                     )}
 
-                    <Button 
-                      type="button" 
-                      onClick={handleNextStep} 
+                    <Button
+                      type="button"
+                      onClick={handleNextStep}
                       className="w-full h-14 text-base font-bold mt-6 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 rounded-full"
                       disabled={isLoading}
                     >
@@ -1156,7 +941,7 @@ export default Auth;
                   </div>
                 )}
 
-                {/* Passo 2: Endereço - Redesenhado */}
+                {/* Step 2 */}
                 {registerStep === 2 && (
                   <div className="space-y-5 animate-fade-in">
                     <div className="text-center mb-6">
@@ -1214,7 +999,6 @@ export default Auth;
                           className="h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300"
                         />
                       </div>
-
                       <div className="space-y-3">
                         <Label htmlFor="neighborhood" className="text-sm font-semibold text-foreground/90">Bairro</Label>
                         <Input
@@ -1245,7 +1029,6 @@ export default Auth;
                           </SelectContent>
                         </Select>
                       </div>
-
                       <div className="space-y-3">
                         <Label className="text-sm font-semibold text-foreground/90">Cidade</Label>
                         <Select value={selectedCidade} onValueChange={setSelectedCidade} disabled={isLoading || !selectedEstado}>
@@ -1263,7 +1046,6 @@ export default Auth;
                       </div>
                     </div>
 
-                    {/* Erro inline - Step 2 */}
                     {authError && (
                       <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in">
                         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -1278,30 +1060,17 @@ export default Auth;
                     )}
 
                     <div className="flex gap-3 mt-6">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={handlePreviousStep}
-                        className="flex-1 h-14 rounded-xl border-border/50 hover:bg-muted/50"
-                        disabled={isLoading}
-                      >
-                        <ChevronLeft className="mr-2 h-5 w-5" />
-                        Voltar
+                      <Button type="button" variant="outline" onClick={handlePreviousStep} className="flex-1 h-14 rounded-xl border-border/50 hover:bg-muted/50" disabled={isLoading}>
+                        <ChevronLeft className="mr-2 h-5 w-5" />Voltar
                       </Button>
-                      <Button 
-                        type="button" 
-                        onClick={handleNextStep}
-                        className="flex-1 h-14 rounded-full bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300"
-                        disabled={isLoading}
-                      >
-                        Próximo
-                        <ChevronRight className="ml-2 h-5 w-5" />
+                      <Button type="button" onClick={handleNextStep} className="flex-1 h-14 rounded-full bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300" disabled={isLoading}>
+                        Próximo<ChevronRight className="ml-2 h-5 w-5" />
                       </Button>
                     </div>
                   </div>
                 )}
 
-                {/* Passo 3: Código de Convite - Redesenhado */}
+                {/* Step 3 */}
                 {registerStep === 3 && (
                   <div className="space-y-6 animate-fade-in">
                     <div className="text-center mb-6">
@@ -1312,21 +1081,10 @@ export default Auth;
                     {hasInviteCode === null ? (
                       <div className="space-y-5">
                         <div className="flex gap-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="flex-1 h-16 border-2 border-accent/50 text-accent hover:bg-accent/10 hover:border-accent font-bold text-base rounded-xl transition-all duration-300"
-                            onClick={() => setHasInviteCode(true)}
-                          >
-                            <Gift className="mr-2 h-6 w-6" />
-                            Sim, tenho!
+                          <Button type="button" variant="outline" className="flex-1 h-16 border-2 border-accent/50 text-accent hover:bg-accent/10 hover:border-accent font-bold text-base rounded-xl transition-all duration-300" onClick={() => setHasInviteCode(true)}>
+                            <Gift className="mr-2 h-6 w-6" />Sim, tenho!
                           </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="flex-1 h-16 border-border/50 hover:bg-muted/50 font-medium text-base rounded-xl"
-                            onClick={() => setHasInviteCode(false)}
-                          >
+                          <Button type="button" variant="outline" className="flex-1 h-16 border-border/50 hover:bg-muted/50 font-medium text-base rounded-xl" onClick={() => setHasInviteCode(false)}>
                             Não tenho
                           </Button>
                         </div>
@@ -1347,50 +1105,28 @@ export default Auth;
                               style={{ textTransform: 'uppercase' }}
                             />
                             <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                              {isValidatingCode && (
-                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                              )}
-                              {!isValidatingCode && codeValidationStatus === "valid" && (
-                                <CheckCircle2 className="h-7 w-7 text-accent" />
-                              )}
-                              {!isValidatingCode && (codeValidationStatus === "invalid" || codeValidationStatus === "used") && (
-                                <XCircle className="h-7 w-7 text-destructive" />
-                              )}
+                              {isValidatingCode && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                              {!isValidatingCode && codeValidationStatus === "valid" && <CheckCircle2 className="h-7 w-7 text-accent" />}
+                              {!isValidatingCode && (codeValidationStatus === "invalid" || codeValidationStatus === "used") && <XCircle className="h-7 w-7 text-destructive" />}
                             </div>
                           </div>
                           {codeValidationStatus === "valid" && (
                             <div className="bg-gradient-to-r from-accent/15 to-accent/5 p-4 rounded-xl border border-accent/30 text-center">
-                              <p className="text-sm text-accent font-bold">
-                                🎉 Código válido! Você ganhará 1 mês + 3 dias grátis!
-                              </p>
+                              <p className="text-sm text-accent font-bold">🎉 Código válido! Você ganhará 1 mês + 3 dias grátis!</p>
                             </div>
                           )}
                           {codeValidationStatus === "invalid" && (
                             <div className="bg-destructive/10 p-4 rounded-xl border border-destructive/30 text-center">
-                              <p className="text-sm text-destructive font-medium">
-                                Código inválido. Verifique e tente novamente.
-                              </p>
+                              <p className="text-sm text-destructive font-medium">Código inválido. Verifique e tente novamente.</p>
                             </div>
                           )}
                           {codeValidationStatus === "used" && (
                             <div className="bg-destructive/10 p-4 rounded-xl border border-destructive/30 text-center">
-                              <p className="text-sm text-destructive font-medium">
-                                Este código já foi utilizado.
-                              </p>
+                              <p className="text-sm text-destructive font-medium">Este código já foi utilizado.</p>
                             </div>
                           )}
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground w-full"
-                          onClick={() => {
-                            setHasInviteCode(false);
-                            setInviteCode("");
-                            setCodeValidationStatus("idle");
-                          }}
-                        >
+                        <Button type="button" variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground w-full" onClick={() => { setHasInviteCode(false); setInviteCode(""); setCodeValidationStatus("idle"); }}>
                           Na verdade, não tenho código
                         </Button>
                       </div>
@@ -1399,19 +1135,12 @@ export default Auth;
                         <p className="text-muted-foreground">
                           Sem código? Sem problema! Você ainda ganha <strong className="text-foreground">3 dias grátis</strong>.
                         </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="mt-4 text-accent hover:text-accent hover:bg-accent/10 font-medium"
-                          onClick={() => setHasInviteCode(true)}
-                        >
+                        <Button type="button" variant="ghost" size="sm" className="mt-4 text-accent hover:text-accent hover:bg-accent/10 font-medium" onClick={() => setHasInviteCode(true)}>
                           Na verdade, tenho um código!
                         </Button>
                       </div>
                     )}
 
-                    {/* Erro inline - Step 3 */}
                     {authError && (
                       <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in">
                         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -1426,37 +1155,28 @@ export default Auth;
                     )}
 
                     <div className="flex gap-3 mt-8">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={handlePreviousStep}
-                        className="flex-1 h-14 rounded-xl border-border/50 hover:bg-muted/50"
-                        disabled={isLoading}
-                      >
-                        <ChevronLeft className="mr-2 h-5 w-5" />
-                        Voltar
+                      <Button type="button" variant="outline" onClick={handlePreviousStep} className="flex-1 h-14 rounded-xl border-border/50 hover:bg-muted/50" disabled={isLoading}>
+                        <ChevronLeft className="mr-2 h-5 w-5" />Voltar
                       </Button>
-                      <Button 
-                        type="button" 
+                      <Button
+                        type="button"
                         onClick={handleGoToEmailVerification}
                         className="flex-1 h-14 rounded-full bg-gradient-to-r from-primary via-primary to-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300"
                         disabled={isLoading || hasInviteCode === null || (hasInviteCode && codeValidationStatus !== "valid" && inviteCode.length > 0)}
                       >
-                        Próximo
-                        <ChevronRight className="ml-2 h-5 w-5" />
+                        Próximo<ChevronRight className="ml-2 h-5 w-5" />
                       </Button>
                     </div>
 
                     <p className="text-xs text-center text-muted-foreground pt-2">
-                      {hasInviteCode && codeValidationStatus === "valid" 
+                      {hasInviteCode && codeValidationStatus === "valid"
                         ? "Você ganhará 1 mês + 3 dias de teste grátis! 🎉"
-                        : "Você ganhará 3 dias de teste grátis"
-                      }
+                        : "Você ganhará 3 dias de teste grátis"}
                     </p>
                   </div>
                 )}
 
-                {/* Passo 4: Verificação de E-mail - Redesenhado */}
+                {/* Step 4 */}
                 {registerStep === 4 && (
                   <div className="space-y-6 animate-fade-in">
                     <div className="text-center mb-6">
@@ -1466,9 +1186,7 @@ export default Auth;
                       <h3 className="font-bold text-2xl text-foreground">
                         Confirme seu {getEmailProvider(formData.email) === "gmail" ? "Gmail" : "Outlook"}
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-3">
-                        Foi enviado um link de confirmação para:
-                      </p>
+                      <p className="text-sm text-muted-foreground mt-3">Foi enviado um link de confirmação para:</p>
                       <p className="font-bold text-primary text-lg mt-2 break-all bg-primary/5 py-2 px-4 rounded-lg inline-block">
                         {formData.email}
                       </p>
@@ -1489,8 +1207,8 @@ export default Auth;
                       </p>
                     </div>
 
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       onClick={openEmailApp}
                       className="w-full h-16 text-lg font-bold bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 rounded-xl"
                     >
@@ -1506,34 +1224,25 @@ export default Auth;
                       disabled={isResendingConfirmation}
                     >
                       {isResendingConfirmation ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Reenviando...
-                        </>
+                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Reenviando...</>
                       ) : (
                         "Reenviar e-mail de confirmação"
                       )}
                     </Button>
 
-                    <Button 
-                      type="button" 
-                      variant="ghost"
-                      onClick={resetForm}
-                      className="w-full h-12 text-muted-foreground hover:text-foreground"
-                    >
+                    <Button type="button" variant="ghost" onClick={resetForm} className="w-full h-12 text-muted-foreground hover:text-foreground">
                       Voltar para o Login
                     </Button>
 
                     <p className="text-sm text-center text-muted-foreground pt-2">
-                      {hasInviteCode && codeValidationStatus === "valid" 
+                      {hasInviteCode && codeValidationStatus === "valid"
                         ? "🎉 Após confirmar, você terá 1 mês + 3 dias grátis!"
-                        : "Após confirmar, você terá 3 dias de teste grátis!"
-                      }
+                        : "Após confirmar, você terá 3 dias de teste grátis!"}
                     </p>
                   </div>
                 )}
 
-                {/* Manual de Como Criar Conta - Premium */}
+                {/* Manual */}
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="ghost" className="w-full h-12 text-muted-foreground hover:text-foreground hover:bg-muted/30 mt-6 rounded-xl" type="button">
@@ -1542,7 +1251,6 @@ export default Auth;
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto p-0 gap-0 rounded-2xl">
-                    {/* Header com gradiente */}
                     <div className="bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground rounded-t-2xl">
                       <DialogHeader>
                         <DialogTitle className="flex items-center gap-3 text-xl text-primary-foreground">
@@ -1556,9 +1264,7 @@ export default Auth;
                         Siga as <strong>4 etapas</strong> abaixo para criar sua conta rapidamente.
                       </p>
                     </div>
-
                     <div className="p-5 space-y-4">
-                      {/* Etapa 1 */}
                       <div className="relative pl-10 pb-4 border-l-2 border-primary/20 ml-3">
                         <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">1</div>
                         <h3 className="font-semibold text-foreground text-sm mb-2">Dados Pessoais & Senha</h3>
@@ -1570,8 +1276,6 @@ export default Auth;
                           <p>• <strong>Senha:</strong> Mínimo 6 caracteres — a confirmação valida em tempo real ✅</p>
                         </div>
                       </div>
-
-                      {/* Etapa 2 */}
                       <div className="relative pl-10 pb-4 border-l-2 border-primary/20 ml-3">
                         <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">2</div>
                         <h3 className="font-semibold text-foreground text-sm mb-2">Endereço</h3>
@@ -1581,8 +1285,6 @@ export default Auth;
                           <p>• Se o CEP não encontrar, selecione estado e cidade manualmente</p>
                         </div>
                       </div>
-
-                      {/* Etapa 3 */}
                       <div className="relative pl-10 pb-4 border-l-2 border-primary/20 ml-3">
                         <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">3</div>
                         <h3 className="font-semibold text-foreground text-sm mb-2">Código de Convite</h3>
@@ -1595,8 +1297,6 @@ export default Auth;
                           <p>• O código é validado automaticamente ao digitar</p>
                         </div>
                       </div>
-
-                      {/* Etapa 4 */}
                       <div className="relative pl-10 ml-3">
                         <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold shadow-md">4</div>
                         <h3 className="font-semibold text-foreground text-sm mb-2">Verificação de E-mail</h3>
@@ -1607,8 +1307,6 @@ export default Auth;
                           <p>• Verifique também a pasta de <strong>spam/lixo eletrônico</strong></p>
                         </div>
                       </div>
-
-                      {/* Dica final */}
                       <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-start gap-2">
                         <CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                         <p className="text-xs text-muted-foreground">
@@ -1624,7 +1322,7 @@ export default Auth;
         </Card>
       </div>
 
-      {/* Dialog de conta bloqueada */}
+      {/* Dialog conta bloqueada */}
       <AlertDialog open={showBlockedAccountDialog} onOpenChange={setShowBlockedAccountDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
