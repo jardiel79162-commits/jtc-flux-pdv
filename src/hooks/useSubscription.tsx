@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SubscriptionStatus {
@@ -19,11 +19,7 @@ export const useSubscription = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkSubscription();
-  }, []);
-
-  const checkSubscription = async () => {
+  const checkSubscription = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -72,7 +68,11 @@ export const useSubscription = () => {
       console.error("Erro ao verificar assinatura:", error);
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkSubscription();
+  }, [checkSubscription]);
 
   return { ...status, loading, refresh: checkSubscription };
 };
