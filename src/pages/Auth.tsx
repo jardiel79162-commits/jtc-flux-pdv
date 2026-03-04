@@ -303,6 +303,7 @@ const Auth = () => {
   };
 
   const validateStep1 = () => {
+    if (!formData.fullName.trim()) { setAuthError("Nome completo é obrigatório."); return false; }
     const docValue = formData.cpf.replace(/\D/g, "");
     if (docType === "cpf") {
       if (!isValidCPF(docValue)) { setAuthError("CPF inválido. Verifique os números digitados."); return false; }
@@ -420,6 +421,7 @@ const Auth = () => {
 
   const resetForm = () => {
     setRegisterStep(1);
+    setDocType("cpf");
     setFormData({ fullName: "", cpf: "", email: "", phone: "", password: "", confirmPassword: "", cep: "", number: "" });
     setAddressData({ street: "", neighborhood: "", city: "", state: "" });
     setSelectedEstado("");
