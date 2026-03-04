@@ -13,7 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Gift, Eye, EyeOff, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronRight, ChevronLeft, HelpCircle, ExternalLink, ShoppingCart, Package, TrendingUp, Check, MapPin, Ticket, User } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { signIn, signUp, type SignUpData, validateInviteCode } from "@/lib/auth";
-import { isValidCPF } from "@/lib/cpfValidator";
+import { isValidCPF, isValidCNPJ } from "@/lib/cpfValidator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 
 const Auth = () => {
@@ -37,6 +38,7 @@ const Auth = () => {
   // Register state
   const [registerStep, setRegisterStep] = useState(1);
   const [accountCreated, setAccountCreated] = useState(false);
+  const [docType, setDocType] = useState<"cpf" | "cnpj">("cpf");
   const [formData, setFormData] = useState({
     fullName: "",
     cpf: "",
@@ -183,7 +185,7 @@ const Auth = () => {
     }
   };
 
-  const formatCPF = (value: string) => {
+  const formatCPFInput = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length > 11) v = v.slice(0, 11);
     let formatted = v;
@@ -191,6 +193,21 @@ const Auth = () => {
     if (v.length > 6) formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
     if (v.length > 9) formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
     return formatted;
+  };
+
+  const formatCNPJInput = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 14) v = v.slice(0, 14);
+    let formatted = v;
+    if (v.length > 2) formatted = v.slice(0, 2) + "." + v.slice(2);
+    if (v.length > 5) formatted = formatted.slice(0, 6) + "." + formatted.slice(6);
+    if (v.length > 8) formatted = formatted.slice(0, 10) + "/" + formatted.slice(10);
+    if (v.length > 12) formatted = formatted.slice(0, 15) + "-" + formatted.slice(15);
+    return formatted;
+  };
+
+  const formatDocInput = (value: string) => {
+    return docType === "cpf" ? formatCPFInput(value) : formatCNPJInput(value);
   };
 
   const formatPhone = (value: string) => {
@@ -287,8 +304,12 @@ const Auth = () => {
 
   const validateStep1 = () => {
     if (!formData.fullName.trim()) { setAuthError("Nome completo é obrigatório."); return false; }
-    const cpfValue = formData.cpf.replace(/\D/g, "");
-    if (!isValidCPF(cpfValue)) { setAuthError("CPF inválido. Verifique os números digitados."); return false; }
+    const docValue = formData.cpf.replace(/\D/g, "");
+    if (docType === "cpf") {
+      if (!isValidCPF(docValue)) { setAuthError("CPF inválido. Verifique os números digitados."); return false; }
+    } else {
+      if (!isValidCNPJ(docValue)) { setAuthError("CNPJ inválido. Verifique os números digitados."); return false; }
+    }
     if (!formData.email.includes("@")) { setAuthError("E-mail inválido. Digite um e-mail válido."); return false; }
     if (!isValidEmailProvider(formData.email)) { setAuthError("Só aceitamos e-mails @gmail.com ou @outlook.com."); return false; }
     const phoneValue = formData.phone.replace(/\D/g, "");
@@ -400,6 +421,7 @@ const Auth = () => {
 
   const resetForm = () => {
     setRegisterStep(1);
+    setDocType("cpf");
     setFormData({ fullName: "", cpf: "", email: "", phone: "", password: "", confirmPassword: "", cep: "", number: "" });
     setAddressData({ street: "", neighborhood: "", city: "", state: "" });
     setSelectedEstado("");
@@ -751,17 +773,41 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="cpf" className="text-sm font-semibold text-foreground/90">CPF</Label>
+                      <Label className="text-sm font-semibold text-foreground/90">Tipo de Cadastro</Label>
+                      <RadioGroup
+                        value={docType}
+                        onValueChange={(val: "cpf" | "cnpj") => {
+                          setDocType(val);
+                          setFormData({ ...formData, cpf: "" });
+                          setCpfError(null);
+                        }}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="cpf" id="doc-cpf" />
+                          <Label htmlFor="doc-cpf" className="text-sm font-medium cursor-pointer">CPF</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="cnpj" id="doc-cnpj" />
+                          <Label htmlFor="doc-cnpj" className="text-sm font-medium cursor-pointer">CNPJ</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label htmlFor="cpf" className="text-sm font-semibold text-foreground/90">{docType === "cpf" ? "CPF" : "CNPJ"}</Label>
                       <Input
                         id="cpf"
-                        placeholder="000.000.000-00"
+                        placeholder={docType === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
                         value={formData.cpf}
                         onChange={(e) => {
-                          const formatted = formatCPF(e.target.value);
+                          const formatted = formatDocInput(e.target.value);
                           setFormData({ ...formData, cpf: formatted });
                           const clean = formatted.replace(/\D/g, "");
-                          if (clean.length === 11) {
-                            setCpfError(!isValidCPF(clean) ? "CPF inválido" : null);
+                          const expectedLen = docType === "cpf" ? 11 : 14;
+                          if (clean.length === expectedLen) {
+                            const isValid = docType === "cpf" ? isValidCPF(clean) : isValidCNPJ(clean);
+                            setCpfError(!isValid ? `${docType.toUpperCase()} inválido` : null);
                           } else {
                             setCpfError(null);
                           }
@@ -769,7 +815,7 @@ const Auth = () => {
                         required
                         disabled={isLoading}
                         inputMode="numeric"
-                        maxLength={14}
+                        maxLength={docType === "cpf" ? 14 : 18}
                         className={`h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300 ${cpfError ? "border-destructive ring-destructive/20" : ""}`}
                       />
                       {cpfError && <p className="text-xs text-destructive font-medium">{cpfError}</p>}
