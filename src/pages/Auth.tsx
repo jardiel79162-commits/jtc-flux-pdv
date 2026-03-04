@@ -13,7 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Gift, Eye, EyeOff, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronRight, ChevronLeft, HelpCircle, ExternalLink, ShoppingCart, Package, TrendingUp, Check, MapPin, Ticket, User } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { signIn, signUp, type SignUpData, validateInviteCode } from "@/lib/auth";
-import { isValidCPF } from "@/lib/cpfValidator";
+import { isValidCPF, isValidCNPJ } from "@/lib/cpfValidator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { fetchCEP, fetchEstados, fetchCidades, type Estado, type Cidade } from "@/lib/location";
 
 const Auth = () => {
