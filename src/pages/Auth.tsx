@@ -185,7 +185,7 @@ const Auth = () => {
     }
   };
 
-  const formatCPF = (value: string) => {
+  const formatCPFInput = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length > 11) v = v.slice(0, 11);
     let formatted = v;
@@ -193,6 +193,21 @@ const Auth = () => {
     if (v.length > 6) formatted = formatted.slice(0, 7) + "." + formatted.slice(7);
     if (v.length > 9) formatted = formatted.slice(0, 11) + "-" + formatted.slice(11);
     return formatted;
+  };
+
+  const formatCNPJInput = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 14) v = v.slice(0, 14);
+    let formatted = v;
+    if (v.length > 2) formatted = v.slice(0, 2) + "." + v.slice(2);
+    if (v.length > 5) formatted = formatted.slice(0, 6) + "." + formatted.slice(6);
+    if (v.length > 8) formatted = formatted.slice(0, 10) + "/" + formatted.slice(10);
+    if (v.length > 12) formatted = formatted.slice(0, 15) + "-" + formatted.slice(15);
+    return formatted;
+  };
+
+  const formatDocInput = (value: string) => {
+    return docType === "cpf" ? formatCPFInput(value) : formatCNPJInput(value);
   };
 
   const formatPhone = (value: string) => {
@@ -288,9 +303,12 @@ const Auth = () => {
   };
 
   const validateStep1 = () => {
-    if (!formData.fullName.trim()) { setAuthError("Nome completo é obrigatório."); return false; }
-    const cpfValue = formData.cpf.replace(/\D/g, "");
-    if (!isValidCPF(cpfValue)) { setAuthError("CPF inválido. Verifique os números digitados."); return false; }
+    const docValue = formData.cpf.replace(/\D/g, "");
+    if (docType === "cpf") {
+      if (!isValidCPF(docValue)) { setAuthError("CPF inválido. Verifique os números digitados."); return false; }
+    } else {
+      if (!isValidCNPJ(docValue)) { setAuthError("CNPJ inválido. Verifique os números digitados."); return false; }
+    }
     if (!formData.email.includes("@")) { setAuthError("E-mail inválido. Digite um e-mail válido."); return false; }
     if (!isValidEmailProvider(formData.email)) { setAuthError("Só aceitamos e-mails @gmail.com ou @outlook.com."); return false; }
     const phoneValue = formData.phone.replace(/\D/g, "");
