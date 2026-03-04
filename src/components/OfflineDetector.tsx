@@ -21,7 +21,7 @@ const OfflineDetector = () => {
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/`, {
         method: "HEAD",
         headers: {
-          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || "",
         },
         cache: "no-store",
         signal: controller.signal,
