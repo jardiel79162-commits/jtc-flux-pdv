@@ -771,17 +771,41 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="cpf" className="text-sm font-semibold text-foreground/90">CPF</Label>
+                      <Label className="text-sm font-semibold text-foreground/90">Tipo de Cadastro</Label>
+                      <RadioGroup
+                        value={docType}
+                        onValueChange={(val: "cpf" | "cnpj") => {
+                          setDocType(val);
+                          setFormData({ ...formData, cpf: "" });
+                          setCpfError(null);
+                        }}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="cpf" id="doc-cpf" />
+                          <Label htmlFor="doc-cpf" className="text-sm font-medium cursor-pointer">CPF</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="cnpj" id="doc-cnpj" />
+                          <Label htmlFor="doc-cnpj" className="text-sm font-medium cursor-pointer">CNPJ</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label htmlFor="cpf" className="text-sm font-semibold text-foreground/90">{docType === "cpf" ? "CPF" : "CNPJ"}</Label>
                       <Input
                         id="cpf"
-                        placeholder="000.000.000-00"
+                        placeholder={docType === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
                         value={formData.cpf}
                         onChange={(e) => {
-                          const formatted = formatCPF(e.target.value);
+                          const formatted = formatDocInput(e.target.value);
                           setFormData({ ...formData, cpf: formatted });
                           const clean = formatted.replace(/\D/g, "");
-                          if (clean.length === 11) {
-                            setCpfError(!isValidCPF(clean) ? "CPF inválido" : null);
+                          const expectedLen = docType === "cpf" ? 11 : 14;
+                          if (clean.length === expectedLen) {
+                            const isValid = docType === "cpf" ? isValidCPF(clean) : isValidCNPJ(clean);
+                            setCpfError(!isValid ? `${docType.toUpperCase()} inválido` : null);
                           } else {
                             setCpfError(null);
                           }
@@ -789,7 +813,7 @@ const Auth = () => {
                         required
                         disabled={isLoading}
                         inputMode="numeric"
-                        maxLength={14}
+                        maxLength={docType === "cpf" ? 14 : 18}
                         className={`h-12 bg-muted/30 border-border/40 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300 ${cpfError ? "border-destructive ring-destructive/20" : ""}`}
                       />
                       {cpfError && <p className="text-xs text-destructive font-medium">{cpfError}</p>}
