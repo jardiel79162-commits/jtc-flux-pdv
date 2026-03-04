@@ -38,6 +38,7 @@ const Auth = () => {
   // Register state
   const [registerStep, setRegisterStep] = useState(1);
   const [accountCreated, setAccountCreated] = useState(false);
+  const [docType, setDocType] = useState<"cpf" | "cnpj">("cpf");
   const [formData, setFormData] = useState({
     fullName: "",
     cpf: "",
